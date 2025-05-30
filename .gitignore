@@ -1,0 +1,30 @@
+# Visual Studio
+.vs/
+*.suo
+*.vcxproj.user
+
+# Build outputs
+x64/
+# 外部ライブラリフォルダーを無視
+/[Ee]xLib/
+*.cso
+*.obj
+*.pdb
+*.exe
+*.ilk
+*.log
+*.png
+*.tga
+*.fbx
+*.mp3
+*.wav
+
+# Others
+*.cache
+*.db
+*.ipch
+*.aps
+*.ncb
+*.sdf
+*.opensdf
+*.tlog
