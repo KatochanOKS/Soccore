@@ -16,7 +16,7 @@ public:
     void Update();
     void Draw();
     void Shutdown();
-
+	void CreateTestCube(); // ’Ç‰Á    
     DeviceManager* GetDeviceManager() { return &m_deviceManager; }
     SwapChainManager* GetSwapChainManager() { return &m_swapChainManager; } // ’Ç‰Á
     DepthBufferManager* GetDepthBufferManager() { return &m_depthBufferManager; } // ’Ç‰Á
@@ -36,5 +36,6 @@ private:
     PipelineManager m_pipelineManager; // ’Ç‰Á
     BufferManager m_bufferManager; // ’Ç‰Á
 	TextureManager m_textureManager; // ’Ç‰Á
+	BufferManager m_cubeBufferManager; // ’Ç‰Á
     // ‘¼‚ÌManager‚à“¯—l‚É’Ç‰Á
 };

@@ -9,7 +9,9 @@ struct VS_OUTPUT
 
 float4 main(VS_OUTPUT input) : SV_TARGET
 {
-    float4 color = tex.Sample(smp, input.Tex);
-    // そのまま返すとアルファも出力される
-    return color;
+    // 「uvが0,0以外の時だけtex.Sample、それ以外は色」
+    if (input.Tex.x != 0 || input.Tex.y != 0)
+        return tex.Sample(smp, input.Tex);
+    else
+        return float4(0.2f, 0.7f, 0.3f, 1.0f); // 単色
 }

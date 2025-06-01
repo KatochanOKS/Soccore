@@ -13,6 +13,7 @@ public:
     void CreateVertexBuffer(ID3D12Device* device, const std::vector<Vertex>& vertices);
     void CreateIndexBuffer(ID3D12Device* device, const std::vector<uint16_t>& indices);
 
+    ID3D12Resource* GetConstantBuffer() const { return m_constantBuffer.Get(); }
     D3D12_VERTEX_BUFFER_VIEW GetVertexBufferView() const { return m_vbv; }
     D3D12_INDEX_BUFFER_VIEW GetIndexBufferView() const { return m_ibv; }
     void CreateConstantBuffer(ID3D12Device* device, size_t size);

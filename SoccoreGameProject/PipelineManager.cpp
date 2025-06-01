@@ -12,21 +12,25 @@ static std::vector<char> LoadShaderFile(LPCWSTR filename) {
 }
 
 bool PipelineManager::Initialize(ID3D12Device* device, LPCWSTR vsPath, LPCWSTR psPath) {
-    // ルートパラメータ：SRVだけ
-    CD3DX12_ROOT_PARAMETER rootParam[1] = {};
+    // ルートパラメータ：0=SRV(t0), 1=CBV(b0)
+    CD3DX12_ROOT_PARAMETER rootParam[2] = {};
+
+    // SRV (t0) : ピクセルシェーダ用
     CD3DX12_DESCRIPTOR_RANGE descRange;
     descRange.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0); // t0
     rootParam[0].InitAsDescriptorTable(1, &descRange, D3D12_SHADER_VISIBILITY_PIXEL);
 
-    // サンプラー（テクスチャサンプリング用）
+    // CBV (b0) : 頂点シェーダ用
+    rootParam[1].InitAsConstantBufferView(0, 0, D3D12_SHADER_VISIBILITY_VERTEX);
+
+    // サンプラーはそのまま
     CD3DX12_STATIC_SAMPLER_DESC staticSampler(
-        0, // register(s0)
-        D3D12_FILTER_MIN_MAG_MIP_LINEAR,
+        0, D3D12_FILTER_MIN_MAG_MIP_LINEAR,
         D3D12_TEXTURE_ADDRESS_MODE_WRAP, D3D12_TEXTURE_ADDRESS_MODE_WRAP, D3D12_TEXTURE_ADDRESS_MODE_WRAP
     );
 
     CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(
-        1, rootParam,
+        2, rootParam,               // ← 2つ
         1, &staticSampler,
         D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT
     );

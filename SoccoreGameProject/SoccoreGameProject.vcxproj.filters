@@ -80,6 +80,9 @@
     <ClInclude Include="TextureManager.h">
       <Filter>ソース ファイル</Filter>
     </ClInclude>
+    <ClInclude Include="Transform.h">
+      <Filter>ソース ファイル</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="PixelShader.hlsl">

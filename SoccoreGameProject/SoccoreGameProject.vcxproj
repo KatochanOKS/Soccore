@@ -166,6 +166,7 @@
     <ClInclude Include="stb_image.h" />
     <ClInclude Include="SwapChainManager.h" />
     <ClInclude Include="TextureManager.h" />
+    <ClInclude Include="Transform.h" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="PixelShader.hlsl">
