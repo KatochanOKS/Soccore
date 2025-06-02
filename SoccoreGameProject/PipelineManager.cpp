@@ -85,7 +85,7 @@ bool PipelineManager::Initialize(ID3D12Device* device, LPCWSTR vsPath, LPCWSTR p
     psoDesc.DSVFormat = DXGI_FORMAT_D32_FLOAT;
     psoDesc.SampleDesc.Count = 1;
 
-    psoDesc.BlendState = blendDesc;
+    /*psoDesc.BlendState = blendDesc;*/
     hr = device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&m_pipelineState));
     return SUCCEEDED(hr);
 }
