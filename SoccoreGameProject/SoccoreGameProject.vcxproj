@@ -148,6 +148,7 @@
     <ClCompile Include="DepthBufferManager.cpp" />
     <ClCompile Include="DeviceManager.cpp" />
     <ClCompile Include="EngineManager.cpp" />
+    <ClCompile Include="GameObject.cpp" />
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="PipelineManager.cpp" />
     <ClCompile Include="SwapChainManager.cpp" />
@@ -157,10 +158,12 @@
     <ClInclude Include="ApplicationManager.h" />
     <ClInclude Include="BIN_FILE12.h" />
     <ClInclude Include="BufferManager.h" />
+    <ClInclude Include="Colors.h" />
     <ClInclude Include="d3dx12.h" />
     <ClInclude Include="DepthBufferManager.h" />
     <ClInclude Include="DeviceManager.h" />
     <ClInclude Include="EngineManager.h" />
+    <ClInclude Include="GameObject.h" />
     <ClInclude Include="Main.h" />
     <ClInclude Include="PipelineManager.h" />
     <ClInclude Include="stb_image.h" />
