@@ -7,6 +7,7 @@
 #include "BufferManager.h"
 #include"TextureManager.h"
 #include "Transform.h"
+#include "GameObject.h"
 class EngineManager {
 public:
     void SetHWND(HWND hwnd) { m_hWnd = hwnd; }
@@ -26,7 +27,7 @@ public:
 	TextureManager* GetTextureManager() { return &m_textureManager; } // ’Ç‰Á
 	BufferManager* GetCubeBufferManager() { return &m_cubeBufferManager; } // ’Ç‰Á
 
-    std::vector<Transform> m_cubeTransforms; // ’n–Ê—p
+    std::vector<GameObject*> m_gameObjects;
     int m_texIdx = -1;
     //============================================================================================================
 

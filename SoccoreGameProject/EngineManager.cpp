@@ -1,63 +1,46 @@
 #include "EngineManager.h"
 #include "BufferManager.h" // Vertexを使うため
 #include <DirectXMath.h>
+#include"GameObject.h"
 using namespace DirectX;
-
-// エンジンの初期化処理
 void EngineManager::Initialize() {
-    // DeviceManagerの初期化（GPUデバイス・コマンド周り）
     m_deviceManager.Initialize();
-
-    // SwapChainManagerの初期化（ウィンドウ・バックバッファ管理）
     auto* device = m_deviceManager.GetDevice();
     auto* cmdQueue = m_deviceManager.GetCommandQueue();
     m_swapChainManager.Initialize(m_hWnd, device, cmdQueue, 1280, 720);
-
-    // デプスバッファ（奥行きテスト用）
     m_depthBufferManager.Initialize(device, 1280, 720);
-
-    // パイプライン・シェーダ初期化
     m_pipelineManager.Initialize(device, L"assets/VertexShader.cso", L"assets/PixelShader.cso");
 
-    // 定数バッファ（CBV）を「4個分」まとめて確保（キューブ4つ分の行列）
-    m_bufferManager.CreateConstantBuffer(m_deviceManager.GetDevice(), sizeof(XMMATRIX) * 4);
-
-    // コマンドリスト取得（リソース作成用）
-    auto* cmdList = m_deviceManager.GetCommandList();
-
-    // テクスチャマネージャ初期化＆画像ロード（penguin1.pngをSRVとしてセット）
+    // 画像ロード
     m_textureManager.Initialize(device);
     m_texIdx = m_textureManager.LoadTexture(L"assets/penguin1.png", m_deviceManager.GetCommandList());
 
-    // --- ここからシーンに配置するキューブを設定 ---
-    m_cubeTransforms.clear();
+    // GameObject生成（地面＋複数Cube）
+    m_gameObjects.clear();
 
-    // キューブ1
-    Transform t1;
-    t1.position = XMFLOAT3(-2.0f, 0.0f, 0.0f); // 左
-    t1.scale = XMFLOAT3(1.0f, 1.0f, 1.0f);     // 標準サイズ
-    m_cubeTransforms.push_back(t1);
+    // --- 地面オブジェクト ---
+    auto* ground = new GameObject("Ground", 0, -1, Colors::Red);   // 地面：緑
+    ground->transform.position = XMFLOAT3(0, -1.0f, 0);
+    ground->transform.scale = XMFLOAT3(50.0f, 0.2f, 50.0f);
+    m_gameObjects.push_back(ground);
 
-    // キューブ2
-    Transform t2;
-    t2.position = XMFLOAT3(0.0f, 5.0f, 0.0f);  // 上にある
-    t2.scale = XMFLOAT3(1.0f, 1.0f, 1.0f);     // 標準サイズ
-    m_cubeTransforms.push_back(t2);
+    // --- キューブオブジェクト ---
+    auto* cube1 = new GameObject("Cube1", 0, m_texIdx);
+    cube1->transform.position = XMFLOAT3(-2, 0, 0);
+    cube1->transform.scale = XMFLOAT3(1, 1, 1);
+    m_gameObjects.push_back(cube1);
 
-    // キューブ3
-    Transform t3;
-    t3.position = XMFLOAT3(2.0f, 2.0f, 2.0f);  // 右奥
-    t3.scale = XMFLOAT3(1.0f, 1.0f, 1.0f);     // 標準サイズ
-    m_cubeTransforms.push_back(t3);
+    auto* cube2 = new GameObject("Cube2", 0, m_texIdx);
+    cube2->transform.position = XMFLOAT3(2, 2, 2);
+    cube2->transform.scale = XMFLOAT3(1, 1, 1);
+    m_gameObjects.push_back(cube2);
 
-    // キューブ4
-    Transform t4;
-    t4.position = XMFLOAT3(-5.0f, 6.0f, 0.0f); // 左上
-    t4.scale = XMFLOAT3(2.0f, 2.0f, 2.0f);     // 大きめ
-    m_cubeTransforms.push_back(t4);
+    // ...追加Cubeも同様に...
 
-    // 頂点・インデックスバッファ生成（立方体1個分のみ作ればOK）
-    CreateTestCube();
+    // 定数バッファは「256バイト×オブジェクト数」
+    constexpr size_t CBV_SIZE = 256;
+    m_bufferManager.CreateConstantBuffer(device, CBV_SIZE * m_gameObjects.size());
+    CreateTestCube(); // 立方体のバッファ作成（地面もスケールで流用）
 }
 
 void EngineManager::Start() {
@@ -69,12 +52,13 @@ void EngineManager::Update() {
 }
 
 // メイン描画関数
+// エンジンの描画処理（完璧版！）
 void EngineManager::Draw() {
-    // 1. 今描画するバックバッファ番号取得、コマンドリスト取得
+    // 1. バックバッファ・コマンドリスト取得
     UINT backBufferIndex = m_swapChainManager.GetSwapChain()->GetCurrentBackBufferIndex();
     auto* cmdList = m_deviceManager.GetCommandList();
 
-    // 2. バックバッファの状態を「描画可能」に切り替えるバリア設定
+    // 2. バリア設定（Present→RenderTarget）
     D3D12_RESOURCE_BARRIER barrier = {};
     barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
     barrier.Transition.pResource = m_swapChainManager.GetBackBuffer(backBufferIndex);
@@ -83,20 +67,18 @@ void EngineManager::Draw() {
     barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
     cmdList->ResourceBarrier(1, &barrier);
 
-    // 3. RTV（カラーバッファ）・DSV（深度バッファ）のハンドル取得
+    // 3. RTV/DSV設定
     D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle = m_swapChainManager.GetRTVHeap()->GetCPUDescriptorHandleForHeapStart();
     rtvHandle.ptr += backBufferIndex * m_swapChainManager.GetRTVHeapSize();
     D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = m_depthBufferManager.GetDSVHeap()->GetCPUDescriptorHandleForHeapStart();
-
-    // 4. レンダーターゲット（RTV/DSV）を設定
     cmdList->OMSetRenderTargets(1, &rtvHandle, FALSE, &dsvHandle);
 
-    // 5. 画面クリア（青色、奥行きもクリア）
+    // 4. 画面クリア
     const float clearColor[] = { 0.1f, 0.3f, 0.6f, 1.0f };
     cmdList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
     cmdList->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
 
-    // 6. ビューポート・シザー設定（画面全体）
+    // 5. ビューポート・シザー設定
     float width = static_cast<float>(m_swapChainManager.GetWidth());
     float height = static_cast<float>(m_swapChainManager.GetHeight());
     D3D12_VIEWPORT viewport = { 0, 0, width, height, 0.0f, 1.0f };
@@ -104,22 +86,19 @@ void EngineManager::Draw() {
     cmdList->RSSetViewports(1, &viewport);
     cmdList->RSSetScissorRects(1, &scissorRect);
 
-    // 7. パイプラインステート・ルートシグネチャ設定（forループの外で1回だけ！）
+    // 6. パイプライン・ルートシグネチャ・SRVヒープ設定
     cmdList->SetPipelineState(m_pipelineManager.GetPipelineState());
     cmdList->SetGraphicsRootSignature(m_pipelineManager.GetRootSignature());
-
-    // 8. テクスチャ（SRV）をシェーダにバインド
     ID3D12DescriptorHeap* heaps[] = { m_textureManager.GetSRVHeap() };
     cmdList->SetDescriptorHeaps(_countof(heaps), heaps);
-    cmdList->SetGraphicsRootDescriptorTable(0, m_textureManager.GetSRV(m_texIdx));
 
-    // 9. カメラの行列（ビュー・プロジェクション）
+    // 7. カメラ行列
     static float angle = 0.0f;
-    angle += 0.01f; // 画面全体を回転させるための角度
+    angle += 0.01f;
     XMMATRIX view = XMMatrixLookAtLH(
-        XMVectorSet(0, 10, -10, 1),  // カメラ位置
-        XMVectorSet(0, 0, 0, 1),    // 注視点
-        XMVectorSet(0, 1, 0, 0)     // 上方向
+        XMVectorSet(0, 3, -10, 1), // カメラ位置
+        XMVectorSet(0, 0, 0, 1),   // 注視点
+        XMVectorSet(0, 1, 0, 0)    // 上方向
     );
     XMMATRIX proj = XMMatrixPerspectiveFovLH(
         XMConvertToRadians(60.0f),
@@ -127,26 +106,38 @@ void EngineManager::Draw() {
         0.1f, 100.0f
     );
 
-    // 10. 定数バッファをMap（forの外で一度だけ）
+    // 8. 回転値をTransformへ（地面もCubeもここで回転可能！）
+    for (auto* obj : m_gameObjects) {
+        // 例：すべてのオブジェクトを回転させる場合
+        obj->transform.rotation.y = angle;
+
+         if (obj->name == "Ground") obj->transform.rotation.y = 0;
+         else obj->transform.rotation.y = angle; // キューブは固定
+    }
+
+    // 9. 定数バッファMap（256バイトアライン）
     void* mapped = nullptr;
     HRESULT hr = m_bufferManager.GetConstantBuffer()->Map(0, nullptr, &mapped);
-    if (FAILED(hr) || mapped == nullptr) return;
+    if (FAILED(hr) || !mapped) return;
+    constexpr size_t CBV_SIZE = 256;
 
-    // 11. すべてのキューブをfor文で描画
-    for (int i = 0; i < m_cubeTransforms.size(); ++i) {
-        const auto& t = m_cubeTransforms[i];
-        // ワールド行列（全体をY軸回転させる）
-        XMMATRIX world = XMMatrixRotationY(angle) * t.GetWorldMatrix();
+    // 10. 全GameObject描画
+    for (size_t i = 0; i < m_gameObjects.size(); ++i) {
+        GameObject* obj = m_gameObjects[i];
+
+        XMMATRIX world = obj->transform.GetWorldMatrix();
         XMMATRIX wvp = XMMatrixTranspose(world * view * proj);
 
-        // CBVバッファ内の自分の領域へ行列を書き込み
-        memcpy((char*)mapped + sizeof(XMMATRIX) * i, &wvp, sizeof(wvp));
+        memcpy((char*)mapped + CBV_SIZE * i, &wvp, sizeof(wvp));
+        D3D12_GPU_VIRTUAL_ADDRESS cbvAddr = m_bufferManager.GetConstantBufferGPUAddress() + CBV_SIZE * i;
+        cmdList->SetGraphicsRootConstantBufferView(1, cbvAddr);
 
-        // 自分用の定数バッファアドレスをバインド
-        D3D12_GPU_VIRTUAL_ADDRESS cbvAddress = m_bufferManager.GetConstantBufferGPUAddress() + sizeof(XMMATRIX) * i;
-        cmdList->SetGraphicsRootConstantBufferView(1, cbvAddress);
+        // テクスチャ（地面だけ色、Cubeだけテクスチャ等を区別できる）
+        if (obj->texIndex >= 0) {
+            cmdList->SetGraphicsRootDescriptorTable(0, m_textureManager.GetSRV(obj->texIndex));
+        }
 
-        // バッファバインド・描画コマンド発行
+        // 描画コマンド
         cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
         D3D12_VERTEX_BUFFER_VIEW vbv = m_bufferManager.GetVertexBufferView();
         D3D12_INDEX_BUFFER_VIEW ibv = m_bufferManager.GetIndexBufferView();
@@ -154,33 +145,39 @@ void EngineManager::Draw() {
         cmdList->IASetIndexBuffer(&ibv);
         cmdList->DrawIndexedInstanced(36, 1, 0, 0, 0);
     }
-    // 定数バッファアンマップ
     m_bufferManager.GetConstantBuffer()->Unmap(0, nullptr);
 
-    // 12. バリアでPresent用に切り替え
+    // 11. バリアでPRESENTに戻す
     barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
     barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
     cmdList->ResourceBarrier(1, &barrier);
 
-    // 13. コマンドリストをGPUに実行させる
+    // 12. コマンドリスト実行とPresent
     cmdList->Close();
     ID3D12CommandList* commandLists[] = { cmdList };
     m_deviceManager.GetCommandQueue()->ExecuteCommandLists(1, commandLists);
     m_deviceManager.WaitForGpu();
-
-    // 14. 画面を表示（スワップチェインのPresent）
     m_swapChainManager.GetSwapChain()->Present(1, 0);
 
-    // 15. コマンドアロケータ/リストをリセットして次のフレーム準備
+    // 13. コマンドアロケータ/リストをリセットして次フレーム準備
     m_deviceManager.GetCommandAllocator()->Reset();
     cmdList->Reset(m_deviceManager.GetCommandAllocator(), nullptr);
 }
 
+
+// 終了時の後始末
 // 終了時の後始末
 void EngineManager::Shutdown() {
+    // GameObjectの動的メモリをすべて解放
+    for (auto* obj : m_gameObjects) delete obj;
+    m_gameObjects.clear();
+
+    // DX12リソースのクリーンアップ
     m_deviceManager.Cleanup();
     m_swapChainManager.Cleanup();
+    // 必要に応じて他のManager（TextureManagerなど）もCleanup()
 }
+
 
 // 頂点・インデックスバッファを作成し、立方体モデルデータを格納
 void EngineManager::CreateTestCube() {
