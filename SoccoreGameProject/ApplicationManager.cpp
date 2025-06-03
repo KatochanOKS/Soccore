@@ -15,7 +15,7 @@ void ApplicationManager::InitWindow(HINSTANCE hInstance, int nCmdShow) {
     RegisterClassEx(&windowClass);
 
     m_hWnd = CreateWindowEx(
-        0, L"GAME_WINDOW", L"DX12 Game",
+        0, TEXT("GAME_WINDOW"), L"DX12 Game",
         WS_OVERLAPPEDWINDOW,
         CW_USEDEFAULT, CW_USEDEFAULT, 1280, 720,
         nullptr, nullptr, hInstance, nullptr);

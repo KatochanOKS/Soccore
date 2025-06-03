@@ -6,6 +6,7 @@
 #include "PipelineManager.h" // 追加
 #include "BufferManager.h"
 #include"TextureManager.h"
+#include "Transform.h"
 class EngineManager {
 public:
     void SetHWND(HWND hwnd) { m_hWnd = hwnd; }
@@ -23,7 +24,9 @@ public:
     BufferManager* GetBufferManager() { return &m_bufferManager; }
 	PipelineManager* GetPipelineManager() { return &m_pipelineManager; } // 追加
 	TextureManager* GetTextureManager() { return &m_textureManager; } // 追加
+	BufferManager* GetCubeBufferManager() { return &m_cubeBufferManager; } // 追加
 
+    std::vector<Transform> m_cubeTransforms; // 地面用
     int m_texIdx = -1;
     //============================================================================================================
 
@@ -37,5 +40,6 @@ private:
     BufferManager m_bufferManager; // 追加
 	TextureManager m_textureManager; // 追加
 	BufferManager m_cubeBufferManager; // 追加
+	Transform m_groundTransform; // 地面用のTransform
     // 他のManagerも同様に追加
 };
