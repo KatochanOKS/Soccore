@@ -35,6 +35,7 @@ public:
 
     std::vector<GameObject*> m_gameObjects;
     int m_texIdx = -1;
+    int m_cubeTexIdx = -1; // ’Ç‰Á
     //============================================================================================================
 
     void CreateTestQuad(); // ’Ç‰Á
