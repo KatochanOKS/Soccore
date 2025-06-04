@@ -16,8 +16,8 @@ void EngineManager::Initialize() {
 
     // 画像ロード
     m_textureManager.Initialize(device);
-    m_texIdx = m_textureManager.LoadTexture(L"assets/Ground.png", m_deviceManager.GetCommandList());
-    m_cubeTexIdx= m_textureManager.LoadTexture(L"assets/penguin1.png", m_deviceManager.GetCommandList()); // 追加
+    m_texIdx = m_textureManager.LoadTexture(L"assets/penguin1.png", m_deviceManager.GetCommandList());
+    m_cubeTexIdx= m_textureManager.LoadTexture(L"assets/penguin2.png", m_deviceManager.GetCommandList()); // 追加
 
     // GameObject生成（地面＋複数Cube）
     m_gameObjects.clear();
