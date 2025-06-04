@@ -1,3 +1,8 @@
+cbuffer ObjectBuffer : register(b0) // b0: 行列と色
+{
+    float4x4 WorldViewProj;
+    float4 Color; // 追加
+};
 Texture2D tex : register(t0);
 SamplerState smp : register(s0);
 
@@ -9,9 +14,9 @@ struct VS_OUTPUT
 
 float4 main(VS_OUTPUT input) : SV_TARGET
 {
-    // 「uvが0,0以外の時だけtex.Sample、それ以外は色」
+    // UVが(0,0)なら「色」で塗る、それ以外はテクスチャ
     if (input.Tex.x != 0 || input.Tex.y != 0)
         return tex.Sample(smp, input.Tex);
     else
-        return float4(0.2f, 0.7f, 0.3f, 1.0f); // 単色
+        return Color; // 定数バッファから色取得
 }

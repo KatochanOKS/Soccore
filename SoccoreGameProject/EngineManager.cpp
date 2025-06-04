@@ -3,7 +3,10 @@
 #include <DirectXMath.h>
 #include"GameObject.h"
 using namespace DirectX;
+using namespace Colors;
 void EngineManager::Initialize() {
+    // 定数バッファ用の構造体（16バイト境界のためパディング不要、float4x4+float4）
+   
     m_deviceManager.Initialize();
     auto* device = m_deviceManager.GetDevice();
     auto* cmdQueue = m_deviceManager.GetCommandQueue();
@@ -19,7 +22,7 @@ void EngineManager::Initialize() {
     m_gameObjects.clear();
 
     // --- 地面オブジェクト ---
-    auto* ground = new GameObject("Ground", 0, -1, Colors::Red);   // 地面：緑
+    auto* ground = new GameObject("Ground", 0, -1, Red);   // 地面：緑
     ground->transform.position = XMFLOAT3(0, -1.0f, 0);
     ground->transform.scale = XMFLOAT3(50.0f, 0.2f, 50.0f);
     m_gameObjects.push_back(ground);
@@ -112,23 +115,24 @@ void EngineManager::Draw() {
         obj->transform.rotation.y = angle;
 
          if (obj->name == "Ground") obj->transform.rotation.y = 0;
-         else obj->transform.rotation.y = angle; // キューブは固定
+         else obj->transform.rotation.y = angle; 
     }
 
     // 9. 定数バッファMap（256バイトアライン）
     void* mapped = nullptr;
     HRESULT hr = m_bufferManager.GetConstantBuffer()->Map(0, nullptr, &mapped);
     if (FAILED(hr) || !mapped) return;
+    
+    // CBVサイズは256固定
     constexpr size_t CBV_SIZE = 256;
 
-    // 10. 全GameObject描画
     for (size_t i = 0; i < m_gameObjects.size(); ++i) {
         GameObject* obj = m_gameObjects[i];
-
+        ObjectCB cb;
         XMMATRIX world = obj->transform.GetWorldMatrix();
-        XMMATRIX wvp = XMMatrixTranspose(world * view * proj);
-
-        memcpy((char*)mapped + CBV_SIZE * i, &wvp, sizeof(wvp));
+        cb.WorldViewProj = XMMatrixTranspose(world * view * proj);
+        cb.Color = obj->color;
+        memcpy((char*)mapped + CBV_SIZE * i, &cb, sizeof(cb));  // ←ここだけ直せばOK
         D3D12_GPU_VIRTUAL_ADDRESS cbvAddr = m_bufferManager.GetConstantBufferGPUAddress() + CBV_SIZE * i;
         cmdList->SetGraphicsRootConstantBufferView(1, cbvAddr);
 
@@ -145,6 +149,7 @@ void EngineManager::Draw() {
         cmdList->IASetIndexBuffer(&ibv);
         cmdList->DrawIndexedInstanced(36, 1, 0, 0, 0);
     }
+
     m_bufferManager.GetConstantBuffer()->Unmap(0, nullptr);
 
     // 11. バリアでPRESENTに戻す

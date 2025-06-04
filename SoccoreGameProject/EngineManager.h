@@ -8,6 +8,12 @@
 #include"TextureManager.h"
 #include "Transform.h"
 #include "GameObject.h"
+
+struct ObjectCB {
+    DirectX::XMMATRIX WorldViewProj;
+    DirectX::XMFLOAT4 Color;
+};
+
 class EngineManager {
 public:
     void SetHWND(HWND hwnd) { m_hWnd = hwnd; }
