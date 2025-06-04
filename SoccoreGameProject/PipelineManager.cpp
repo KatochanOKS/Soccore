@@ -21,7 +21,7 @@ bool PipelineManager::Initialize(ID3D12Device* device, LPCWSTR vsPath, LPCWSTR p
     rootParam[0].InitAsDescriptorTable(1, &descRange, D3D12_SHADER_VISIBILITY_PIXEL);
 
     // CBV (b0) : 頂点シェーダ用
-    rootParam[1].InitAsConstantBufferView(0, 0, D3D12_SHADER_VISIBILITY_VERTEX);
+    rootParam[1].InitAsConstantBufferView(0, 0, D3D12_SHADER_VISIBILITY_ALL);
 
     // サンプラーはそのまま
     CD3DX12_STATIC_SAMPLER_DESC staticSampler(
