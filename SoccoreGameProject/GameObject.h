@@ -6,7 +6,7 @@ class GameObject {
 public:
     Transform transform;
     std::string name;
-    int meshType;    // 0=Cube, 1=Ground, ... 将来拡張用
+    int meshType = 0;    // 0=Cube, 1=Ground, ... 将来拡張用
     int meshIndex;
     int texIndex;    // SRVヒープ番号（-1なら無テクスチャ）
     XMFLOAT4 color;

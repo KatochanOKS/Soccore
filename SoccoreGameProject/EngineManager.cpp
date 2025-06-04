@@ -16,24 +16,25 @@ void EngineManager::Initialize() {
 
     // 画像ロード
     m_textureManager.Initialize(device);
-    m_texIdx = m_textureManager.LoadTexture(L"assets/penguin1.png", m_deviceManager.GetCommandList());
+    m_texIdx = m_textureManager.LoadTexture(L"assets/Ground.png", m_deviceManager.GetCommandList());
+    m_cubeTexIdx= m_textureManager.LoadTexture(L"assets/penguin1.png", m_deviceManager.GetCommandList()); // 追加
 
     // GameObject生成（地面＋複数Cube）
     m_gameObjects.clear();
 
     // --- 地面オブジェクト ---
-    auto* ground = new GameObject("Ground", 0, -1, Red);   // 地面：緑
+    auto* ground = new GameObject("Ground", 0, m_texIdx, Red);   // 地面：Ground.png
     ground->transform.position = XMFLOAT3(0, -1.0f, 0);
     ground->transform.scale = XMFLOAT3(50.0f, 0.2f, 50.0f);
     m_gameObjects.push_back(ground);
 
     // --- キューブオブジェクト ---
-    auto* cube1 = new GameObject("Cube1", 0, m_texIdx);
+    auto* cube1 = new GameObject("Cube1", 0, m_cubeTexIdx, White); // Cube.png
     cube1->transform.position = XMFLOAT3(-2, 0, 0);
     cube1->transform.scale = XMFLOAT3(1, 1, 1);
     m_gameObjects.push_back(cube1);
 
-    auto* cube2 = new GameObject("Cube2", 0, m_texIdx);
+    auto* cube2 = new GameObject("Cube2", 0, m_cubeTexIdx, White); // Cube.png
     cube2->transform.position = XMFLOAT3(2, 2, 2);
     cube2->transform.scale = XMFLOAT3(1, 1, 1);
     m_gameObjects.push_back(cube2);
@@ -99,7 +100,7 @@ void EngineManager::Draw() {
     static float angle = 0.0f;
     angle += 0.01f;
     XMMATRIX view = XMMatrixLookAtLH(
-        XMVectorSet(0, 3, -10, 1), // カメラ位置
+        XMVectorSet(0, 9, -20, 1), // カメラ位置
         XMVectorSet(0, 0, 0, 1),   // 注視点
         XMVectorSet(0, 1, 0, 0)    // 上方向
     );
@@ -127,28 +128,44 @@ void EngineManager::Draw() {
     constexpr size_t CBV_SIZE = 256;
 
     for (size_t i = 0; i < m_gameObjects.size(); ++i) {
+        // 1. 各GameObjectの取得
         GameObject* obj = m_gameObjects[i];
-        ObjectCB cb;
-        XMMATRIX world = obj->transform.GetWorldMatrix();
-        cb.WorldViewProj = XMMatrixTranspose(world * view * proj);
-        cb.Color = obj->color;
-        memcpy((char*)mapped + CBV_SIZE * i, &cb, sizeof(cb));  // ←ここだけ直せばOK
-        D3D12_GPU_VIRTUAL_ADDRESS cbvAddr = m_bufferManager.GetConstantBufferGPUAddress() + CBV_SIZE * i;
-        cmdList->SetGraphicsRootConstantBufferView(1, cbvAddr);
 
-        // テクスチャ（地面だけ色、Cubeだけテクスチャ等を区別できる）
+        // 2. 定数バッファ（ObjectCB）を準備
+        ObjectCB cb;
+        XMMATRIX world = obj->transform.GetWorldMatrix(); // ワールド行列を取得
+
+        // 行列をGPU用に転置し、View/Projをかけてセット
+        cb.WorldViewProj = XMMatrixTranspose(world * view * proj);
+
+        // オブジェクト固有の色情報をセット
+        cb.Color = obj->color;
+
+        // 定数バッファ領域へデータコピー（各オブジェクト分ずらして書き込む）
+        memcpy((char*)mapped + CBV_SIZE * i, &cb, sizeof(cb));
+
+        // 3. 定数バッファのGPUアドレスを計算してルートCBVにセット
+        D3D12_GPU_VIRTUAL_ADDRESS cbvAddr = m_bufferManager.GetConstantBufferGPUAddress() + CBV_SIZE * i;
+        cmdList->SetGraphicsRootConstantBufferView(1, cbvAddr); // ルートパラメータ1にバインド
+
+        // 4. テクスチャが設定されている場合のみSRVバインド
         if (obj->texIndex >= 0) {
+            // テクスチャSRVをルートパラメータ0にセット
             cmdList->SetGraphicsRootDescriptorTable(0, m_textureManager.GetSRV(obj->texIndex));
         }
-
-        // 描画コマンド
+        // 5. 描画コマンド（プリミティブ・バッファバインド）
         cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+        // 頂点バッファビューをセット
         D3D12_VERTEX_BUFFER_VIEW vbv = m_bufferManager.GetVertexBufferView();
         D3D12_INDEX_BUFFER_VIEW ibv = m_bufferManager.GetIndexBufferView();
         cmdList->IASetVertexBuffers(0, 1, &vbv);
         cmdList->IASetIndexBuffer(&ibv);
+
+        // インデックスド描画（36頂点＝12三角形＝立方体想定）
         cmdList->DrawIndexedInstanced(36, 1, 0, 0, 0);
     }
+
 
     m_bufferManager.GetConstantBuffer()->Unmap(0, nullptr);
 
@@ -188,15 +205,15 @@ void EngineManager::Shutdown() {
 void EngineManager::CreateTestCube() {
     std::vector<Vertex> vertices = {
         // 前面（テクスチャを貼る面）
-        { -0.5f, -0.5f, -0.5f, 0, 0.5f }, // 左下
+        { -0.5f, -0.5f, -0.5f, 0, 0 }, // 左下
         { -0.5f,  0.5f, -0.5f, 0, 0 }, // 左上
-        {  0.5f,  0.5f, -0.5f, 0.5f, 0 }, // 右上
-        {  0.5f, -0.5f, -0.5f, 0.5f, 0.5f }, // 右下
+        {  0.5f,  0.5f, -0.5f, 0, 0 }, // 右上
+        {  0.5f, -0.5f, -0.5f, 0, 0 }, // 右下
         // 右面（単色：UVは0,0で固定）
-        { 0.5f, -0.5f, -0.5f, 0, 1 },
+        { 0.5f, -0.5f, -0.5f, 0, 0},
         { 0.5f,  0.5f, -0.5f, 0, 0 },
-        { 0.5f,  0.5f,  0.5f, 1, 0 },
-        { 0.5f, -0.5f,  0.5f, 1, 1 },
+        { 0.5f,  0.5f,  0.5f, 0, 0 },
+        { 0.5f, -0.5f,  0.5f, 0, 0 },
         // 後面
         { 0.5f, -0.5f,  0.5f, 0, 0 },
         { 0.5f,  0.5f,  0.5f, 0, 0 },
@@ -208,10 +225,10 @@ void EngineManager::CreateTestCube() {
         { -0.5f,  0.5f, -0.5f, 0, 0 },
         { -0.5f, -0.5f, -0.5f, 0, 0 },
         // 上面
-        { -0.5f,  0.5f, -0.5f, 0, 0 },
+        { -0.5f,  0.5f, -0.5f, 0, 1 },
         { -0.5f,  0.5f,  0.5f, 0, 0 },
-        { 0.5f,  0.5f,  0.5f, 0, 0 },
-        { 0.5f,  0.5f, -0.5f, 0, 0 },
+        { 0.5f,  0.5f,  0.5f, 1, 0 },
+        { 0.5f,  0.5f, -0.5f, 1, 1 },
         // 下面
         { -0.5f, -0.5f, -0.5f, 0, 0 },
         { -0.5f, -0.5f,  0.5f, 0, 0 },
