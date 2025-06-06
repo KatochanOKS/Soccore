@@ -1,21 +1,25 @@
 #pragma once
 #include <Windows.h>
+#include <vector>
+#include <DirectXMath.h>
 #include "DeviceManager.h"
-#include "SwapChainManager.h" // 追加
-#include "DepthBufferManager.h" // 追加
-#include "PipelineManager.h" // 追加
+#include "SwapChainManager.h"
+#include "DepthBufferManager.h"
+#include "PipelineManager.h"
 #include "BufferManager.h"
-#include"TextureManager.h"
+#include "TextureManager.h"
 #include "Transform.h"
 #include "GameObject.h"
 #include "FbxModelLoader.h"
+#include "Renderer.h"
+
+
 struct ObjectCB {
     DirectX::XMMATRIX WorldViewProj;
     DirectX::XMFLOAT4 Color;
     int UseTexture;
     float padding[3]; // 16バイトアライン
 };
-
 
 class EngineManager {
 public:
@@ -27,30 +31,29 @@ public:
     void Update();
     void Draw();
     void Shutdown();
-	void CreateTestCube(); // 追加    
+    void CreateTestCube();
+
     DeviceManager* GetDeviceManager() { return &m_deviceManager; }
-    SwapChainManager* GetSwapChainManager() { return &m_swapChainManager; } // 追加
-    DepthBufferManager* GetDepthBufferManager() { return &m_depthBufferManager; } // 追加
+    SwapChainManager* GetSwapChainManager() { return &m_swapChainManager; }
+    DepthBufferManager* GetDepthBufferManager() { return &m_depthBufferManager; }
     BufferManager* GetBufferManager() { return &m_bufferManager; }
-	PipelineManager* GetPipelineManager() { return &m_pipelineManager; } // 追加
-	TextureManager* GetTextureManager() { return &m_textureManager; } // 追加
-	BufferManager* GetCubeBufferManager() { return &m_cubeBufferManager; } // 追加
+    PipelineManager* GetPipelineManager() { return &m_pipelineManager; }
+    TextureManager* GetTextureManager() { return &m_textureManager; }
 
     std::vector<GameObject*> m_gameObjects;
     int m_texIdx = -1;
-    int m_cubeTexIdx = -1; // 追加
-    //============================================================================================================
+    int m_cubeTexIdx = -1;
+
 private:
     HWND m_hWnd = nullptr;
     DeviceManager m_deviceManager;
-    SwapChainManager m_swapChainManager; // 追加
-    DepthBufferManager m_depthBufferManager; // 追加
-    PipelineManager m_pipelineManager; // 追加
-    BufferManager m_bufferManager; // 追加
-	TextureManager m_textureManager; // 追加
-	BufferManager m_cubeBufferManager; // 追加
-	Transform m_groundTransform; // 地面用のTransform
-    // 他のManagerも同様に追加
-     BufferManager m_modelBufferManager;         // モデル用バッファ
-    FbxModelLoader::VertexInfo m_modelVertexInfo; // モデルの頂点・インデックス
+    SwapChainManager m_swapChainManager;
+    DepthBufferManager m_depthBufferManager;
+    PipelineManager m_pipelineManager;
+    BufferManager m_bufferManager;      // 共通バッファ（Cube, Ground等）
+    BufferManager m_modelBufferManager; // FBXモデル専用バッファ
+    TextureManager m_textureManager;
+    FbxModelLoader::VertexInfo m_modelVertexInfo;
+
+    Renderer m_renderer; // ★描画管理クラス！
 };
