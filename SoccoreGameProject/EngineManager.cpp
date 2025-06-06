@@ -19,11 +19,26 @@ void EngineManager::Initialize() {
     m_texIdx = m_textureManager.LoadTexture(L"assets/penguin1.png", m_deviceManager.GetCommandList());
     m_cubeTexIdx= m_textureManager.LoadTexture(L"assets/penguin2.png", m_deviceManager.GetCommandList()); // 追加
 
+
     // GameObject生成（地面＋複数Cube）
     m_gameObjects.clear();
 
+
+    // MixamoのFBXモデルを読み込む
+    if (FbxModelLoader::Load("assets/MixamoModel.fbx", &m_modelVertexInfo)) {
+        m_modelBufferManager.CreateVertexBuffer(device, m_modelVertexInfo.vertices);
+        m_modelBufferManager.CreateIndexBuffer(device, m_modelVertexInfo.indices);
+    }
+
+    // モデル用GameObjectを追加（名前"FbxModel"、meshType=1で区別）
+    auto* fbxObj = new GameObject("FbxModel", 1, -1, Red);
+    fbxObj->transform.position = XMFLOAT3(0, 0, 0); // 地面の上
+    fbxObj->transform.scale = XMFLOAT3(0.05f, 0.05f, 0.05f);    // お好みで調整
+    fbxObj->meshType = 1; // 1=FBXモデル
+    m_gameObjects.push_back(fbxObj);
+
     // --- 地面オブジェクト ---
-    auto* ground = new GameObject("Ground", 0, m_texIdx, Red);   // 地面：Ground.png
+    auto* ground = new GameObject("Ground", 0, m_texIdx, White);   // 地面：Ground.png
     ground->transform.position = XMFLOAT3(0, -1.0f, 0);
     ground->transform.scale = XMFLOAT3(50.0f, 0.2f, 50.0f);
     m_gameObjects.push_back(ground);
@@ -135,14 +150,14 @@ void EngineManager::Draw() {
         ObjectCB cb;
         XMMATRIX world = obj->transform.GetWorldMatrix(); // ワールド行列を取得
 
-        // 行列をGPU用に転置し、View/Projをかけてセット
+        // ObjectCB cb;
+ // ...
         cb.WorldViewProj = XMMatrixTranspose(world * view * proj);
-
-        // オブジェクト固有の色情報をセット
         cb.Color = obj->color;
+        cb.UseTexture = (obj->texIndex >= 0 ? 1 : 0); // ←ここ追加
 
-        // 定数バッファ領域へデータコピー（各オブジェクト分ずらして書き込む）
         memcpy((char*)mapped + CBV_SIZE * i, &cb, sizeof(cb));
+
 
         // 3. 定数バッファのGPUアドレスを計算してルートCBVにセット
         D3D12_GPU_VIRTUAL_ADDRESS cbvAddr = m_bufferManager.GetConstantBufferGPUAddress() + CBV_SIZE * i;
@@ -161,6 +176,21 @@ void EngineManager::Draw() {
         D3D12_INDEX_BUFFER_VIEW ibv = m_bufferManager.GetIndexBufferView();
         cmdList->IASetVertexBuffers(0, 1, &vbv);
         cmdList->IASetIndexBuffer(&ibv);
+        if (obj->meshType == 1) {
+            // ---- ここがポイント ----
+            D3D12_VERTEX_BUFFER_VIEW vbv = m_modelBufferManager.GetVertexBufferView();
+            D3D12_INDEX_BUFFER_VIEW ibv = m_modelBufferManager.GetIndexBufferView();
+            cmdList->IASetVertexBuffers(0, 1, &vbv);
+            cmdList->IASetIndexBuffer(&ibv);
+            cmdList->DrawIndexedInstanced((UINT)m_modelVertexInfo.indices.size(), 1, 0, 0, 0);
+        }
+        else {
+            D3D12_VERTEX_BUFFER_VIEW vbv = m_bufferManager.GetVertexBufferView();
+            D3D12_INDEX_BUFFER_VIEW ibv = m_bufferManager.GetIndexBufferView();
+            cmdList->IASetVertexBuffers(0, 1, &vbv);
+            cmdList->IASetIndexBuffer(&ibv);
+            cmdList->DrawIndexedInstanced(36, 1, 0, 0, 0);
+        }
 
         // インデックスド描画（36頂点＝12三角形＝立方体想定）
         cmdList->DrawIndexedInstanced(36, 1, 0, 0, 0);
@@ -204,37 +234,43 @@ void EngineManager::Shutdown() {
 // 頂点・インデックスバッファを作成し、立方体モデルデータを格納
 void EngineManager::CreateTestCube() {
     std::vector<Vertex> vertices = {
-        // 前面（テクスチャを貼る面）
-        { -0.5f, -0.5f, -0.5f, 0, 0 }, // 左下
-        { -0.5f,  0.5f, -0.5f, 0, 0 }, // 左上
-        {  0.5f,  0.5f, -0.5f, 0, 0 }, // 右上
-        {  0.5f, -0.5f, -0.5f, 0, 0 }, // 右下
-        // 右面（単色：UVは0,0で固定）
-        { 0.5f, -0.5f, -0.5f, 0, 0},
-        { 0.5f,  0.5f, -0.5f, 0, 0 },
-        { 0.5f,  0.5f,  0.5f, 0, 0 },
-        { 0.5f, -0.5f,  0.5f, 0, 0 },
-        // 後面
-        { 0.5f, -0.5f,  0.5f, 0, 0 },
-        { 0.5f,  0.5f,  0.5f, 0, 0 },
-        { -0.5f,  0.5f,  0.5f, 0, 0 },
-        { -0.5f, -0.5f,  0.5f, 0, 0 },
-        // 左面
-        { -0.5f, -0.5f,  0.5f, 0, 0 },
-        { -0.5f,  0.5f,  0.5f, 0, 0 },
-        { -0.5f,  0.5f, -0.5f, 0, 0 },
-        { -0.5f, -0.5f, -0.5f, 0, 0 },
-        // 上面
-        { -0.5f,  0.5f, -0.5f, 0, 1 },
-        { -0.5f,  0.5f,  0.5f, 0, 0 },
-        { 0.5f,  0.5f,  0.5f, 1, 0 },
-        { 0.5f,  0.5f, -0.5f, 1, 1 },
-        // 下面
-        { -0.5f, -0.5f, -0.5f, 0, 0 },
-        { -0.5f, -0.5f,  0.5f, 0, 0 },
-        { 0.5f, -0.5f,  0.5f, 0, 0 },
-        { 0.5f, -0.5f, -0.5f, 0, 0 },
+        // 前面 (z: -0.5, 法線 0,0,-1)
+        { -0.5f, -0.5f, -0.5f,  0, 0, -1, 0, 0 },
+        { -0.5f,  0.5f, -0.5f,  0, 0, -1, 0, 1 },
+        {  0.5f,  0.5f, -0.5f,  0, 0, -1, 1, 1 },
+        {  0.5f, -0.5f, -0.5f,  0, 0, -1, 1, 0 },
+
+        // 右面 (x: 0.5, 法線 1,0,0)
+        { 0.5f, -0.5f, -0.5f,   1, 0, 0,  0, 0 },
+        { 0.5f,  0.5f, -0.5f,   1, 0, 0,  0, 1 },
+        { 0.5f,  0.5f,  0.5f,   1, 0, 0,  1, 1 },
+        { 0.5f, -0.5f,  0.5f,   1, 0, 0,  1, 0 },
+
+        // 後面 (z: 0.5, 法線 0,0,1)
+        { 0.5f, -0.5f,  0.5f,   0, 0, 1,  0, 0 },
+        { 0.5f,  0.5f,  0.5f,   0, 0, 1,  0, 1 },
+        { -0.5f,  0.5f,  0.5f,  0, 0, 1,  1, 1 },
+        { -0.5f, -0.5f,  0.5f,  0, 0, 1,  1, 0 },
+
+        // 左面 (x: -0.5, 法線 -1,0,0)
+        { -0.5f, -0.5f,  0.5f,  -1, 0, 0, 0, 0 },
+        { -0.5f,  0.5f,  0.5f,  -1, 0, 0, 0, 1 },
+        { -0.5f,  0.5f, -0.5f,  -1, 0, 0, 1, 1 },
+        { -0.5f, -0.5f, -0.5f,  -1, 0, 0, 1, 0 },
+
+        // 上面 (y: 0.5, 法線 0,1,0)
+        { -0.5f,  0.5f, -0.5f,  0, 1, 0, 0, 1 },
+        { -0.5f,  0.5f,  0.5f,  0, 1, 0, 0, 0 },
+        {  0.5f,  0.5f,  0.5f,  0, 1, 0, 1, 0 },
+        {  0.5f,  0.5f, -0.5f,  0, 1, 0, 1, 1 },
+
+        // 下面 (y: -0.5, 法線 0,-1,0)
+        { -0.5f, -0.5f, -0.5f,  0, -1, 0, 0, 0 },
+        { -0.5f, -0.5f,  0.5f,  0, -1, 0, 0, 1 },
+        {  0.5f, -0.5f,  0.5f,  0, -1, 0, 1, 1 },
+        {  0.5f, -0.5f, -0.5f,  0, -1, 0, 1, 0 },
     };
+
     std::vector<uint16_t> indices = {
         // 各面 2三角形
         0,1,2, 0,2,3,      // 前面

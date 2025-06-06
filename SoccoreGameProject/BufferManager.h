@@ -3,10 +3,12 @@
 #include <d3d12.h>
 #include <wrl.h>
 
-struct Vertex { // すでに定義した場合は不要
+struct Vertex {
     float x, y, z;
+    float nx, ny, nz;   // ← 法線
     float u, v;
 };
+
 
 class BufferManager {
 public:

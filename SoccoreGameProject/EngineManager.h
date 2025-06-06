@@ -8,11 +8,14 @@
 #include"TextureManager.h"
 #include "Transform.h"
 #include "GameObject.h"
-
+#include "FbxModelLoader.h"
 struct ObjectCB {
     DirectX::XMMATRIX WorldViewProj;
     DirectX::XMFLOAT4 Color;
+    int UseTexture;
+    float padding[3]; // 16バイトアライン
 };
+
 
 class EngineManager {
 public:
@@ -37,8 +40,6 @@ public:
     int m_texIdx = -1;
     int m_cubeTexIdx = -1; // 追加
     //============================================================================================================
-
-    void CreateTestQuad(); // 追加
 private:
     HWND m_hWnd = nullptr;
     DeviceManager m_deviceManager;
@@ -50,4 +51,6 @@ private:
 	BufferManager m_cubeBufferManager; // 追加
 	Transform m_groundTransform; // 地面用のTransform
     // 他のManagerも同様に追加
+     BufferManager m_modelBufferManager;         // モデル用バッファ
+    FbxModelLoader::VertexInfo m_modelVertexInfo; // モデルの頂点・インデックス
 };
