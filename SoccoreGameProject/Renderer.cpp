@@ -61,6 +61,10 @@ void Renderer::BeginFrame() {
 }
 
 void Renderer::DrawObject(GameObject* obj, size_t idx, const XMMATRIX& view, const XMMATRIX& proj) {
+    // MeshRendererを取得
+    auto* mr = obj->GetComponent<MeshRenderer>();
+    if (!mr) return; // 安全のため
+
     // 定数バッファはEngineManagerからマップ・memcpyされた状態で使う想定
     constexpr size_t CBV_SIZE = 256;
     void* mapped = nullptr;
@@ -70,13 +74,13 @@ void Renderer::DrawObject(GameObject* obj, size_t idx, const XMMATRIX& view, con
     m_cmdList->SetGraphicsRootConstantBufferView(1, cbvAddr);
 
     // SRVバインド
-    if (obj->texIndex >= 0) {
-        m_cmdList->SetGraphicsRootDescriptorTable(0, m_texMgr->GetSRV(obj->texIndex));
+    if (mr->texIndex >= 0) {
+        m_cmdList->SetGraphicsRootDescriptorTable(0, m_texMgr->GetSRV(mr->texIndex));
     }
     m_cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
     // バッファ分岐
-    if (obj->meshType == 1) {
+    if (mr->meshType == 1) {
         D3D12_VERTEX_BUFFER_VIEW vbv = m_modelBufMgr->GetVertexBufferView();
         D3D12_INDEX_BUFFER_VIEW ibv = m_modelBufMgr->GetIndexBufferView();
         m_cmdList->IASetVertexBuffers(0, 1, &vbv);
@@ -92,6 +96,7 @@ void Renderer::DrawObject(GameObject* obj, size_t idx, const XMMATRIX& view, con
     }
     m_cubeBufMgr->GetConstantBuffer()->Unmap(0, nullptr);
 }
+
 
 void Renderer::EndFrame() {
     // バリア設定（RenderTarget→Present）

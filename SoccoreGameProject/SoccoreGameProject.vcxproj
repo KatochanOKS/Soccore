@@ -175,6 +175,7 @@
     <ClInclude Include="FbxModelLoader.h" />
     <ClInclude Include="GameObject.h" />
     <ClInclude Include="Main.h" />
+    <ClInclude Include="MeshRenderer.h" />
     <ClInclude Include="PipelineManager.h" />
     <ClInclude Include="Renderer.h" />
     <ClInclude Include="stb_image.h" />

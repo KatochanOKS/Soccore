@@ -1,4 +1,6 @@
 #include "EngineManager.h"
+#include "Transform.h"
+#include "MeshRenderer.h"
 #include "Colors.h"
 using namespace DirectX;
 using namespace Colors;
@@ -23,31 +25,56 @@ void EngineManager::Initialize() {
         m_modelBufferManager.CreateIndexBuffer(device, m_modelVertexInfo.indices);
     }
 
-    // FBXモデル用GameObject
-    auto* fbxObj = new GameObject("FbxModel", 1, -1, Red);
-    fbxObj->transform.position = XMFLOAT3(0, 0, 0);
-    fbxObj->transform.scale = XMFLOAT3(0.05f, 0.05f, 0.05f);
-    fbxObj->meshType = 1;
-    m_gameObjects.push_back(fbxObj);
-
+    // --- GameObject生成 ---
+    // FBXモデル
+    {
+        auto* obj = new GameObject();
+        auto* tr = obj->AddComponent<Transform>();
+        tr->position = XMFLOAT3(0, 0, 0);
+        tr->scale = XMFLOAT3(0.05f, 0.05f, 0.05f);
+        auto* mr = obj->AddComponent<MeshRenderer>();
+        mr->meshType = 1;     // FBX
+        mr->texIndex = -1;    // テクスチャなし
+        mr->color = Red;
+        m_gameObjects.push_back(obj);
+    }
     // 地面
-    auto* ground = new GameObject("Ground", 0, m_texIdx, White);
-    ground->transform.position = XMFLOAT3(0, -1.0f, 0);
-    ground->transform.scale = XMFLOAT3(50.0f, 0.2f, 50.0f);
-    m_gameObjects.push_back(ground);
-
-    // キューブ
-    auto* cube1 = new GameObject("Cube1", 0, m_cubeTexIdx, White);
-    cube1->transform.position = XMFLOAT3(-2, 0, 0);
-    cube1->transform.scale = XMFLOAT3(1, 1, 1);
-    m_gameObjects.push_back(cube1);
-
-    auto* cube2 = new GameObject("Cube2", 0, m_cubeTexIdx, White);
-    cube2->transform.position = XMFLOAT3(2, 2, 2);
-    cube2->transform.scale = XMFLOAT3(1, 1, 1);
-    m_gameObjects.push_back(cube2);
-
-    // ...他のオブジェクトも同様に追加...
+    {
+        auto* obj = new GameObject();
+        auto* tr = obj->AddComponent<Transform>();
+        tr->position = XMFLOAT3(0, -1.0f, 0);
+        tr->scale = XMFLOAT3(50.0f, 0.2f, 50.0f);
+        auto* mr = obj->AddComponent<MeshRenderer>();
+        mr->meshType = 0;     // キューブ
+        mr->texIndex = m_texIdx;
+        mr->color = White;
+        m_gameObjects.push_back(obj);
+    }
+    // キューブ1
+    {
+        auto* obj = new GameObject();
+        auto* tr = obj->AddComponent<Transform>();
+        tr->position = XMFLOAT3(-2, 0, 0);
+        tr->scale = XMFLOAT3(1, 1, 1);
+        auto* mr = obj->AddComponent<MeshRenderer>();
+        mr->meshType = 0;     // キューブ
+        mr->texIndex = m_cubeTexIdx;
+        mr->color = White;
+        m_gameObjects.push_back(obj);
+    }
+    // キューブ2
+    {
+        auto* obj = new GameObject();
+        auto* tr = obj->AddComponent<Transform>();
+        tr->position = XMFLOAT3(2, 2, 2);
+        tr->scale = XMFLOAT3(1, 1, 1);
+        auto* mr = obj->AddComponent<MeshRenderer>();
+        mr->meshType = 0;     // キューブ
+        mr->texIndex = m_cubeTexIdx;
+        mr->color = White;
+        m_gameObjects.push_back(obj);
+    }
+    // ...他のCubeも同様に追加...
 
     // 定数バッファ
     constexpr size_t CBV_SIZE = 256;
@@ -86,10 +113,15 @@ void EngineManager::Draw() {
         0.1f, 100.0f
     );
 
-    // 回転値
+    // 回転値をTransformへ
     for (auto* obj : m_gameObjects) {
-        if (obj->name == "Ground") obj->transform.rotation.y = 0;
-        else obj->transform.rotation.y = angle;
+        auto* tr = obj->GetComponent<Transform>();
+        auto* mr = obj->GetComponent<MeshRenderer>();
+        if (!tr || !mr) continue;
+        if (mr->meshType == 0 && tr->scale.y < 0.3f) // 地面は回転なし
+            tr->rotation.y = 0;
+        else
+            tr->rotation.y = angle;
     }
 
     // 定数バッファ書き込み（各オブジェクト分）
@@ -98,11 +130,15 @@ void EngineManager::Draw() {
     m_bufferManager.GetConstantBuffer()->Map(0, nullptr, &mapped);
     for (size_t i = 0; i < m_gameObjects.size(); ++i) {
         GameObject* obj = m_gameObjects[i];
+        auto* tr = obj->GetComponent<Transform>();
+        auto* mr = obj->GetComponent<MeshRenderer>();
+        if (!tr || !mr) continue;
+
         ObjectCB cb;
-        XMMATRIX world = obj->transform.GetWorldMatrix();
+        XMMATRIX world = tr->GetWorldMatrix();
         cb.WorldViewProj = XMMatrixTranspose(world * view * proj);
-        cb.Color = obj->color;
-        cb.UseTexture = (obj->texIndex >= 0 ? 1 : 0);
+        cb.Color = mr->color;
+        cb.UseTexture = (mr->texIndex >= 0 ? 1 : 0);
         memcpy((char*)mapped + CBV_SIZE * i, &cb, sizeof(cb));
     }
     m_bufferManager.GetConstantBuffer()->Unmap(0, nullptr);
