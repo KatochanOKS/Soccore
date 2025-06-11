@@ -157,6 +157,8 @@
     <ClCompile Include="FbxModelLoader.cpp" />
     <ClCompile Include="GameObject.cpp" />
     <ClCompile Include="Main.cpp" />
+    <ClCompile Include="MeshLibrary.cpp" />
+    <ClCompile Include="ObjectFactory.h" />
     <ClCompile Include="PipelineManager.cpp" />
     <ClCompile Include="Renderer.cpp" />
     <ClCompile Include="SwapChainManager.cpp" />
@@ -175,6 +177,7 @@
     <ClInclude Include="FbxModelLoader.h" />
     <ClInclude Include="GameObject.h" />
     <ClInclude Include="Main.h" />
+    <ClInclude Include="MeshLibrary.h" />
     <ClInclude Include="MeshRenderer.h" />
     <ClInclude Include="PipelineManager.h" />
     <ClInclude Include="Renderer.h" />
