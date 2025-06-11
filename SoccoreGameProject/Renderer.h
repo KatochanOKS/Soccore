@@ -21,8 +21,11 @@ public:
         TextureManager* texMgr,
         BufferManager* cubeBufMgr,
         BufferManager* modelBufMgr,
+        BufferManager* cbvBufferMgr, // ★ これを追加
         FbxModelLoader::VertexInfo* modelVertexInfo
     );
+
+
 
     void BeginFrame();
     void DrawObject(GameObject* obj, size_t idx, const DirectX::XMMATRIX& view, const DirectX::XMMATRIX& proj);
@@ -37,6 +40,7 @@ private:
     BufferManager* m_cubeBufMgr = nullptr;
     BufferManager* m_modelBufMgr = nullptr;
     FbxModelLoader::VertexInfo* m_modelVertexInfo = nullptr;
+    BufferManager* m_cbvBufferMgr = nullptr;  // 定数バッファ用だけに使うバッファマネージャ
 
     UINT m_backBufferIndex = 0;
     ID3D12GraphicsCommandList* m_cmdList = nullptr;

@@ -9,6 +9,7 @@ void Renderer::Initialize(
     TextureManager* texMgr,
     BufferManager* cubeBufMgr,
     BufferManager* modelBufMgr,
+    BufferManager* cbvBufferMgr, // Åö í«â¡ÅI
     FbxModelLoader::VertexInfo* modelVertexInfo
 ) {
     m_deviceMgr = deviceMgr;
@@ -19,6 +20,7 @@ void Renderer::Initialize(
     m_cubeBufMgr = cubeBufMgr;
     m_modelBufMgr = modelBufMgr;
     m_modelVertexInfo = modelVertexInfo;
+    m_cbvBufferMgr = cbvBufferMgr;
     m_width = static_cast<float>(m_swapMgr->GetWidth());
     m_height = static_cast<float>(m_swapMgr->GetHeight());
 }
