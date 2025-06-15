@@ -40,7 +40,6 @@ public:
     TextureManager* GetTextureManager() { return &m_textureManager; }
     FbxModelLoader::VertexInfo* GetModelVertexInfo() { return &m_modelVertexInfo; }
     BufferManager* GetModelBufferManager() { return &m_modelBufferManager; }
-
     std::vector<GameObject*> m_gameObjects;
     int m_texIdx = -1;
     int m_cubeTexIdx = -1;

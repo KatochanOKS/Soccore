@@ -62,34 +62,33 @@ void Renderer::BeginFrame() {
     m_cmdList->SetDescriptorHeaps(_countof(heaps), heaps);
 }
 
-void Renderer::DrawObject(GameObject* obj, size_t idx, const XMMATRIX& view, const XMMATRIX& proj) {
-    // MeshRendererを取得
-    auto* mr = obj->GetComponent<MeshRenderer>();
-    if (!mr) return; // 安全のため
+// Renderer.cpp
 
-    // 定数バッファはEngineManagerからマップ・memcpyされた状態で使う想定
+void Renderer::DrawObject(GameObject* obj, size_t idx, const XMMATRIX& view, const XMMATRIX& proj) {
+    auto* mr = obj->GetComponent<MeshRenderer>();
+    if (!mr) return;
+
     constexpr size_t CBV_SIZE = 256;
     void* mapped = nullptr;
     m_cubeBufMgr->GetConstantBuffer()->Map(0, nullptr, &mapped);
-
     D3D12_GPU_VIRTUAL_ADDRESS cbvAddr = m_cubeBufMgr->GetConstantBufferGPUAddress() + CBV_SIZE * idx;
     m_cmdList->SetGraphicsRootConstantBufferView(1, cbvAddr);
 
-    // SRVバインド
     if (mr->texIndex >= 0) {
         m_cmdList->SetGraphicsRootDescriptorTable(0, m_texMgr->GetSRV(mr->texIndex));
     }
     m_cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-    // バッファ分岐
-    if (mr->meshType == 1) {
-        D3D12_VERTEX_BUFFER_VIEW vbv = m_modelBufMgr->GetVertexBufferView();
-        D3D12_INDEX_BUFFER_VIEW ibv = m_modelBufMgr->GetIndexBufferView();
+    if (mr->meshType == 1 && mr->modelBuffer && mr->vertexInfo) {
+        // ★個別バッファで描画
+        D3D12_VERTEX_BUFFER_VIEW vbv = mr->modelBuffer->GetVertexBufferView();
+        D3D12_INDEX_BUFFER_VIEW ibv = mr->modelBuffer->GetIndexBufferView();
         m_cmdList->IASetVertexBuffers(0, 1, &vbv);
         m_cmdList->IASetIndexBuffer(&ibv);
-        m_cmdList->DrawIndexedInstanced((UINT)m_modelVertexInfo->indices.size(), 1, 0, 0, 0);
+        m_cmdList->DrawIndexedInstanced((UINT)mr->vertexInfo->indices.size(), 1, 0, 0, 0);
     }
     else {
+        // キューブは共通バッファ
         D3D12_VERTEX_BUFFER_VIEW vbv = m_cubeBufMgr->GetVertexBufferView();
         D3D12_INDEX_BUFFER_VIEW ibv = m_cubeBufMgr->GetIndexBufferView();
         m_cmdList->IASetVertexBuffers(0, 1, &vbv);
@@ -98,6 +97,7 @@ void Renderer::DrawObject(GameObject* obj, size_t idx, const XMMATRIX& view, con
     }
     m_cubeBufMgr->GetConstantBuffer()->Unmap(0, nullptr);
 }
+
 
 
 void Renderer::EndFrame() {
