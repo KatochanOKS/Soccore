@@ -36,27 +36,35 @@ public:
     }
 
 
-    static GameObject* CreateModel(EngineManager* engine, const std::string& path, const XMFLOAT3& pos, const XMFLOAT3& scale, const XMFLOAT4& color = Colors::White) {
+    static GameObject* CreateModel(
+        EngineManager* engine,
+        const std::string& path,
+        const XMFLOAT3& pos,
+        const XMFLOAT3& scale,
+        int texIndex = -1,                      // ← 追加
+        const XMFLOAT4& color = Colors::White
+    ) {
         auto* obj = new GameObject();
         auto* tr = obj->AddComponent<Transform>();
         tr->position = pos;
         tr->scale = scale;
-        tr->rotation.y = XMConvertToRadians(180.0f); // ← ★これだけでOK！
+        tr->rotation.y = XMConvertToRadians(180.0f);
+
         auto* mr = obj->AddComponent<MeshRenderer>();
-        mr->meshType = 1;      // FBXモデル
-        mr->texIndex = -1;
+        mr->meshType = 1;
+        mr->texIndex = texIndex;                // ← ここで指定！
         mr->color = color;
 
-        auto* modelData = engine->GetModelVertexInfo();
-        if (modelData->vertices.empty()) {
-            FbxModelLoader::Load(path, modelData);
-            engine->GetModelBufferManager()->CreateVertexBuffer(engine->GetDeviceManager()->GetDevice(), modelData->vertices);
-            engine->GetModelBufferManager()->CreateIndexBuffer(engine->GetDeviceManager()->GetDevice(), modelData->indices);
+        mr->vertexInfo = new FbxModelLoader::VertexInfo();
+        if (!FbxModelLoader::Load(path, mr->vertexInfo)) {
+            delete obj;
+            return nullptr;
         }
+        mr->modelBuffer = new BufferManager();
+        mr->modelBuffer->CreateVertexBuffer(engine->GetDeviceManager()->GetDevice(), mr->vertexInfo->vertices);
+        mr->modelBuffer->CreateIndexBuffer(engine->GetDeviceManager()->GetDevice(), mr->vertexInfo->indices);
 
         engine->m_gameObjects.push_back(obj);
         return obj;
     }
-
-
 };

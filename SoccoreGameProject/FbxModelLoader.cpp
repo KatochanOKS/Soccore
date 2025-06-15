@@ -70,9 +70,12 @@ bool FbxModelLoader::Load(const std::string& filePath, VertexInfo* vertexInfo)
         for (int i = 0; i < vertexInfoList.size(); i++) {
             std::vector<float>& vi = vertexInfoList[i];
             vertices.push_back(Vertex{
-                vi[0], vi[1], vi[2],             // pos
-                vi[6], 1.0f - vi[7]              // uv
+                vi[0], vi[1], vi[2],
+                vi[3], vi[4], vi[5],
+                vi[6], 1.0f - vi[7] // ← ここを変更 FBX/Blender/Maya等 → vは下から上が0→1 FBX/Blender/Maya等 → vは下から上が0→1
                 });
+
+
         }
         // インデックスはオフセットを付けてallIndicesへ
         for (auto idx : indices) {

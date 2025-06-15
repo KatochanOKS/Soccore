@@ -28,7 +28,8 @@ void EngineManager::Initialize() {
     ObjectFactory::CreateCube(this, { 0,  0.0f, 0 }, { 1, 1, 1 }, playerTex, White);           // プレイヤー
     ObjectFactory::CreateCube(this, { -2,  0.0f, 0 }, { 1, 1, 1 }, cubeTex, White);             // Cube1
     ObjectFactory::CreateCube(this, { 2,  2.0f, 2 }, { 1, 1, 1 }, cubeTex, White);             // Cube2
-    ObjectFactory::CreateModel(this, "assets/MixamoModel.fbx", { 0, 0, 0 }, { 0.05f, 0.05f, 0.05f }, Red); // FBXモデル
+    int bossTexIdx = m_textureManager.LoadTexture(L"assets/MixamoModel.fbm/Boss_diffuse.png", cmdList);
+    ObjectFactory::CreateModel(this, "assets/MixamoModel.fbx", { 0,0,0 }, { 0.05f,0.05f,0.05f }, bossTexIdx, White);
 
     // 定数バッファ
     constexpr size_t CBV_SIZE = 256;
@@ -51,14 +52,35 @@ void EngineManager::Initialize() {
 
 
 void EngineManager::Start() {}
-void EngineManager::Update() {}
+void EngineManager::Update() {
+    auto* player = m_gameObjects[4]; // 2番目がプレイヤーCubeの場合
+    auto* tr = player->GetComponent<Transform>();
+    float moveSpeed = 0.1f;
+    if (GetAsyncKeyState('W') & 0x8000) tr->position.z += moveSpeed;
+    if (GetAsyncKeyState('S') & 0x8000) tr->position.z -= moveSpeed;
+    if (GetAsyncKeyState('A') & 0x8000) tr->position.x -= moveSpeed;
+    if (GetAsyncKeyState('D') & 0x8000) tr->position.x += moveSpeed;
+}
 
 void EngineManager::Draw() {
-    XMMATRIX view = XMMatrixLookAtLH(
-        XMVectorSet(0, 9, -20, 1),
-        XMVectorSet(0, 0, 0, 1),
-        XMVectorSet(0, 1, 0, 0)
-    );
+    // --- 追従したいキャラのTransform取得
+    auto* player = m_gameObjects[4]; // 番号は自分のプレイヤーCubeに合わせてね
+    auto* tr = player->GetComponent<Transform>();
+    XMFLOAT3 playerPos = tr->position;
+
+    // --- カメラ位置を決める（後ろ＆上）
+    XMFLOAT3 cameraOffset = { 0.0f, 5.0f, -20.0f };
+    XMFLOAT3 cameraPos = {
+        playerPos.x + cameraOffset.x,
+        playerPos.y + cameraOffset.y,
+        playerPos.z + cameraOffset.z
+    };
+
+    XMVECTOR eye = XMLoadFloat3(&cameraPos);
+    XMVECTOR target = XMLoadFloat3(&playerPos);
+    XMVECTOR up = XMVectorSet(0, 1, 0, 0);
+    XMMATRIX view = XMMatrixLookAtLH(eye, target, up);
+
     XMMATRIX proj = XMMatrixPerspectiveFovLH(
         XMConvertToRadians(60.0f),
         m_swapChainManager.GetWidth() / (float)m_swapChainManager.GetHeight(),
