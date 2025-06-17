@@ -180,7 +180,7 @@
     <ClInclude Include="DeviceManager.h" />
     <ClInclude Include="EngineManager.h" />
     <ClInclude Include="FbxModelLoader.h" />
-    <ClInclude Include="FbxSkeletalLader.h" />
+    <ClInclude Include="FbxSkeletalLoader.h" />
     <ClInclude Include="GameObject.h" />
     <ClInclude Include="Main.h" />
     <ClInclude Include="MeshLibrary.h" />
