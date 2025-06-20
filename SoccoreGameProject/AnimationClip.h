@@ -1,15 +1,20 @@
 #pragma once
 #include <vector>
 #include <string>
-#include <unordered_map>
 #include <DirectXMath.h>
 
-class AnimationClip
-{
+struct BoneKeyframe {
+    double time;
+    DirectX::XMMATRIX transform; // 各ボーンのグローバル変換
+};
+
+struct BoneAnim {
+    std::string name;
+    std::vector<BoneKeyframe> keyframes;
+};
+
+class AnimationClip {
 public:
-	float duration = 0.0f;
-	float frameRate = 30.0f;
-
-	std::unordered_map<std::string, std::vector<DirectX::XMMATRIX>> boneKeyframes;
-
+    double duration = 0.0;
+    std::vector<BoneAnim> boneAnims;
 };

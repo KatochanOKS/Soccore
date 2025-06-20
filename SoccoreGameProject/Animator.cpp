@@ -1,18 +1,29 @@
-// Animator.cpp
 #include "Animator.h"
+using namespace DirectX;
 
-// ボーン名に対応する今の行列を返す
-std::vector<DirectX::XMMATRIX> Animator::GetCurrentPoseMatrices() {
-    std::vector<DirectX::XMMATRIX> result;
-    if (!currentClip) return result;
-
-    for (const auto& bone : currentClip->boneKeyframes) {
-        // 今のフレーム番号を計算
-        int frameCount = (int)bone.second.size();
-        float frameF = (currentTime / currentClip->duration) * frameCount;
-        int frameIdx = std::min((int)frameF, frameCount - 1);
-
-        result.push_back(bone.second[frameIdx]);
+void Animator::SetAnimation(AnimationClip* clip) {
+    m_clip = clip;
+    m_time = 0.0;
+}
+void Animator::Update(float deltaTime) {
+    if (!m_clip) return;
+    m_time += deltaTime;
+    if (m_time > m_clip->duration)
+        m_time = 0.0; // ループ
+}
+std::vector<XMMATRIX> Animator::GetCurrentPoseMatrices(const std::vector<std::string>& boneNames) {
+    std::vector<XMMATRIX> result(boneNames.size(), XMMatrixIdentity());
+    if (!m_clip) return result;
+    for (size_t i = 0; i < boneNames.size(); ++i) {
+        for (const BoneAnim& ba : m_clip->boneAnims) {
+            if (ba.name == boneNames[i] && !ba.keyframes.empty()) {
+                // 一番近いキーフレーム
+                int idx = (int)(m_time * 30.0f); // 30fps仮定
+                if (idx >= (int)ba.keyframes.size()) idx = (int)ba.keyframes.size() - 1;
+                result[i] = ba.keyframes[idx].transform;
+                break;
+            }
+        }
     }
     return result;
 }

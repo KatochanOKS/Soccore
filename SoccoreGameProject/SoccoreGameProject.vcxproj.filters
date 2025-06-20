@@ -146,7 +146,7 @@
     <ClInclude Include="FbxModelLoader.h">
       <Filter>ソース ファイル\FBX</Filter>
     </ClInclude>
-    <ClInclude Include="FbxSkeletalLader.h">
+    <ClInclude Include="FbxSkeletalLoader.h">
       <Filter>ソース ファイル\Animation</Filter>
     </ClInclude>
   </ItemGroup>
