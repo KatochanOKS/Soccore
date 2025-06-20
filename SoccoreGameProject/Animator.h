@@ -1,29 +1,16 @@
 #pragma once
-#include <vector>
-#include <DirectXMath.h>
 #include "AnimationClip.h"
-
+#include <vector>
+#include <string>
+#include <DirectXMath.h>
 
 class Animator {
 public:
+    void SetAnimation(AnimationClip* clip);
+    void Update(float deltaTime);
+    std::vector<DirectX::XMMATRIX> GetCurrentPoseMatrices(const std::vector<std::string>& boneNames);
 
-	AnimationClip* currentClip = nullptr;
-	float currentTime = 0.0f;
-
-void SetAnimationClip(AnimationClip* clip) {
-	currentClip = clip;
-   currentTime = 0.0f; // Reset time when changing clips
-	}
-
-void Update(float deltaTime) {
-	if (!currentClip) return;
-	currentTime += deltaTime;
-	if (currentTime > currentClip->duration)
-		currentTime = 0.0f; // Loop the animation
-}
-
-std::vector<DirectX::XMMATRIX>  GetCurrentPoseMatrices();
-
-
-
+private:
+    AnimationClip* m_clip = nullptr;
+    double m_time = 0.0;
 };

@@ -3,6 +3,7 @@
 #include "MeshRenderer.h"
 #include "Colors.h"
 #include "ObjectFactory.h" // ★追加
+#include "FbxSkeletalLoader.h"
 using namespace DirectX;
 using namespace Colors;
 
@@ -30,6 +31,12 @@ void EngineManager::Initialize() {
     ObjectFactory::CreateCube(this, { 2,  2.0f, 2 }, { 1, 1, 1 }, cubeTex, White);             // Cube2
     int bossTexIdx = m_textureManager.LoadTexture(L"assets/MixamoModel.fbm/Boss_diffuse.png", cmdList);
     ObjectFactory::CreateModel(this, "assets/MixamoModel.fbx", { 0,0,0 }, { 0.05f,0.05f,0.05f }, bossTexIdx, White);
+
+    //animation
+    FbxSkeletalLoader::LoadMesh("assets/MixamoModel.fbx", m_mesh);
+    m_animClip = FbxSkeletalLoader::LoadAnimation("assets/MixamoAnimation.fbx", m_mesh.bones);
+    m_animator.SetAnimation(m_animClip);
+
 
     // 定数バッファ
     constexpr size_t CBV_SIZE = 256;
