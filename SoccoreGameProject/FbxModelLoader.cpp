@@ -1,9 +1,35 @@
 #include "FbxModelLoader.h"
 #include "BufferManager.h"
-
+#include <map>        // 追加（ボーン名→インデックス用）
+#include <string>     // 追加
 FbxModelLoader::FbxModelLoader()
 {
 }
+// FBXノードを再帰的にたどってボーン情報を抽出する関数
+void GetBonesRecursive(FbxNode* node, int parentIdx,
+    std::vector<Bone>& outBones,
+    std::map<std::string, int>& boneNameToIdx)
+{
+    if (!node) return;
+
+    // このノードが「スケルトン（ボーン）」か判定
+    if (node->GetNodeAttribute() &&
+        node->GetNodeAttribute()->GetAttributeType() == FbxNodeAttribute::eSkeleton) {
+        Bone bone;
+        bone.name = node->GetName();    // ボーン名
+        bone.parentIndex = parentIdx;   // 親インデックス
+        bone.bindPoseMatrix = node->EvaluateGlobalTransform(); // バインドポーズ行列
+        int newIdx = static_cast<int>(outBones.size());
+        outBones.push_back(bone);
+        boneNameToIdx[bone.name] = newIdx;
+        parentIdx = newIdx; // 子の親として渡す
+    }
+    // 子ノードを再帰探索
+    for (int i = 0; i < node->GetChildCount(); ++i) {
+        GetBonesRecursive(node->GetChild(i), parentIdx, outBones, boneNameToIdx);
+    }
+}
+
 
 bool FbxModelLoader::Load(const std::string& filePath, VertexInfo* vertexInfo)
 {
@@ -17,6 +43,16 @@ bool FbxModelLoader::Load(const std::string& filePath, VertexInfo* vertexInfo)
     FbxGeometryConverter geometryConverter(manager);
     if (!geometryConverter.Triangulate(scene, true))
         return false;
+
+    // ボーン階層を再帰で収集
+    std::vector<Bone> bones;
+    std::map<std::string, int> boneNameToIndex;
+    GetBonesRecursive(scene->GetRootNode(), -1, bones, boneNameToIndex);
+
+    // 全体で使うボーン情報
+    std::map<std::string, int> boneNameToIndex; // ボーン名→インデックス
+    std::vector<std::string> boneNames;         // ボーン名リスト（インデックス対応）
+
 
     // ======= 全メッシュ取得 =======
     int meshCount = scene->GetSrcObjectCount<FbxMesh>();
@@ -33,6 +69,51 @@ bool FbxModelLoader::Load(const std::string& filePath, VertexInfo* vertexInfo)
         mesh->GetUVSetNames(uvSetNameList);
         if (uvSetNameList.GetCount() == 0) continue;
         const char* uvSetName = uvSetNameList.GetStringAt(0);
+
+        // コントロールポイント数＝FBX内部の頂点数
+        int controlPointCount = mesh->GetControlPointsCount();
+        // 頂点ごとにスキン情報（最大4つのボーンとウェイト）を保存する構造体
+        struct SkinData {
+            std::vector<std::pair<int, float>> boneWeightPairs; // (ボーン番号, ウェイト)
+        };
+        std::vector<SkinData> skinDatas(controlPointCount); // 頂点数分
+
+        // ----- スキン情報の抽出 -----
+        int deformerCount = mesh->GetDeformerCount(FbxDeformer::eSkin);
+        for (int deformerIdx = 0; deformerIdx < deformerCount; ++deformerIdx) {
+            FbxSkin* skin = (FbxSkin*)mesh->GetDeformer(deformerIdx, FbxDeformer::eSkin);
+            if (!skin) continue;
+            // すべてのクラスタ（＝ボーン）について
+            for (int clusterIdx = 0; clusterIdx < skin->GetClusterCount(); ++clusterIdx) {
+                FbxCluster* cluster = skin->GetCluster(clusterIdx);
+                // ボーン名の取得
+                std::string boneName = cluster->GetLink()->GetName();
+                // ボーンインデックス割り当て（初出なら追加）
+                int boneIdx = 0;
+                if (boneNameToIndex.count(boneName) == 0) {
+                    boneIdx = static_cast<int>(boneNames.size());
+                    boneNames.push_back(boneName);
+                    boneNameToIndex[boneName] = boneIdx;
+                }
+                else {
+                    boneIdx = boneNameToIndex[boneName];
+                }
+
+                int* indices = cluster->GetControlPointIndices();
+                double* weights = cluster->GetControlPointWeights();
+                int indicesCount = cluster->GetControlPointIndicesCount();
+                for (int i = 0; i < indicesCount; ++i) {
+                    int vertexIdx = indices[i];
+                    float weight = static_cast<float>(weights[i]);
+                    if (weight <= 0.0f) continue;
+                    // 4つまで登録
+                    if (skinDatas[vertexIdx].boneWeightPairs.size() < 4) {
+                        skinDatas[vertexIdx].boneWeightPairs.push_back({ boneIdx, weight });
+                    }
+                }
+            }
+        }
+        // ----- ここまでで各頂点に最大4つまでの(ボーン番号, ウェイト)が記録される -----
 
         // 頂点座標
         std::vector<std::vector<float>> vertexInfoList;
@@ -69,11 +150,29 @@ bool FbxModelLoader::Load(const std::string& filePath, VertexInfo* vertexInfo)
         std::vector<Vertex> vertices;
         for (int i = 0; i < vertexInfoList.size(); i++) {
             std::vector<float>& vi = vertexInfoList[i];
-            vertices.push_back(Vertex{
-                vi[0], vi[1], vi[2],
-                vi[3], vi[4], vi[5],
-                vi[6], 1.0f - vi[7] // ← ここを変更 FBX/Blender/Maya等 → vは下から上が0→1 FBX/Blender/Maya等 → vは下から上が0→1
-                });
+
+            Vertex v = {
+                vi[0], vi[1], vi[2],    // 位置
+                vi[3], vi[4], vi[5],    // 法線
+                vi[6], 1.0f - vi[7]     // UV（FBXはvが逆なので1-v）
+            };
+
+            // ---- スキニング（ボーン）情報をセット ----
+            auto& pairs = skinDatas[i].boneWeightPairs;
+            float totalWeight = 0.0f;
+            for (int k = 0; k < pairs.size() && k < 4; ++k) {
+                v.boneIndices[k] = pairs[k].first;   // ボーンインデックス
+                v.boneWeights[k] = pairs[k].second;  // ウェイト
+                totalWeight += pairs[k].second;
+            }
+            // ウェイトの合計が1.0になるよう正規化（重要！）
+            if (totalWeight > 0.0f) {
+                for (int k = 0; k < 4; ++k)
+                    v.boneWeights[k] /= totalWeight;
+            }
+            // ---- ここまで ----
+
+            vertices.push_back(v);
 
 
         }
@@ -86,10 +185,11 @@ bool FbxModelLoader::Load(const std::string& filePath, VertexInfo* vertexInfo)
         indexOffset += static_cast<unsigned short>(vertices.size());
     }
 
+    *vertexInfo = { allVertices, allIndices, bones }; // ここでボーンも渡す
+
     // マネージャー、シーンの破棄
     scene->Destroy();
     manager->Destroy();
-    *vertexInfo = { allVertices, allIndices };
     return true;
 }
 
