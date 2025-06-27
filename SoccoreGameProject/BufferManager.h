@@ -5,10 +5,8 @@
 
 struct Vertex {
     float x, y, z;
-    float nx, ny, nz;
+    float nx, ny, nz;   // ← 法線
     float u, v;
-    uint32_t boneIndices[4]; // 影響ボーンのインデックス（最大4つまで）
-    float boneWeights[4];    // 各ボーンのウェイト
 };
 
 

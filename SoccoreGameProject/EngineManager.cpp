@@ -32,7 +32,10 @@ void EngineManager::Initialize() {
     int bossTexIdx = m_textureManager.LoadTexture(L"assets/MixamoModel.fbm/Boss_diffuse.png", cmdList);
     ObjectFactory::CreateModel(this, "assets/MixamoModel.fbx", { 0,0,0 }, { 0.05f,0.05f,0.05f }, bossTexIdx, White);
 
-
+    //animation
+    FbxSkeletalLoader::LoadMesh("assets/MixamoModel.fbx", m_mesh);
+    m_animClip = FbxSkeletalLoader::LoadAnimation("assets/MixamoAnimation.fbx", m_mesh.bones);
+    m_animator.SetAnimation(m_animClip);
 
 
     // 定数バッファ
