@@ -63,15 +63,6 @@
     <ClCompile Include="MeshLibrary.cpp">
       <Filter>ソース ファイル\GameObject</Filter>
     </ClCompile>
-    <ClCompile Include="SkeletalMesh.cpp">
-      <Filter>ソース ファイル\Animation</Filter>
-    </ClCompile>
-    <ClCompile Include="Animator.cpp">
-      <Filter>ソース ファイル\Animation</Filter>
-    </ClCompile>
-    <ClCompile Include="AnimationClip.cpp">
-      <Filter>ソース ファイル\Animation</Filter>
-    </ClCompile>
     <ClCompile Include="FbxModelLoader.cpp">
       <Filter>ソース ファイル\FBX</Filter>
     </ClCompile>
@@ -134,20 +125,8 @@
     <ClInclude Include="MeshLibrary.h">
       <Filter>ソース ファイル\GameObject</Filter>
     </ClInclude>
-    <ClInclude Include="AnimationClip.h">
-      <Filter>ソース ファイル\Animation</Filter>
-    </ClInclude>
-    <ClInclude Include="Animator.h">
-      <Filter>ソース ファイル\Animation</Filter>
-    </ClInclude>
-    <ClInclude Include="SkeletalMesh.h">
-      <Filter>ソース ファイル\Animation</Filter>
-    </ClInclude>
     <ClInclude Include="FbxModelLoader.h">
       <Filter>ソース ファイル\FBX</Filter>
-    </ClInclude>
-    <ClInclude Include="FbxSkeletalLoader.h">
-      <Filter>ソース ファイル\Animation</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
