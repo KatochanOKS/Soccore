@@ -73,6 +73,39 @@ void BufferManager::CreateIndexBuffer(ID3D12Device* device, const std::vector<ui
     m_ibv.Format = DXGI_FORMAT_R16_UINT; // 16ビットインデックス
 }
 
+// BufferManager.cpp
+
+// ★ スキニング頂点用バッファ生成
+void BufferManager::CreateSkinningVertexBuffer(ID3D12Device* device, const std::vector<SkinningVertex>& vertices)
+{
+    const UINT bufferSize = UINT(vertices.size() * sizeof(SkinningVertex));
+
+    CD3DX12_HEAP_PROPERTIES heapProps(D3D12_HEAP_TYPE_UPLOAD);
+    CD3DX12_RESOURCE_DESC resDesc = CD3DX12_RESOURCE_DESC::Buffer(bufferSize);
+
+    // バッファリソース生成
+    device->CreateCommittedResource(
+        &heapProps,
+        D3D12_HEAP_FLAG_NONE,
+        &resDesc,
+        D3D12_RESOURCE_STATE_GENERIC_READ,
+        nullptr,
+        IID_PPV_ARGS(&m_vertexBuffer)
+    );
+
+    // CPUアクセスでマップ
+    void* mapped = nullptr;
+    m_vertexBuffer->Map(0, nullptr, &mapped);
+    memcpy(mapped, vertices.data(), bufferSize);
+    m_vertexBuffer->Unmap(0, nullptr);
+
+    // 頂点バッファビューのセット（Strideが重要！）
+    m_vbv.BufferLocation = m_vertexBuffer->GetGPUVirtualAddress();
+    m_vbv.SizeInBytes = bufferSize;
+    m_vbv.StrideInBytes = sizeof(SkinningVertex);
+}
+
+
 // 定数バッファ（CBV: Constant Buffer View）を作成する関数
 void BufferManager::CreateConstantBuffer(ID3D12Device* device, size_t size)
 {
