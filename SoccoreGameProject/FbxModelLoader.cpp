@@ -1,5 +1,8 @@
 #include "FbxModelLoader.h"
 #include "BufferManager.h"
+#include <DirectXMath.h>
+using namespace DirectX;
+#include <algorithm>
 
 FbxModelLoader::FbxModelLoader()
 {
@@ -135,4 +138,126 @@ bool FbxModelLoader::IsSetNormalUV(const std::vector<float> vertexInfo, const Fb
         && fabs(vertexInfo[5] - normalVec4[2]) < FLT_EPSILON
         && fabs(vertexInfo[6] - uvVec2[0]) < FLT_EPSILON
         && fabs(vertexInfo[7] - uvVec2[1]) < FLT_EPSILON;
+}
+
+// FBXの行列をDirectXに変換
+static XMMATRIX FbxAMatrixToXMMATRIX(const FbxAMatrix& m) {
+    XMFLOAT4X4 xf;
+    for (int r = 0; r < 4; r++)
+        for (int c = 0; c < 4; c++)
+            xf.m[r][c] = (float)m.Get(r, c);
+    return XMLoadFloat4x4(&xf);
+}
+
+// スキニングモデル読込
+bool FbxModelLoader::LoadSkinningModel(const std::string& filePath, SkinningVertexInfo* outInfo)
+{
+    // FBX初期化
+    FbxManager* manager = FbxManager::Create();
+    FbxImporter* importer = FbxImporter::Create(manager, "");
+    if (!importer->Initialize(filePath.c_str(), -1, manager->GetIOSettings())) {
+        manager->Destroy();
+        return false;
+    }
+    FbxScene* scene = FbxScene::Create(manager, "");
+    importer->Import(scene);
+    importer->Destroy();
+    FbxGeometryConverter conv(manager);
+    conv.Triangulate(scene, true);
+
+    // 初期化
+    outInfo->vertices.clear();
+    outInfo->indices.clear();
+    outInfo->boneNames.clear();
+    outInfo->bindPoses.clear();
+
+    // メッシュごと
+    int meshCount = scene->GetSrcObjectCount<FbxMesh>();
+    for (int m = 0; m < meshCount; ++m) {
+        FbxMesh* mesh = scene->GetSrcObject<FbxMesh>(m);
+        if (!mesh) continue;
+        int ctrlCount = mesh->GetControlPointsCount();
+
+        // --- コントロールポイントごとにボーン情報を集める ---
+        struct BoneWeight { int boneIdx; float weight; };
+        std::vector<std::vector<BoneWeight>> ctrlptBones(ctrlCount);
+
+        // スキン取得
+        int skinCount = mesh->GetDeformerCount(FbxDeformer::eSkin);
+        if (skinCount > 0) {
+            FbxSkin* skin = static_cast<FbxSkin*>(mesh->GetDeformer(0, FbxDeformer::eSkin));
+            int clusterCount = skin->GetClusterCount();
+            outInfo->boneNames.resize(clusterCount);
+            outInfo->bindPoses.resize(clusterCount);
+            for (int c = 0; c < clusterCount; ++c) {
+                FbxCluster* cluster = skin->GetCluster(c);
+                FbxNode* link = cluster->GetLink();
+                std::string boneName = link ? link->GetName() : "Bone" + std::to_string(c);
+                outInfo->boneNames[c] = boneName;
+                outInfo->bindPoses[c] = FbxAMatrixToXMMATRIX(link->EvaluateGlobalTransform().Inverse());
+
+                int* indices = cluster->GetControlPointIndices();
+                double* weights = cluster->GetControlPointWeights();
+                int idxCount = cluster->GetControlPointIndicesCount();
+                for (int i = 0; i < idxCount; ++i) {
+                    int ctrlIdx = indices[i];
+                    float w = (float)weights[i];
+                    ctrlptBones[ctrlIdx].push_back({ c, w });
+                }
+            }
+        }
+
+        // --- 頂点ごとにSkinningVertex構築 ---
+        FbxStringList uvSets;
+        mesh->GetUVSetNames(uvSets);
+        const char* uvSet = (uvSets.GetCount() > 0) ? uvSets[0] : "";
+
+        std::vector<SkinningVertex> vertices;
+        std::vector<uint16_t> indices;
+
+        int polyCount = mesh->GetPolygonCount();
+        for (int pi = 0; pi < polyCount; ++pi) {
+            int polySize = mesh->GetPolygonSize(pi);
+            for (int vi = 0; vi < polySize; ++vi) {
+                int ctrlIdx = mesh->GetPolygonVertex(pi, vi);
+                FbxVector4 pos = mesh->GetControlPointAt(ctrlIdx);
+
+                // 法線
+                FbxVector4 normal;
+                mesh->GetPolygonVertexNormal(pi, vi, normal);
+
+                // UV
+                FbxVector2 uv = { 0,0 }; bool unmapped = false;
+                mesh->GetPolygonVertexUV(pi, vi, uvSet, uv, unmapped);
+
+                // 頂点生成
+                SkinningVertex v;
+                v.x = (float)pos[0]; v.y = (float)pos[1]; v.z = (float)pos[2];
+                v.nx = (float)normal[0]; v.ny = (float)normal[1]; v.nz = (float)normal[2];
+                v.u = (float)uv[0]; v.v = 1.0f - (float)uv[1];
+
+                // --- ボーン情報をセット ---
+                auto& boneList = ctrlptBones[ctrlIdx];
+                // ウェイトが大きい順に4つだけセット
+                std::sort(boneList.begin(), boneList.end(), [](auto& a, auto& b) {return a.weight > b.weight; });
+                float sumW = 0.0f;
+                for (int k = 0; k < 4 && k < (int)boneList.size(); ++k) {
+                    v.boneIndices[k] = boneList[k].boneIdx;
+                    v.boneWeights[k] = boneList[k].weight;
+                    sumW += v.boneWeights[k];
+                }
+                if (sumW > 0.0f) for (int k = 0; k < 4; ++k) v.boneWeights[k] /= sumW;
+                else { v.boneIndices[0] = 0; v.boneWeights[0] = 1.0f; }
+
+                vertices.push_back(v);
+                indices.push_back((uint16_t)(vertices.size() - 1));
+            }
+        }
+        outInfo->vertices.insert(outInfo->vertices.end(), vertices.begin(), vertices.end());
+        outInfo->indices.insert(outInfo->indices.end(), indices.begin(), indices.end());
+    }
+
+    scene->Destroy();
+    manager->Destroy();
+    return true;
 }
