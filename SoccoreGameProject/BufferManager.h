@@ -26,6 +26,11 @@ public:
     // --- 新規追加: スキニング頂点用のバッファ生成 ---
     void CreateSkinningVertexBuffer(ID3D12Device* device, const std::vector<SkinningVertex>& vertices);
 
+    // --- 追加 ---
+    void CreateBoneConstantBuffer(ID3D12Device* device, size_t boneCount);
+    ID3D12Resource* GetBoneConstantBuffer() const { return m_boneConstantBuffer.Get(); }
+    D3D12_GPU_VIRTUAL_ADDRESS GetBoneConstantBufferGPUAddress() const;
+
     ID3D12Resource* GetConstantBuffer() const { return m_constantBuffer.Get(); }
     D3D12_VERTEX_BUFFER_VIEW GetVertexBufferView() const { return m_vbv; }
     D3D12_INDEX_BUFFER_VIEW GetIndexBufferView() const { return m_ibv; }
@@ -38,4 +43,7 @@ private:
     D3D12_INDEX_BUFFER_VIEW m_ibv{};
     Microsoft::WRL::ComPtr<ID3D12Resource> m_constantBuffer;
     D3D12_GPU_VIRTUAL_ADDRESS m_cbGpuAddress = 0;
+
+    Microsoft::WRL::ComPtr<ID3D12Resource> m_boneConstantBuffer; // 追加
+    D3D12_GPU_VIRTUAL_ADDRESS m_boneCbGpuAddress = 0;
 };

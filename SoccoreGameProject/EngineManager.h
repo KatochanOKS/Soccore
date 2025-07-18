@@ -43,7 +43,7 @@ public:
     std::vector<GameObject*> m_gameObjects;
     int m_texIdx = -1;
     int m_cubeTexIdx = -1;
-
+    double m_animTime = 0.0; // アニメーション再生時間（秒）
 private:
     HWND m_hWnd = nullptr;
     DeviceManager m_deviceManager;

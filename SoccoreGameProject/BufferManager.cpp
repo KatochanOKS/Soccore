@@ -1,6 +1,6 @@
 #include "BufferManager.h"
 #include "d3dx12.h"   
-
+#include <DirectXMath.h>
 // 頂点バッファを作成する関数
 void BufferManager::CreateVertexBuffer(ID3D12Device* device, const std::vector<Vertex>& vertices)
 {
@@ -125,6 +125,33 @@ void BufferManager::CreateConstantBuffer(ID3D12Device* device, size_t size)
 
     // GPUバッファの仮想アドレスを保持
     m_cbGpuAddress = m_constantBuffer->GetGPUVirtualAddress();
+}
+
+void BufferManager::CreateBoneConstantBuffer(ID3D12Device* device, size_t boneCount) {
+    if (boneCount == 0) {
+        m_boneConstantBuffer.Reset();    // 安全にnullクリア
+        m_boneCbGpuAddress = 0;
+        return;
+    }
+    size_t size = sizeof(DirectX::XMMATRIX) * boneCount;
+    // 256バイトアライン
+    CD3DX12_HEAP_PROPERTIES heapProps(D3D12_HEAP_TYPE_UPLOAD);
+    CD3DX12_RESOURCE_DESC desc = CD3DX12_RESOURCE_DESC::Buffer((size + 255) & ~255);
+
+    device->CreateCommittedResource(
+        &heapProps,
+        D3D12_HEAP_FLAG_NONE,
+        &desc,
+        D3D12_RESOURCE_STATE_GENERIC_READ,
+        nullptr,
+        IID_PPV_ARGS(&m_boneConstantBuffer)
+    );
+    m_boneCbGpuAddress = m_boneConstantBuffer->GetGPUVirtualAddress();
+}
+
+
+D3D12_GPU_VIRTUAL_ADDRESS BufferManager::GetBoneConstantBufferGPUAddress() const {
+    return m_boneCbGpuAddress;
 }
 
 // 定数バッファのGPUアドレスを取得する関数

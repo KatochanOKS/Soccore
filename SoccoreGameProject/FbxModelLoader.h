@@ -31,6 +31,15 @@ public:
 		SkinningVertexInfo* outInfo
 	);
 
+	// アニメーションの現在のボーン行列を計算する関数
+	static void CalcCurrentBoneMatrices(
+		const std::string& fbxPath,                  // FBXファイルのパス
+		double currentTime,                          // 再生時間（秒）
+		std::vector<DirectX::XMMATRIX>& outMatrices, // 計算したボーン行列を詰める配列
+		const std::vector<std::string>& boneNames,   // ボーン名リスト
+		const std::vector<DirectX::XMMATRIX>& bindPoses // バインドポーズ行列リスト
+	);
+
 private:
 	static bool IsExistNormalUVInfo(const std::vector<float>& vertexInfo);
 	static std::vector<float> CreateVertexInfo(const std::vector<float>& vertex, const FbxVector4& normalVec4, const FbxVector2& uvVec2);
