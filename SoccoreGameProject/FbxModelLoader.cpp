@@ -171,40 +171,75 @@ bool FbxModelLoader::LoadSkinningModel(const std::string& filePath, SkinningVert
     outInfo->boneNames.clear();
     outInfo->bindPoses.clear();
 
-    // メッシュごと
     int meshCount = scene->GetSrcObjectCount<FbxMesh>();
+    char buf[256];
+    sprintf_s(buf, "[FBX DEBUG] meshCount = %d\n", meshCount);
+    OutputDebugStringA(buf);
+
+    bool bonesInitialized = false; // ボーン名/bindPoseを一度だけセットする
+
+    unsigned int indexOffset = 0; // 複数メッシュ用の頂点オフセット
+
     for (int m = 0; m < meshCount; ++m) {
         FbxMesh* mesh = scene->GetSrcObject<FbxMesh>(m);
         if (!mesh) continue;
         int ctrlCount = mesh->GetControlPointsCount();
+        int skinCount = mesh->GetDeformerCount(FbxDeformer::eSkin);
+        int polyCount = mesh->GetPolygonCount();
+
+        sprintf_s(buf, "[FBX DEBUG] Mesh %d: skinCount=%d, ctrlPts=%d, polys=%d\n", m, skinCount, ctrlCount, polyCount);
+        OutputDebugStringA(buf);
 
         // --- コントロールポイントごとにボーン情報を集める ---
         struct BoneWeight { int boneIdx; float weight; };
         std::vector<std::vector<BoneWeight>> ctrlptBones(ctrlCount);
 
         // スキン取得
-        int skinCount = mesh->GetDeformerCount(FbxDeformer::eSkin);
+        int clusterCount = 0;
         if (skinCount > 0) {
             FbxSkin* skin = static_cast<FbxSkin*>(mesh->GetDeformer(0, FbxDeformer::eSkin));
-            int clusterCount = skin->GetClusterCount();
-            outInfo->boneNames.resize(clusterCount);
-            outInfo->bindPoses.resize(clusterCount);
+            clusterCount = skin->GetClusterCount();
+
+            sprintf_s(buf, "[FBX DEBUG] Mesh %d: clusterCount=%d\n", m, clusterCount);
+            OutputDebugStringA(buf);
+
+            // ボーン名/bindPoseは最初のスキニングメッシュでのみセット（多重登録防止）
+            if (!bonesInitialized) {
+                outInfo->boneNames.resize(clusterCount);
+                outInfo->bindPoses.resize(clusterCount);
+            }
+
             for (int c = 0; c < clusterCount; ++c) {
                 FbxCluster* cluster = skin->GetCluster(c);
                 FbxNode* link = cluster->GetLink();
                 std::string boneName = link ? link->GetName() : "Bone" + std::to_string(c);
-                outInfo->boneNames[c] = boneName;
-                outInfo->bindPoses[c] = FbxAMatrixToXMMATRIX(link->EvaluateGlobalTransform().Inverse());
+
+                if (!bonesInitialized) {
+                    outInfo->boneNames[c] = boneName;
+                    outInfo->bindPoses[c] = FbxAMatrixToXMMATRIX(link->EvaluateGlobalTransform().Inverse());
+                }
 
                 int* indices = cluster->GetControlPointIndices();
                 double* weights = cluster->GetControlPointWeights();
                 int idxCount = cluster->GetControlPointIndicesCount();
+                sprintf_s(buf, "[FBX DEBUG] Cluster %d: idxCount=%d (%s)\n", c, idxCount, boneName.c_str());
+                OutputDebugStringA(buf);
+
                 for (int i = 0; i < idxCount; ++i) {
                     int ctrlIdx = indices[i];
                     float w = (float)weights[i];
-                    ctrlptBones[ctrlIdx].push_back({ c, w });
+                    if (ctrlIdx >= 0 && ctrlIdx < ctrlCount)
+                        ctrlptBones[ctrlIdx].push_back({ c, w });
+                    else {
+                        sprintf_s(buf, "[FBX WARNING] ctrlIdx %d out of range for ctrlCount=%d\n", ctrlIdx, ctrlCount);
+                        OutputDebugStringA(buf);
+                    }
                 }
             }
+            bonesInitialized = true;
+        }
+        else {
+            OutputDebugStringA("[FBX DEBUG] No skin found for this mesh.\n");
         }
 
         // --- 頂点ごとにSkinningVertex構築 ---
@@ -215,7 +250,6 @@ bool FbxModelLoader::LoadSkinningModel(const std::string& filePath, SkinningVert
         std::vector<SkinningVertex> vertices;
         std::vector<uint16_t> indices;
 
-        int polyCount = mesh->GetPolygonCount();
         for (int pi = 0; pi < polyCount; ++pi) {
             int polySize = mesh->GetPolygonSize(pi);
             for (int vi = 0; vi < polySize; ++vi) {
@@ -231,14 +265,13 @@ bool FbxModelLoader::LoadSkinningModel(const std::string& filePath, SkinningVert
                 mesh->GetPolygonVertexUV(pi, vi, uvSet, uv, unmapped);
 
                 // 頂点生成
-                SkinningVertex v;
+                SkinningVertex v = {};
                 v.x = (float)pos[0]; v.y = (float)pos[1]; v.z = (float)pos[2];
                 v.nx = (float)normal[0]; v.ny = (float)normal[1]; v.nz = (float)normal[2];
                 v.u = (float)uv[0]; v.v = 1.0f - (float)uv[1];
 
                 // --- ボーン情報をセット ---
                 auto& boneList = ctrlptBones[ctrlIdx];
-                // ウェイトが大きい順に4つだけセット
                 std::sort(boneList.begin(), boneList.end(), [](auto& a, auto& b) {return a.weight > b.weight; });
                 float sumW = 0.0f;
                 for (int k = 0; k < 4 && k < (int)boneList.size(); ++k) {
@@ -246,18 +279,91 @@ bool FbxModelLoader::LoadSkinningModel(const std::string& filePath, SkinningVert
                     v.boneWeights[k] = boneList[k].weight;
                     sumW += v.boneWeights[k];
                 }
-                if (sumW > 0.0f) for (int k = 0; k < 4; ++k) v.boneWeights[k] /= sumW;
-                else { v.boneIndices[0] = 0; v.boneWeights[0] = 1.0f; }
+                if (sumW > 0.0f)
+                    for (int k = 0; k < 4; ++k)
+                        v.boneWeights[k] /= sumW;
+                else {
+                    v.boneIndices[0] = 0;
+                    v.boneWeights[0] = 1.0f;
+                    for (int k = 1; k < 4; ++k) {
+                        v.boneIndices[k] = 0;
+                        v.boneWeights[k] = 0.0f;
+                    }
+                }
 
+                indices.push_back((uint16_t)vertices.size());
                 vertices.push_back(v);
-                indices.push_back((uint16_t)(vertices.size() - 1));
             }
         }
+
+        // --- 複数メッシュ対応：indexOffsetを使ってずらしてから追加！ ---
+        for (auto idx : indices) {
+            outInfo->indices.push_back(idx + indexOffset);
+        }
         outInfo->vertices.insert(outInfo->vertices.end(), vertices.begin(), vertices.end());
-        outInfo->indices.insert(outInfo->indices.end(), indices.begin(), indices.end());
+        indexOffset += vertices.size();
     }
 
     scene->Destroy();
     manager->Destroy();
     return true;
+}
+
+
+
+// 現在時刻のアニメーションのボーン行列配列を計算する
+void FbxModelLoader::CalcCurrentBoneMatrices(
+    const std::string & fbxPath,
+    double currentTime,
+    std::vector<DirectX::XMMATRIX>&outMatrices,
+    const std::vector<std::string>&boneNames,
+    const std::vector<DirectX::XMMATRIX>&bindPoses
+) {
+    // 1. FBXファイルをロード（1回で十分なので工夫すると速いです）
+    FbxManager* manager = FbxManager::Create();
+    FbxImporter* importer = FbxImporter::Create(manager, "");
+    if (!importer->Initialize(fbxPath.c_str(), -1, manager->GetIOSettings())) {
+        manager->Destroy();
+        return;
+    }
+    FbxScene* scene = FbxScene::Create(manager, "");
+    importer->Import(scene);
+    importer->Destroy();
+
+    // 2. アニメーションスタック・レイヤー取得
+    FbxAnimStack* animStack = scene->GetCurrentAnimationStack();
+    if (!animStack) {
+        scene->Destroy(); manager->Destroy();
+        return;
+    }
+    FbxAnimLayer* animLayer = animStack->GetMember<FbxAnimLayer>(0);
+    if (!animLayer) {
+        scene->Destroy(); manager->Destroy();
+        return;
+    }
+
+    // 3. 現在時刻を設定
+    FbxTime time;
+    time.SetSecondDouble(currentTime);
+
+    // 4. 各ボーンごとにグローバル変換を取得し、バインドポーズ逆行列と掛けてスキン行列を計算
+    for (int i = 0; i < (int)boneNames.size(); ++i) {
+        FbxNode* boneNode = scene->FindNodeByName(boneNames[i].c_str());
+        if (!boneNode) {
+            outMatrices[i] = DirectX::XMMatrixIdentity(); // 存在しなければ単位行列
+            continue;
+        }
+
+        FbxAMatrix globalTransform = boneNode->EvaluateGlobalTransform(time); // アニメ時間でのボーン行列
+        DirectX::XMMATRIX current = FbxAMatrixToXMMATRIX(globalTransform);
+
+        //// バインドポーズはすでに逆行列
+        //outMatrices[i] = DirectX::XMMatrixTranspose(current * bindPoses[i]);
+
+        // 修正後
+        outMatrices[i] = DirectX::XMMatrixTranspose(bindPoses[i] * current);
+    }
+
+    scene->Destroy();
+    manager->Destroy();
 }
