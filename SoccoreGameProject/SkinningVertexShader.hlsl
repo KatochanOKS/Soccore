@@ -54,5 +54,7 @@ VS_OUT main(VS_IN vin)
 
     // UV‚»‚Ì‚Ü‚Ü
     vout.uv = vin.uv;
+   //vout.uv = float2(0.5, 0.5);
+
     return vout;
 }
