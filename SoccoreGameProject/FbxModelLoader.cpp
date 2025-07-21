@@ -311,59 +311,102 @@ bool FbxModelLoader::LoadSkinningModel(const std::string& filePath, SkinningVert
 
 
 
-// 現在時刻のアニメーションのボーン行列配列を計算する
-void FbxModelLoader::CalcCurrentBoneMatrices(
-    const std::string & fbxPath,
-    double currentTime,
-    std::vector<DirectX::XMMATRIX>&outMatrices,
-    const std::vector<std::string>&boneNames,
-    const std::vector<DirectX::XMMATRIX>&bindPoses
-) {
-    // 1. FBXファイルをロード（1回で十分なので工夫すると速いです）
-    FbxManager* manager = FbxManager::Create();
-    FbxImporter* importer = FbxImporter::Create(manager, "");
-    if (!importer->Initialize(fbxPath.c_str(), -1, manager->GetIOSettings())) {
-        manager->Destroy();
-        return;
+/// --- FBXを一度だけロードして必要情報をキャッシュする関数 ---
+// （ファイル名から呼ばれ、初回だけメモリ上に読み込んで返す）
+FbxModelInstance* FbxModelLoader::LoadAndCache(const std::string& fbxPath)
+{
+    auto* instance = new FbxModelInstance();
+
+    // FBXの初期化（管理クラス・シーン生成）
+    instance->manager = FbxManager::Create();
+    instance->scene = FbxScene::Create(instance->manager, "");
+    FbxImporter* importer = FbxImporter::Create(instance->manager, "");
+
+    if (!importer->Initialize(fbxPath.c_str(), -1, instance->manager->GetIOSettings())) {
+        importer->Destroy();
+        delete instance;
+        return nullptr;
     }
-    FbxScene* scene = FbxScene::Create(manager, "");
-    importer->Import(scene);
+    importer->Import(instance->scene);
     importer->Destroy();
 
-    // 2. アニメーションスタック・レイヤー取得
-    FbxAnimStack* animStack = scene->GetCurrentAnimationStack();
-    if (!animStack) {
-        scene->Destroy(); manager->Destroy();
-        return;
-    }
-    FbxAnimLayer* animLayer = animStack->GetMember<FbxAnimLayer>(0);
-    if (!animLayer) {
-        scene->Destroy(); manager->Destroy();
-        return;
+    // --- 複数メッシュ対応：最初のスキンメッシュからボーン・バインドポーズ配列取得 ---
+    int meshCount = instance->scene->GetSrcObjectCount<FbxMesh>();
+    bool bonesInitialized = false;
+
+    for (int m = 0; m < meshCount; ++m) {
+        FbxMesh* mesh = instance->scene->GetSrcObject<FbxMesh>(m);
+        if (!mesh) continue;
+        int skinCount = mesh->GetDeformerCount(FbxDeformer::eSkin);
+        if (skinCount > 0 && !bonesInitialized) {
+            FbxSkin* skin = static_cast<FbxSkin*>(mesh->GetDeformer(0, FbxDeformer::eSkin));
+            int clusterCount = skin->GetClusterCount();
+
+            instance->boneNames.resize(clusterCount);
+            instance->bindPoses.resize(clusterCount);
+            for (int c = 0; c < clusterCount; ++c) {
+                FbxCluster* cluster = skin->GetCluster(c);
+                FbxNode* link = cluster->GetLink();
+                std::string boneName = link ? link->GetName() : "Bone" + std::to_string(c);
+                instance->boneNames[c] = boneName;
+                // bindPose（逆行列）をキャッシュ
+                instance->bindPoses[c] = FbxAMatrixToXMMATRIX(link->EvaluateGlobalTransform().Inverse());
+            }
+            bonesInitialized = true;
+        }
     }
 
-    // 3. 現在時刻を設定
+    // --- アニメーションの長さを取得（取得できなければデフォルト2.5秒） ---
+    instance->animationLength = 2.5; // 仮の値
+    FbxAnimStack* animStack = instance->scene->GetCurrentAnimationStack();
+    if (animStack) {
+        FbxTakeInfo* takeInfo = instance->scene->GetTakeInfo(animStack->GetName());
+        if (takeInfo) {
+            FbxTimeSpan span = takeInfo->mLocalTimeSpan;
+            instance->animationLength = span.GetDuration().GetSecondDouble();
+        }
+    }
+
+    // ボーンが1つもないモデルは失敗
+    if (instance->boneNames.empty()) {
+        delete instance;
+        return nullptr;
+    }
+
+    return instance;
+}
+
+
+// --- キャッシュ済みインスタンス＋再生時刻で、ボーン最終行列配列を計算する関数 ---
+void FbxModelLoader::CalcCurrentBoneMatrices(
+    FbxModelInstance* instance,
+    double currentTime,
+    std::vector<DirectX::XMMATRIX>& outMatrices
+) {
+    if (!instance) return;
+
+    // --- アニメーションのループ再生に対応 ---
+    if (instance->animationLength > 0.0)
+        currentTime = fmod(currentTime, instance->animationLength);
+
+    // --- FBXアニメーションレイヤー取得 ---
+    FbxAnimStack* animStack = instance->scene->GetCurrentAnimationStack();
+    if (!animStack) return;
+    FbxAnimLayer* animLayer = animStack->GetMember<FbxAnimLayer>(0);
+    if (!animLayer) return;
+
     FbxTime time;
     time.SetSecondDouble(currentTime);
 
-    // 4. 各ボーンごとにグローバル変換を取得し、バインドポーズ逆行列と掛けてスキン行列を計算
-    for (int i = 0; i < (int)boneNames.size(); ++i) {
-        FbxNode* boneNode = scene->FindNodeByName(boneNames[i].c_str());
+    // --- 全ボーンについて、グローバル変換×バインドポーズ逆行列を計算 ---
+    for (int i = 0; i < (int)instance->boneNames.size(); ++i) {
+        FbxNode* boneNode = instance->scene->FindNodeByName(instance->boneNames[i].c_str());
         if (!boneNode) {
-            outMatrices[i] = DirectX::XMMatrixIdentity(); // 存在しなければ単位行列
+            outMatrices[i] = DirectX::XMMatrixIdentity();
             continue;
         }
-
-        FbxAMatrix globalTransform = boneNode->EvaluateGlobalTransform(time); // アニメ時間でのボーン行列
+        FbxAMatrix globalTransform = boneNode->EvaluateGlobalTransform(time);
         DirectX::XMMATRIX current = FbxAMatrixToXMMATRIX(globalTransform);
-
-        //// バインドポーズはすでに逆行列
-        //outMatrices[i] = DirectX::XMMatrixTranspose(current * bindPoses[i]);
-
-        // 修正後
-        outMatrices[i] = DirectX::XMMatrixTranspose(bindPoses[i] * current);
+        outMatrices[i] = DirectX::XMMatrixTranspose(instance->bindPoses[i] * current);
     }
-
-    scene->Destroy();
-    manager->Destroy();
 }

@@ -8,6 +8,24 @@
 #pragma comment(lib, "zlib-md.lib")
 #include "BufferManager.h" // BufferManagerのヘッダーファイルをインクルード
 #include <DirectXMath.h>
+
+// --- FBXキャッシュ用構造体 ---
+// これは「FBXモデルを1回だけロードし、必要な情報をずっと保持するための箱」です
+struct FbxModelInstance {
+	FbxManager* manager = nullptr;            // FBX SDK 管理インスタンス
+	FbxScene* scene = nullptr;                // FBXシーンデータ
+	std::vector<std::string> boneNames;       // ボーン名リスト
+	std::vector<DirectX::XMMATRIX> bindPoses; // ボーンのバインドポーズ行列
+	double animationLength = 0.0;             // アニメーションの総再生時間（秒）
+
+	// --- デストラクタでFBXリソースの解放（必須!!）---
+	~FbxModelInstance() {
+		if (scene)    scene->Destroy();
+		if (manager)  manager->Destroy();
+	}
+};
+
+
 class FbxModelLoader
 {
 public:
@@ -24,6 +42,15 @@ public:
 		std::vector<DirectX::XMMATRIX> bindPoses;
 	};
 
+	// FBXのアニメーションデータをキャッシュする構造体
+	struct FbxModelInstance {
+		FbxManager* manager = nullptr;            // FBX管理クラス
+		FbxScene* scene = nullptr;                // FBXシーン
+		std::vector<std::string> boneNames;       // ボーン名リスト
+		std::vector<DirectX::XMMATRIX> bindPoses; // ボーンごとのバインドポーズ
+		double animationLength = 0.0;             // アニメーションの長さ（秒）
+	};
+
 	static bool Load(const std::string& filePath, VertexInfo* vertexInfo);
 
 	static bool LoadSkinningModel(
@@ -31,13 +58,14 @@ public:
 		SkinningVertexInfo* outInfo
 	);
 
-	// アニメーションの現在のボーン行列を計算する関数
+	// ★FBXをロードしてキャッシュ構造体を作成（初回だけ）
+	static FbxModelInstance* LoadAndCache(const std::string& filePath);
+
+	// ★キャッシュ済みインスタンスからアニメーション時刻でボーン行列を計算
 	static void CalcCurrentBoneMatrices(
-		const std::string& fbxPath,                  // FBXファイルのパス
-		double currentTime,                          // 再生時間（秒）
-		std::vector<DirectX::XMMATRIX>& outMatrices, // 計算したボーン行列を詰める配列
-		const std::vector<std::string>& boneNames,   // ボーン名リスト
-		const std::vector<DirectX::XMMATRIX>& bindPoses // バインドポーズ行列リスト
+		FbxModelInstance* instance,             // キャッシュインスタンス
+		double currentTime,                     // 再生したい時刻（秒）
+		std::vector<DirectX::XMMATRIX>& outMatrices // 計算結果格納先
 	);
 
 private:
