@@ -16,6 +16,7 @@ void EngineManager::Initialize() {
     m_pipelineManager.Initialize(device, L"assets/VertexShader.cso", L"assets/PixelShader.cso");
     m_pipelineManager.InitializeSkinning(device, L"assets/SkinningVertexShader.cso", L"assets/SkinningPixelShader.cso");
     m_textureManager.Initialize(device);
+    m_fbxInstance = FbxModelLoader::LoadAndCache("assets/Defeated.fbx");
 
     ID3D12GraphicsCommandList* cmdList = m_deviceManager.GetCommandList();
     int groundTex = m_textureManager.LoadTexture(L"assets/penguin2.png", cmdList);
@@ -58,35 +59,20 @@ void EngineManager::Initialize() {
 void EngineManager::Start() {}
 void EngineManager::Update() {
 
-    // Updateの冒頭で
     static auto prevTime = std::chrono::steady_clock::now();
     auto now = std::chrono::steady_clock::now();
     std::chrono::duration<double> elapsed = now - prevTime;
     prevTime = now;
     double deltaTime = elapsed.count();
-
-    // ★ ここで一度だけ加算
     m_animTime += deltaTime;
 
-    // ★ 仮のアニメーション長さ（本当はFBXから取得するべき）
-    const double animationLength = 2.5; // 例
-    if (m_animTime > animationLength)
-        m_animTime -= animationLength;
-
-    char buf[128];
-    sprintf_s(buf, "[ANIM DEBUG] deltaTime = %.6f, m_animTime = %.3f\n", deltaTime, m_animTime);
-    OutputDebugStringA(buf);
-
-    // --- スキニングFBXにアニメーション適用 ---
     for (auto* obj : m_gameObjects) {
         auto* mr = obj->GetComponent<MeshRenderer>();
-        if (mr && mr->meshType == 2 && mr->skinInfo && mr->boneBuffer) {
+        if (mr && mr->meshType == 2 && mr->skinInfo && mr->boneBuffer && m_fbxInstance) {
             FbxModelLoader::CalcCurrentBoneMatrices(
-                "assets/Defeated.fbx",
+                m_fbxInstance,
                 m_animTime,
-                mr->boneMatrices,
-                mr->skinInfo->boneNames,
-                mr->skinInfo->bindPoses
+                mr->boneMatrices
             );
             void* mapped = nullptr;
             mr->boneBuffer->GetBoneConstantBuffer()->Map(0, nullptr, &mapped);

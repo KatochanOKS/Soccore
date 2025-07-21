@@ -54,6 +54,7 @@ private:
     BufferManager m_modelBufferManager; // FBXモデル専用バッファ
     TextureManager m_textureManager;
     FbxModelLoader::VertexInfo m_modelVertexInfo;
-
+    // FBXキャッシュ用（今はnullptrでOK）
+    FbxModelInstance* m_fbxInstance = nullptr; // FBXキャッシュ
     Renderer m_renderer; // ★描画管理クラス！
 };
