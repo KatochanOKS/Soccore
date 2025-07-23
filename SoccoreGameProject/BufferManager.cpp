@@ -75,35 +75,6 @@ void BufferManager::CreateIndexBuffer(ID3D12Device* device, const std::vector<ui
 
 // BufferManager.cpp
 
-// ★ スキニング頂点用バッファ生成
-void BufferManager::CreateSkinningVertexBuffer(ID3D12Device* device, const std::vector<SkinningVertex>& vertices)
-{
-    const UINT bufferSize = UINT(vertices.size() * sizeof(SkinningVertex));
-
-    CD3DX12_HEAP_PROPERTIES heapProps(D3D12_HEAP_TYPE_UPLOAD);
-    CD3DX12_RESOURCE_DESC resDesc = CD3DX12_RESOURCE_DESC::Buffer(bufferSize);
-
-    // バッファリソース生成
-    device->CreateCommittedResource(
-        &heapProps,
-        D3D12_HEAP_FLAG_NONE,
-        &resDesc,
-        D3D12_RESOURCE_STATE_GENERIC_READ,
-        nullptr,
-        IID_PPV_ARGS(&m_vertexBuffer)
-    );
-
-    // CPUアクセスでマップ
-    void* mapped = nullptr;
-    m_vertexBuffer->Map(0, nullptr, &mapped);
-    memcpy(mapped, vertices.data(), bufferSize);
-    m_vertexBuffer->Unmap(0, nullptr);
-
-    // 頂点バッファビューのセット（Strideが重要！）
-    m_vbv.BufferLocation = m_vertexBuffer->GetGPUVirtualAddress();
-    m_vbv.SizeInBytes = bufferSize;
-    m_vbv.StrideInBytes = sizeof(SkinningVertex);
-}
 
 
 // 定数バッファ（CBV: Constant Buffer View）を作成する関数
@@ -125,33 +96,6 @@ void BufferManager::CreateConstantBuffer(ID3D12Device* device, size_t size)
 
     // GPUバッファの仮想アドレスを保持
     m_cbGpuAddress = m_constantBuffer->GetGPUVirtualAddress();
-}
-
-void BufferManager::CreateBoneConstantBuffer(ID3D12Device* device, size_t boneCount) {
-    if (boneCount == 0) {
-        m_boneConstantBuffer.Reset();    // 安全にnullクリア
-        m_boneCbGpuAddress = 0;
-        return;
-    }
-    size_t size = sizeof(DirectX::XMMATRIX) * boneCount;
-    // 256バイトアライン
-    CD3DX12_HEAP_PROPERTIES heapProps(D3D12_HEAP_TYPE_UPLOAD);
-    CD3DX12_RESOURCE_DESC desc = CD3DX12_RESOURCE_DESC::Buffer((size + 255) & ~255);
-
-    device->CreateCommittedResource(
-        &heapProps,
-        D3D12_HEAP_FLAG_NONE,
-        &desc,
-        D3D12_RESOURCE_STATE_GENERIC_READ,
-        nullptr,
-        IID_PPV_ARGS(&m_boneConstantBuffer)
-    );
-    m_boneCbGpuAddress = m_boneConstantBuffer->GetGPUVirtualAddress();
-}
-
-
-D3D12_GPU_VIRTUAL_ADDRESS BufferManager::GetBoneConstantBufferGPUAddress() const {
-    return m_boneCbGpuAddress;
 }
 
 // 定数バッファのGPUアドレスを取得する関数

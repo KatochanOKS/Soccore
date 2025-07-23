@@ -1,10 +1,12 @@
 #include "FbxModelLoader.h"
 #include "BufferManager.h"
 #include <DirectXMath.h>
-using namespace DirectX;
 #include <algorithm>
 #include <map>
 #include <tuple>
+#include <iostream>   // std::cout, もしくはOutputDebugStringA
+#include <functional>  // ★ここを必ず追加！
+using namespace DirectX;
 FbxModelLoader::FbxModelLoader()
 {
 }
@@ -141,269 +143,431 @@ bool FbxModelLoader::IsSetNormalUV(const std::vector<float> vertexInfo, const Fb
         && fabs(vertexInfo[7] - uvVec2[1]) < FLT_EPSILON;
 }
 
-// FBXの行列をDirectXに変換
-static XMMATRIX FbxAMatrixToXMMATRIX(const FbxAMatrix& m) {
-    XMFLOAT4X4 xf;
-    for (int r = 0; r < 4; r++)
-        for (int c = 0; c < 4; c++)
-            xf.m[r][c] = (float)m.Get(r, c);
-    return XMLoadFloat4x4(&xf);
-}
+#include "FbxModelLoader.h"
+// ...（他のインクルードも必要に応じて）...
 
-// SkinningVertex属性を比較するための構造体
-struct SkinVtxKey {
-    float x, y, z;
-    float nx, ny, nz;
-    float u, v;
-    uint32_t boneIndices[4];
-    float boneWeights[4];
+//----------------------------
+// スキニング＆アニメ付きFBXの読み込み
+//----------------------------
+//bool FbxModelLoader::LoadSkinningModel(const std::string& filePath, SkinningVertexInfo* outInfo)
+//{
+//    //----------------------------------------
+//    // 1. FBX SDKマネージャ、インポータ、シーンの生成
+//    //----------------------------------------
+//    // FbxManager* manager = FbxManager::Create();
+//    // FbxImporter* importer = FbxImporter::Create(manager, "");
+//    // importer->Initialize(filePath.c_str(), -1, manager->GetIOSettings());
+//    // FbxScene* scene = FbxScene::Create(manager, "");
+//    // importer->Import(scene);
+//    // importer->Destroy();
+//
+//    //----------------------------------------
+//    // 2. メッシュの三角形化
+//    //----------------------------------------
+//    // FbxGeometryConverter geometryConverter(manager);
+//    // geometryConverter.Triangulate(scene, true);
+//
+//    //----------------------------------------
+//    // 3. ボーン階層/名前/バインドポーズ行列の抽出
+//    //----------------------------------------
+//    // - シーン内の全骨ノードを走査し、boneNames, bindPosesをoutInfoに格納
+//
+//    //----------------------------------------
+//    // 4. 各頂点ごとに
+//    //    ・座標, 法線, UV
+//    //    ・ボーンインデックス, ボーンウェイト
+//    // を抽出し、SkinningVertex配列を生成
+//    //----------------------------------------
+//    // - 各FbxMeshのコントロールポイントから必要情報を取得
+//
+//    //----------------------------------------
+//    // 5. インデックス配列も生成
+//    //----------------------------------------
+//    // - ポリゴン情報から
+//
+//    //----------------------------------------
+//    // 6. 各アニメーション（Take/Clip）ごとに
+//    //    ・全キーフレームごとに全ボーンの変換行列配列
+//    //    ・Animator::Keyframe配列としてoutInfo->animationsに格納
+//    //----------------------------------------
+//    // - アニメーションスタックやレイヤを走査
+//
+//    //----------------------------------------
+//    // 7. すべてoutInfoにセット完了後、FBXオブジェクト開放
+//    //----------------------------------------
+//    // scene->Destroy();
+//    // manager->Destroy();
+//
+//    //----------------------------------------
+//    // 8. 成功でtrue、失敗時はfalse
+//    //----------------------------------------
+//    return false; // ※まだ仮実装。細かい実装は後で段階的に
+//}
 
-    // 完全一致比較
-    bool operator<(const SkinVtxKey& rhs) const {
-        // tupleで全部比較
-        return std::tie(x, y, z, nx, ny, nz, u, v,
-            boneIndices[0], boneIndices[1], boneIndices[2], boneIndices[3],
-            boneWeights[0], boneWeights[1], boneWeights[2], boneWeights[3])
-            < std::tie(rhs.x, rhs.y, rhs.z, rhs.nx, rhs.ny, rhs.nz, rhs.u, rhs.v,
-                rhs.boneIndices[0], rhs.boneIndices[1], rhs.boneIndices[2], rhs.boneIndices[3],
-                rhs.boneWeights[0], rhs.boneWeights[1], rhs.boneWeights[2], rhs.boneWeights[3]);
-    }
-};
-
+//----------------------------
+// スキニング＆アニメ付きFBXの読み込み
+//----------------------------
 bool FbxModelLoader::LoadSkinningModel(const std::string& filePath, SkinningVertexInfo* outInfo)
 {
-    // --- FBX初期化 ---
+    // --- 1. FBX SDKマネージャ作成 ---
+    OutputDebugStringA("[FBX] 1. FbxManager作成\n");
     FbxManager* manager = FbxManager::Create();
+    if (!manager) {
+        OutputDebugStringA("[FBX] FbxManager作成失敗\n");
+        return false;
+    }
+
+    // --- 2. インポータ作成＆初期化 ---
+    OutputDebugStringA("[FBX] 2. FbxImporter作成＆初期化\n");
     FbxImporter* importer = FbxImporter::Create(manager, "");
     if (!importer->Initialize(filePath.c_str(), -1, manager->GetIOSettings())) {
+        OutputDebugStringA("[FBX] FbxImporter初期化失敗\n");
+        return false;
+    }
+
+    // --- 3. シーン生成＆インポート ---
+    OutputDebugStringA("[FBX] 3. シーン生成＆インポート\n");
+    FbxScene* scene = FbxScene::Create(manager, "");
+    if (!importer->Import(scene)) {
+        OutputDebugStringA("[FBX] インポート失敗\n");
+        importer->Destroy();
         manager->Destroy();
         return false;
     }
-    FbxScene* scene = FbxScene::Create(manager, "");
-    importer->Import(scene);
     importer->Destroy();
-    FbxGeometryConverter conv(manager);
-    conv.Triangulate(scene, true);
+
+    // --- 4. 三角形化 ---
+    OutputDebugStringA("[FBX] 4. メッシュの三角形化\n");
+    FbxGeometryConverter geometryConverter(manager);
+    if (!geometryConverter.Triangulate(scene, true)) {
+        OutputDebugStringA("[FBX] 三角形化失敗\n");
+        scene->Destroy();
+        manager->Destroy();
+        return false;
+    }
+
+    // --- 5. 読み込んだシーンのサマリを出力（ノード数など） ---
+    FbxNode* rootNode = scene->GetRootNode();
+    if (!rootNode) {
+        OutputDebugStringA("[FBX] ルートノードがありません\n");
+        scene->Destroy();
+        manager->Destroy();
+        return false;
+    }
+
+    char msg[256];
+    sprintf_s(msg, "[FBX] RootNode名: %s, 子ノード数: %d\n",
+        rootNode->GetName(), rootNode->GetChildCount());
+    OutputDebugStringA(msg);
+
+    // --- 6. とりあえず全ノード名を再帰で出してみる ---
+ // 先に宣言だけ
+    std::function<void(FbxNode*, int)> PrintNodeNames;
+
+    // その後、初期化
+    PrintNodeNames = [&](FbxNode* node, int depth) {
+        std::string indent(depth * 2, ' ');
+        char nodeMsg[256];
+        sprintf_s(nodeMsg, "%s- %s\n", indent.c_str(), node->GetName());
+        OutputDebugStringA(nodeMsg);
+        for (int i = 0; i < node->GetChildCount(); ++i)
+            PrintNodeNames(node->GetChild(i), depth + 1);
+        };
+
+    // --- 7. ボーンノードの抽出・リストアップ ---
+    OutputDebugStringA("[FBX] --- ボーンノード一覧 ---\n");
+
+    // ボーン判定のための関数（たとえばMixamoならノード名に"mixamorig:"が含まれるものがボーン）
+    auto IsBoneNode = [](FbxNode* node) -> bool {
+        std::string name = node->GetName();
+        // Mixamoのボーン名は "mixamorig:" から始まる
+        return name.find("mixamorig:") != std::string::npos;
+        };
+
+    // 再帰的にボーンノード名を出力＆boneNamesに追加
+    std::function<void(FbxNode*, int)> ListBoneNodes;
+    ListBoneNodes = [&](FbxNode* node, int depth) {
+        if (IsBoneNode(node)) {
+            std::string indent(depth * 2, ' ');
+            char msg[256];
+            sprintf_s(msg, "%s- %s\n", indent.c_str(), node->GetName());
+            OutputDebugStringA(msg);
+            outInfo->boneNames.push_back(node->GetName());
+        }
+        for (int i = 0; i < node->GetChildCount(); ++i)
+            ListBoneNodes(node->GetChild(i), depth + 1);
+        };
+    ListBoneNodes(rootNode, 0);
+
+    char msg2[128];
+    sprintf_s(msg2, "[FBX] ボーン数 = %zu\n", outInfo->boneNames.size());
+    OutputDebugStringA(msg2);
+
+
+    // --- 8. 各ボーンのバインドポーズ行列取得 ---
+    OutputDebugStringA("[FBX] --- バインドポーズ行列（初期姿勢）取得 ---\n");
+
+    outInfo->bindPoses.clear();
+    auto* pose = scene->GetPose(0);
+    if (pose && pose->IsBindPose()) {
+        OutputDebugStringA("[FBX] BindPoseから行列取得\n");
+        for (const std::string& boneName : outInfo->boneNames) {
+            FbxNode* boneNode = scene->FindNodeByName(boneName.c_str());
+            if (!boneNode) {
+                char err[128];
+                sprintf_s(err, "[FBX] ボーンノードが見つからない: %s\n", boneName.c_str());
+                OutputDebugStringA(err);
+                outInfo->bindPoses.push_back(DirectX::XMMatrixIdentity());
+                continue;
+            }
+            // Pose配列をループして一致するノードを探す
+            FbxMatrix mat;
+            bool found = false;
+            for (int pi = 0; pi < pose->GetCount(); ++pi) {
+                if (pose->GetNode(pi) == boneNode) {
+                    mat = pose->GetMatrix(pi);
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                char err[128];
+                sprintf_s(err, "[FBX] BindPoseが見つからない: %s\n", boneName.c_str());
+                OutputDebugStringA(err);
+                outInfo->bindPoses.push_back(DirectX::XMMatrixIdentity());
+                continue;
+            }
+
+            DirectX::XMMATRIX dxMat = DirectX::XMMatrixIdentity();
+            for (int r = 0; r < 4; ++r)
+                for (int c = 0; c < 4; ++c)
+                    dxMat.r[r].m128_f32[c] = static_cast<float>(mat.Get(r, c));
+            outInfo->bindPoses.push_back(dxMat);
+
+            char msg[256];
+            sprintf_s(msg, "[FBX] Bone: %s, BindPose: (%.2f, %.2f, %.2f)\n",
+                boneName.c_str(),
+                (float)mat.Get(0, 3), (float)mat.Get(1, 3), (float)mat.Get(2, 3));
+            OutputDebugStringA(msg);
+        }
+    }
+    else {
+        // Fallback: EvaluateGlobalTransform
+        OutputDebugStringA("[FBX] BindPoseが見つからない！EvaluateGlobalTransformで代用\n");
+        for (const std::string& boneName : outInfo->boneNames) {
+            FbxNode* boneNode = scene->FindNodeByName(boneName.c_str());
+            if (!boneNode) {
+                char err[128];
+                sprintf_s(err, "[FBX] ボーンノードが見つからない: %s\n", boneName.c_str());
+                OutputDebugStringA(err);
+                outInfo->bindPoses.push_back(DirectX::XMMatrixIdentity());
+                continue;
+            }
+            FbxAMatrix bindPoseMatrix = boneNode->EvaluateGlobalTransform();
+            DirectX::XMMATRIX dxMat = DirectX::XMMatrixIdentity();
+            for (int r = 0; r < 4; ++r)
+                for (int c = 0; c < 4; ++c)
+                    dxMat.r[r].m128_f32[c] = static_cast<float>(bindPoseMatrix.Get(r, c));
+            outInfo->bindPoses.push_back(dxMat);
+
+            char msg[256];
+            sprintf_s(msg, "[FBX] Bone: %s, FallbackBindPose: (%.2f, %.2f, %.2f)\n",
+                boneName.c_str(),
+                (float)bindPoseMatrix.Get(0, 3), (float)bindPoseMatrix.Get(1, 3), (float)bindPoseMatrix.Get(2, 3));
+            OutputDebugStringA(msg);
+        }
+    }
+
+
+    // --- 9. 各頂点ごとにボーンインデックス＆ウェイトを格納 ---
+    OutputDebugStringA("[FBX] --- スキニング頂点情報抽出 ---\n");
 
     outInfo->vertices.clear();
     outInfo->indices.clear();
-    outInfo->boneNames.clear();
-    outInfo->bindPoses.clear();
 
+    // 全メッシュ走査
     int meshCount = scene->GetSrcObjectCount<FbxMesh>();
-    bool bonesInitialized = false;
-
-    unsigned int indexOffset = 0;
+    unsigned short indexOffset = 0;
     for (int m = 0; m < meshCount; ++m) {
-        FbxMesh* mesh = scene->GetSrcObject<FbxMesh>(m);
+        auto mesh = scene->GetSrcObject<FbxMesh>(m);
         if (!mesh) continue;
-        int ctrlCount = mesh->GetControlPointsCount();
+
+        // --- コントロールポイント（頂点）ごとにボーンインデックスとウェイトを配列化 ---
+        // ボーンインデックス: boneNames配列の中で一致したらそのインデックス
+        int controlPointCount = mesh->GetControlPointsCount();
+
+        // 各コントロールポイントに対して最大4つのインデックス・ウェイトを割り当て
+        struct BoneWeight {
+            int indices[4] = { 0,0,0,0 };
+            float weights[4] = { 0,0,0,0 };
+        };
+        std::vector<BoneWeight> boneWeights(controlPointCount);
+
+        // デフォーム情報（スキン）を抽出
         int skinCount = mesh->GetDeformerCount(FbxDeformer::eSkin);
-        int polyCount = mesh->GetPolygonCount();
-
-        // --- コントロールポイントごとにボーン情報 ---
-        struct BoneWeight { int boneIdx; float weight; };
-        std::vector<std::vector<BoneWeight>> ctrlptBones(ctrlCount);
-
-        int clusterCount = 0;
-        if (skinCount > 0) {
-            FbxSkin* skin = static_cast<FbxSkin*>(mesh->GetDeformer(0, FbxDeformer::eSkin));
-            clusterCount = skin->GetClusterCount();
-
-            if (!bonesInitialized) {
-                outInfo->boneNames.resize(clusterCount);
-                outInfo->bindPoses.resize(clusterCount);
-            }
-
+        for (int s = 0; s < skinCount; ++s) {
+            FbxSkin* skin = (FbxSkin*)mesh->GetDeformer(s, FbxDeformer::eSkin);
+            int clusterCount = skin->GetClusterCount();
             for (int c = 0; c < clusterCount; ++c) {
                 FbxCluster* cluster = skin->GetCluster(c);
-                FbxNode* link = cluster->GetLink();
-                std::string boneName = link ? link->GetName() : "Bone" + std::to_string(c);
-
-                if (!bonesInitialized) {
-                    outInfo->boneNames[c] = boneName;
-                    outInfo->bindPoses[c] = FbxAMatrixToXMMATRIX(link->EvaluateGlobalTransform().Inverse());
-                }
+                std::string boneName = cluster->GetLink()->GetName();
+                // boneNames内インデックス取得
+                auto it = std::find(outInfo->boneNames.begin(), outInfo->boneNames.end(), boneName);
+                int boneIdx = (it != outInfo->boneNames.end()) ? std::distance(outInfo->boneNames.begin(), it) : -1;
+                if (boneIdx < 0) continue;
 
                 int* indices = cluster->GetControlPointIndices();
                 double* weights = cluster->GetControlPointWeights();
-                int idxCount = cluster->GetControlPointIndicesCount();
-
-                for (int i = 0; i < idxCount; ++i) {
+                int indexCount = cluster->GetControlPointIndicesCount();
+                for (int i = 0; i < indexCount; ++i) {
                     int ctrlIdx = indices[i];
-                    float w = (float)weights[i];
-                    if (ctrlIdx >= 0 && ctrlIdx < ctrlCount)
-                        ctrlptBones[ctrlIdx].push_back({ c, w });
-                }
-            }
-            bonesInitialized = true;
-        }
-
-        // --- 頂点重複排除マップ ---
-        std::map<SkinVtxKey, uint16_t> vtxMap;
-        std::vector<SkinningVertex> vertices;
-        std::vector<uint16_t> indices;
-
-        FbxStringList uvSets;
-        mesh->GetUVSetNames(uvSets);
-        const char* uvSet = (uvSets.GetCount() > 0) ? uvSets[0] : "";
-
-        for (int pi = 0; pi < polyCount; ++pi) {
-            int polySize = mesh->GetPolygonSize(pi);
-            for (int vi = 0; vi < polySize; ++vi) {
-                int ctrlIdx = mesh->GetPolygonVertex(pi, vi);
-                FbxVector4 pos = mesh->GetControlPointAt(ctrlIdx);
-
-                // 法線
-                FbxVector4 normal;
-                mesh->GetPolygonVertexNormal(pi, vi, normal);
-
-                // UV
-                FbxVector2 uv = { 0,0 }; bool unmapped = false;
-                mesh->GetPolygonVertexUV(pi, vi, uvSet, uv, unmapped);
-
-                // --- ボーン情報 ---
-                auto& boneList = ctrlptBones[ctrlIdx];
-                std::sort(boneList.begin(), boneList.end(), [](auto& a, auto& b) {return a.weight > b.weight; });
-
-                SkinningVertex v = {};
-                v.x = (float)pos[0]; v.y = (float)pos[1]; v.z = (float)pos[2];
-                v.nx = (float)normal[0]; v.ny = (float)normal[1]; v.nz = (float)normal[2];
-                v.u = (float)uv[0];
-                v.v = 1.0f - (float)uv[1]; // FBX下から上が0→1aaaaaaa
-
-                float sumW = 0.0f;
-                for (int k = 0; k < 4 && k < (int)boneList.size(); ++k) {
-                    v.boneIndices[k] = boneList[k].boneIdx;
-                    v.boneWeights[k] = boneList[k].weight;
-                    sumW += v.boneWeights[k];
-                }
-                if (sumW > 0.0f)
-                    for (int k = 0; k < 4; ++k)
-                        v.boneWeights[k] /= sumW;
-                else {
-                    v.boneIndices[0] = 0; v.boneWeights[0] = 1.0f;
-                    for (int k = 1; k < 4; ++k) { v.boneIndices[k] = 0; v.boneWeights[k] = 0.0f; }
-                }
-
-                // --- 重複頂点判定用キーを生成 ---
-                SkinVtxKey key;
-                key.x = v.x; key.y = v.y; key.z = v.z;
-                key.nx = v.nx; key.ny = v.ny; key.nz = v.nz;
-                key.u = v.u; key.v = v.v;
-                for (int k = 0; k < 4; ++k) {
-                    key.boneIndices[k] = v.boneIndices[k];
-                    key.boneWeights[k] = v.boneWeights[k];
-                }
-
-                // --- mapで重複頂点を管理 ---
-                auto it = vtxMap.find(key);
-                if (it != vtxMap.end()) {
-                    indices.push_back(it->second);
-                }
-                else {
-                    uint16_t newIdx = (uint16_t)vertices.size();
-                    vtxMap[key] = newIdx;
-                    vertices.push_back(v);
-                    indices.push_back(newIdx);
+                    double weight = weights[i];
+                    // 最大4つまで詰める（既に4つ埋まっていたら無視）
+                    for (int j = 0; j < 4; ++j) {
+                        if (boneWeights[ctrlIdx].weights[j] == 0.0f) {
+                            boneWeights[ctrlIdx].indices[j] = boneIdx;
+                            boneWeights[ctrlIdx].weights[j] = (float)weight;
+                            break;
+                        }
+                    }
                 }
             }
         }
 
-        // --- 複数メッシュ対応 ---
-        for (auto idx : indices)
-            outInfo->indices.push_back(idx + indexOffset);
-        outInfo->vertices.insert(outInfo->vertices.end(), vertices.begin(), vertices.end());
-        indexOffset += (unsigned int)vertices.size();
+        // 頂点配列を生成
+        // FBXの頂点は「コントロールポイント＋法線・UVごとに複製」されるため、ポリゴン単位で処理
+        for (int polIndex = 0; polIndex < mesh->GetPolygonCount(); polIndex++) {
+            for (int polVertexIndex = 0; polVertexIndex < mesh->GetPolygonSize(polIndex); polVertexIndex++) {
+                int ctrlIdx = mesh->GetPolygonVertex(polIndex, polVertexIndex);
+
+                // --- 位置 ---
+                auto point = mesh->GetControlPointAt(ctrlIdx);
+
+                // --- 法線 ---
+                FbxVector4 normalVec4;
+                mesh->GetPolygonVertexNormal(polIndex, polVertexIndex, normalVec4);
+
+                // --- UV ---
+                FbxStringList uvSetNameList;
+                mesh->GetUVSetNames(uvSetNameList);
+                const char* uvSetName = (uvSetNameList.GetCount() > 0) ? uvSetNameList.GetStringAt(0) : "";
+                FbxVector2 uvVec2(0, 0);
+                bool isUnMapped = false;
+                mesh->GetPolygonVertexUV(polIndex, polVertexIndex, uvSetName, uvVec2, isUnMapped);
+
+                // --- スキニング情報 ---
+                BoneWeight& bw = boneWeights[ctrlIdx];
+
+                // --- 頂点データをSkinningVertex型で構築 ---
+                SkinningVertex v;
+                v.x = (float)point[0];
+                v.y = (float)point[1];
+                v.z = (float)point[2];
+                v.nx = (float)normalVec4[0];
+                v.ny = (float)normalVec4[1];
+                v.nz = (float)normalVec4[2];
+                v.u = (float)uvVec2[0];
+                v.v = 1.0f - (float)uvVec2[1]; // v座標は上下反転
+                for (int i = 0; i < 4; ++i) {
+                    v.boneIndices[i] = bw.indices[i];
+                    v.boneWeights[i] = bw.weights[i];
+                }
+                outInfo->vertices.push_back(v);
+                outInfo->indices.push_back((unsigned short)outInfo->vertices.size() - 1);
+
+                    char uvmsg[256];
+                sprintf_s(uvmsg, "[FBX][UV] Vtx[%d] Pos=(%.2f, %.2f, %.2f) UV=(%.3f, %.3f)\n",
+                    (int)outInfo->vertices.size() - 1, v.x, v.y, v.z, v.u, v.v);
+                OutputDebugStringA(uvmsg);
+
+                char msg[128];
+                sprintf_s(msg, "[FBX] Vtx[%d]: BoneIdx=(%d,%d,%d,%d) Weight=(%.2f,%.2f,%.2f,%.2f)\n",
+                    (int)outInfo->vertices.size() - 1,
+                    v.boneIndices[0], v.boneIndices[1], v.boneIndices[2], v.boneIndices[3],
+                    v.boneWeights[0], v.boneWeights[1], v.boneWeights[2], v.boneWeights[3]);
+                OutputDebugStringA(msg);
+            }
+        }
     }
 
+
+    // --- 10. アニメーション情報（キーフレーム）の取得 ---
+    OutputDebugStringA("[FBX] --- アニメーション情報抽出 ---\n");
+
+    outInfo->animations.clear();
+
+    int animStackCount = scene->GetSrcObjectCount<FbxAnimStack>();
+    for (int stackIdx = 0; stackIdx < animStackCount; ++stackIdx) {
+        FbxAnimStack* animStack = scene->GetSrcObject<FbxAnimStack>(stackIdx);
+        std::string animName = animStack->GetName();
+        OutputDebugStringA(("[FBX] アニメ名: " + animName + "\n").c_str());
+
+        // アニメーションレイヤを取得（通常1つでOK）
+        FbxAnimLayer* animLayer = animStack->GetMember<FbxAnimLayer>(0);
+        if (!animLayer) continue;
+
+        // 開始～終了時間を取得
+        FbxTimeSpan timeSpan = animStack->GetLocalTimeSpan();
+        FbxTime start = timeSpan.GetStart();
+        FbxTime end = timeSpan.GetStop();
+
+        double startSec = start.GetSecondDouble();
+        double endSec = end.GetSecondDouble();
+        double frameRate = 30.0; // 仮に30FPS（Mixamoはほぼこの値）
+        int numFrames = int((endSec - startSec) * frameRate) + 1;
+
+        OutputDebugStringA(("[FBX] フレーム数: " + std::to_string(numFrames) + "\n").c_str());
+
+        // キーフレーム配列
+        std::vector<Animator::Keyframe> keyframes;
+
+        // 全フレーム分
+        for (int f = 0; f < numFrames; ++f) {
+            double sec = startSec + f / frameRate;
+            FbxTime t;
+            t.SetSecondDouble(sec);
+
+            // 各ボーンの行列
+            std::vector<DirectX::XMMATRIX> framePoses;
+            for (const std::string& boneName : outInfo->boneNames) {
+                FbxNode* boneNode = scene->FindNodeByName(boneName.c_str());
+                if (!boneNode) {
+                    framePoses.push_back(DirectX::XMMatrixIdentity());
+                    continue;
+                }
+                // アニメ時刻でのグローバル変換を取得
+                FbxAMatrix mat = boneNode->EvaluateGlobalTransform(t);
+                DirectX::XMMATRIX dxMat = DirectX::XMMatrixIdentity();
+                for (int r = 0; r < 4; ++r)
+                    for (int c = 0; c < 4; ++c)
+                        dxMat.r[r].m128_f32[c] = static_cast<float>(mat.Get(r, c));
+                framePoses.push_back(dxMat);
+            }
+            // キーフレーム登録
+            Animator::Keyframe kf;
+            kf.time = sec;
+            kf.pose = framePoses;
+            keyframes.push_back(kf);
+        }
+
+        // Animation構造体にまとめて登録
+        FbxModelLoader::SkinningVertexInfo::Animation anim;
+        anim.name = animName;
+        anim.length = endSec - startSec;
+        anim.keyframes = keyframes;
+        outInfo->animations.push_back(anim);
+    }
+
+
+
+    // --- 今回はここまで ---
+    OutputDebugStringA("[FBX] === FBXロード初期段階完了 ===\n");
+
+    // 解放
     scene->Destroy();
     manager->Destroy();
-    return true;
+
+    return true; // まずは「ファイル読めてノード一覧がprintできる」ことを目標に！
 }
 
 
-
-// --- FBXを一度だけロードしてキャッシュ ---
-FbxModelInstance* FbxModelLoader::LoadAndCache(const std::string& fbxPath)
-{
-    auto* instance = new FbxModelInstance();
-    instance->manager = FbxManager::Create();
-    instance->scene = FbxScene::Create(instance->manager, "");
-    FbxImporter* importer = FbxImporter::Create(instance->manager, "");
-    if (!importer->Initialize(fbxPath.c_str(), -1, instance->manager->GetIOSettings())) {
-        importer->Destroy();
-        delete instance;
-        return nullptr;
-    }
-    importer->Import(instance->scene);
-    importer->Destroy();
-
-    // ボーン情報セット
-    int meshCount = instance->scene->GetSrcObjectCount<FbxMesh>();
-    bool bonesInitialized = false;
-    for (int m = 0; m < meshCount; ++m) {
-        FbxMesh* mesh = instance->scene->GetSrcObject<FbxMesh>(m);
-        if (!mesh) continue;
-        int skinCount = mesh->GetDeformerCount(FbxDeformer::eSkin);
-        if (skinCount > 0 && !bonesInitialized) {
-            FbxSkin* skin = static_cast<FbxSkin*>(mesh->GetDeformer(0, FbxDeformer::eSkin));
-            int clusterCount = skin->GetClusterCount();
-            instance->boneNames.resize(clusterCount);
-            instance->bindPoses.resize(clusterCount);
-            for (int c = 0; c < clusterCount; ++c) {
-                FbxCluster* cluster = skin->GetCluster(c);
-                FbxNode* link = cluster->GetLink();
-                std::string boneName = link ? link->GetName() : "Bone" + std::to_string(c);
-                instance->boneNames[c] = boneName;
-                instance->bindPoses[c] = FbxAMatrixToXMMATRIX(link->EvaluateGlobalTransform().Inverse());
-            }
-            bonesInitialized = true;
-        }
-    }
-    // アニメ長取得
-    instance->animationLength = 2.5;
-    FbxAnimStack* animStack = instance->scene->GetCurrentAnimationStack();
-    if (animStack) {
-        FbxTakeInfo* takeInfo = instance->scene->GetTakeInfo(animStack->GetName());
-        if (takeInfo) {
-            FbxTimeSpan span = takeInfo->mLocalTimeSpan;
-            instance->animationLength = span.GetDuration().GetSecondDouble();
-        }
-    }
-    if (instance->boneNames.empty()) {
-        delete instance;
-        return nullptr;
-    }
-    return instance;
-}
-
-// --- キャッシュ済みインスタンスからボーン行列計算 ---
-void FbxModelLoader::CalcCurrentBoneMatrices(
-    FbxModelInstance* instance,
-    double currentTime,
-    std::vector<DirectX::XMMATRIX>& outMatrices
-) {
-    if (!instance) return;
-    if (instance->animationLength > 0.0)
-        currentTime = fmod(currentTime, instance->animationLength);
-
-    FbxAnimStack* animStack = instance->scene->GetCurrentAnimationStack();
-    if (!animStack) return;
-    FbxAnimLayer* animLayer = animStack->GetMember<FbxAnimLayer>(0);
-    if (!animLayer) return;
-
-    FbxTime time;
-    time.SetSecondDouble(currentTime);
-
-    for (int i = 0; i < (int)instance->boneNames.size(); ++i) {
-        FbxNode* boneNode = instance->scene->FindNodeByName(instance->boneNames[i].c_str());
-        if (!boneNode) {
-            outMatrices[i] = DirectX::XMMatrixIdentity();
-            continue;
-        }
-        FbxAMatrix globalTransform = boneNode->EvaluateGlobalTransform(time);
-        DirectX::XMMATRIX current = FbxAMatrixToXMMATRIX(globalTransform);
-        outMatrices[i] = DirectX::XMMatrixTranspose(instance->bindPoses[i] * current);
-    }
-}

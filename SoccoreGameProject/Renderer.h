@@ -21,7 +21,6 @@ public:
         TextureManager* texMgr,
         BufferManager* cubeBufMgr,
         BufferManager* modelBufMgr,
-        BufferManager* cbvBufferMgr, // Åö Ç±ÇÍÇí«â¡
         FbxModelLoader::VertexInfo* modelVertexInfo
     );
 

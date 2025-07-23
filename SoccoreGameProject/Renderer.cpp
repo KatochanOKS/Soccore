@@ -10,7 +10,6 @@ void Renderer::Initialize(
     TextureManager* texMgr,
     BufferManager* cubeBufMgr,
     BufferManager* modelBufMgr,
-    BufferManager* cbvBufferMgr,
     FbxModelLoader::VertexInfo* modelVertexInfo
 ) {
     m_deviceMgr = deviceMgr;
@@ -21,7 +20,6 @@ void Renderer::Initialize(
     m_cubeBufMgr = cubeBufMgr;
     m_modelBufMgr = modelBufMgr;
     m_modelVertexInfo = modelVertexInfo;
-    m_cbvBufferMgr = cbvBufferMgr;
     m_width = static_cast<float>(m_swapMgr->GetWidth());
     m_height = static_cast<float>(m_swapMgr->GetHeight());
 }
@@ -101,45 +99,6 @@ void Renderer::DrawObject(GameObject* obj, size_t idx, const XMMATRIX& view, con
             m_cmdList->IASetIndexBuffer(&ibv);
             m_cmdList->DrawIndexedInstanced(36, 1, 0, 0, 0);
         }
-        m_cubeBufMgr->GetConstantBuffer()->Unmap(0, nullptr);
-        return;
-    }
-
-    // ----------------------
-// --- スキニングFBXの場合 ---
-    if (mr->meshType == 2 && mr->skinBuffer && mr->skinInfo && mr->boneBuffer) {
-
-        if (mr->skinInfo->vertices.empty() || mr->skinInfo->indices.empty()) {
-            OutputDebugStringA("★[SKIN_RENDER] 頂点かインデックスが空です！\n");
-            return;
-        }
-
-        // スキニング用のパイプライン・ルートシグネチャをセット
-        m_cmdList->SetPipelineState(m_pipeMgr->GetPipelineState(true));
-        m_cmdList->SetGraphicsRootSignature(m_pipeMgr->GetRootSignature(true));
-
-        // CBV0: ワールドViewProj
-        m_cubeBufMgr->GetConstantBuffer()->Map(0, nullptr, &mapped);
-        D3D12_GPU_VIRTUAL_ADDRESS cbvAddr = m_cubeBufMgr->GetConstantBufferGPUAddress() + CBV_SIZE * idx;
-        m_cmdList->SetGraphicsRootConstantBufferView(0, cbvAddr);
-
-        // CBV1: ボーン行列配列
-        D3D12_GPU_VIRTUAL_ADDRESS boneCBV = mr->boneBuffer->GetBoneConstantBufferGPUAddress();
-        m_cmdList->SetGraphicsRootConstantBufferView(1, boneCBV);
-
-        // テクスチャSRV（t0）
-        if (mr->texIndex >= 0)
-            m_cmdList->SetGraphicsRootDescriptorTable(2, m_texMgr->GetSRV(mr->texIndex));
-
-        // 頂点・インデックスバッファ
-        D3D12_VERTEX_BUFFER_VIEW vbv = mr->skinBuffer->GetVertexBufferView();
-        D3D12_INDEX_BUFFER_VIEW ibv = mr->skinBuffer->GetIndexBufferView();
-        m_cmdList->IASetVertexBuffers(0, 1, &vbv);
-        m_cmdList->IASetIndexBuffer(&ibv);
-        m_cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-
-        // 描画
-        m_cmdList->DrawIndexedInstanced((UINT)mr->skinInfo->indices.size(), 1, 0, 0, 0);
         m_cubeBufMgr->GetConstantBuffer()->Unmap(0, nullptr);
         return;
     }

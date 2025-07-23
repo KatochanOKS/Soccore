@@ -14,32 +14,18 @@ public:
 
     // --- バッファ類 ---
     BufferManager* modelBuffer = nullptr;    // 通常モデル用（Cubeや静的FBX）
-    BufferManager* skinBuffer = nullptr;     // スキンアニメモデル用
 
     // --- 頂点・インデックス情報 ---
     FbxModelLoader::VertexInfo* vertexInfo = nullptr;             // 静的モデル用
-    FbxModelLoader::SkinningVertexInfo* skinInfo = nullptr;       // スキンアニメ用
 
-    // --- フラグ ---
-    bool hasSkinning = false;     // スキンアニメモデルならtrue
-
-
-
-    // --- ボーン関連（skinInfoと重複する場合は省略OK） ---
-    std::vector<std::string> boneNames;
-    std::vector<DirectX::XMMATRIX> bindPoses;
-
-    std::vector<DirectX::XMMATRIX> boneMatrices;   // ボーンの最終行列配列
-    BufferManager* boneBuffer = nullptr;           // ボーンCBV用
-    size_t boneCount = 0;                          // ボーン数
-
+    BufferManager* skinBuffer = nullptr; // スキンメッシュ用
+    FbxModelLoader::SkinningVertexInfo* skinVertexInfo = nullptr; // スキン用
 
     // デストラクタで安全に解放（nullptrチェック付き！）
     virtual ~MeshRenderer() {
         if (modelBuffer) delete modelBuffer;
-        if (skinBuffer)  delete skinBuffer;
-        if (vertexInfo)  delete vertexInfo;
-        if (skinInfo)    delete skinInfo;
-        if (boneBuffer)  delete boneBuffer; // 追加
+        if (skinBuffer) delete skinBuffer;
+        if (vertexInfo) delete vertexInfo;
+        if (skinVertexInfo) delete skinVertexInfo;
     }
 };

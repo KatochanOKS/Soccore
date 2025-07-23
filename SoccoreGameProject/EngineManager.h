@@ -12,7 +12,8 @@
 #include "GameObject.h"
 #include "FbxModelLoader.h"
 #include "Renderer.h"
-
+#include "Animator.h"
+#include <memory>
 
 struct ObjectCB {
     DirectX::XMMATRIX WorldViewProj;
@@ -43,7 +44,6 @@ public:
     std::vector<GameObject*> m_gameObjects;
     int m_texIdx = -1;
     int m_cubeTexIdx = -1;
-    double m_animTime = 0.0; // アニメーション再生時間（秒）
 private:
     HWND m_hWnd = nullptr;
     DeviceManager m_deviceManager;
@@ -54,7 +54,9 @@ private:
     BufferManager m_modelBufferManager; // FBXモデル専用バッファ
     TextureManager m_textureManager;
     FbxModelLoader::VertexInfo m_modelVertexInfo;
-    // FBXキャッシュ用（今はnullptrでOK）
-    FbxModelInstance* m_fbxInstance = nullptr; // FBXキャッシュ
     Renderer m_renderer; // ★描画管理クラス！
+
+    std::unique_ptr<Animator> m_animator;
+
+
 };
