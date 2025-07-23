@@ -270,7 +270,7 @@ bool FbxModelLoader::LoadSkinningModel(const std::string& filePath, SkinningVert
                 v.x = (float)pos[0]; v.y = (float)pos[1]; v.z = (float)pos[2];
                 v.nx = (float)normal[0]; v.ny = (float)normal[1]; v.nz = (float)normal[2];
                 v.u = (float)uv[0];
-                v.v = 1.0f - (float)uv[1]; // FBXâ∫Ç©ÇÁè„Ç™0Å®1
+                v.v = 1.0f - (float)uv[1]; // FBXâ∫Ç©ÇÁè„Ç™0Å®1aaaaaaa
 
                 float sumW = 0.0f;
                 for (int k = 0; k < 4 && k < (int)boneList.size(); ++k) {
