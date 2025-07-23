@@ -2,8 +2,10 @@
 #include "Transform.h"
 #include "MeshRenderer.h"
 #include "Colors.h"
-#include "ObjectFactory.h" // š’Ç‰Á
-#include <chrono>  // © ‚±‚ê‚ğ•K‚¸’Ç‰ÁII
+#include "ObjectFactory.h" // â˜…è¿½åŠ aaaaaaaaaaaaaaaaaaaaaaaaaaa
+=======
+#include "ObjectFactory.h" // â˜…è¿½åŠ 
+#include <chrono>  // â† ã“ã‚Œã‚’å¿…ãšè¿½åŠ ï¼
 using namespace DirectX;
 using namespace Colors;
 
@@ -27,16 +29,16 @@ void EngineManager::Initialize() {
 
     m_gameObjects.clear();
 
-    // ---- Unity•—”z’u ----
-    ObjectFactory::CreateCube(this, { 0, -1.0f, 0 }, { 50, 0.2f, 50 }, groundTex, White);      // ’n–Ê
-    ObjectFactory::CreateCube(this, { 0,  0.0f, 0 }, { 1, 1, 1 }, playerTex, White);           // ƒvƒŒƒCƒ„[
+    // ---- Unityé¢¨é…ç½® ----
+    ObjectFactory::CreateCube(this, { 0, -1.0f, 0 }, { 50, 0.2f, 50 }, groundTex, White);      // åœ°é¢
+    ObjectFactory::CreateCube(this, { 0,  0.0f, 0 }, { 1, 1, 1 }, playerTex, White);           // ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼
     ObjectFactory::CreateCube(this, { -2,  0.0f, 0 }, { 1, 1, 1 }, cubeTex, White);             // Cube1
     ObjectFactory::CreateCube(this, { 2,  2.0f, 2 }, { 1, 1, 1 }, cubeTex, White);             // Cube2
     ObjectFactory::CreateModel(this, "assets/MixamoModel.fbx", { 0,0,0 }, { 0.05f,0.05f,0.05f }, bossTexIdx, White);
-    OutputDebugStringA("šCreateSkinningModelŒÄ‚Ño‚µ’¼‘O\n");
+    OutputDebugStringA("â˜…CreateSkinningModelå‘¼ã³å‡ºã—ç›´å‰\n");
     ObjectFactory::CreateSkinningModel(this, "assets/Defeated.fbx", { -1,0,-2 }, { 0.05f,0.05f,0.05f }, bossTexIdx, Red);
 
-    // ’è”ƒoƒbƒtƒ@
+    // å®šæ•°ãƒãƒƒãƒ•ã‚¡
     constexpr size_t CBV_SIZE = 256;
     m_bufferManager.CreateConstantBuffer(device, CBV_SIZE * m_gameObjects.size());
 
@@ -47,9 +49,9 @@ void EngineManager::Initialize() {
         &m_depthBufferManager,
         &m_pipelineManager,
         &m_textureManager,
-        &m_bufferManager,         // Cube—pƒoƒbƒtƒ@
-        &m_modelBufferManager,    // ƒ‚ƒfƒ‹—pƒoƒbƒtƒ@
-        &m_bufferManager,         // š’è”ƒoƒbƒtƒ@i‹¤’Ê‚Åg‚Á‚Ä‚é‚È‚ç‚±‚ê‚ÅOKj
+        &m_bufferManager,         // Cubeç”¨ãƒãƒƒãƒ•ã‚¡
+        &m_modelBufferManager,    // ãƒ¢ãƒ‡ãƒ«ç”¨ãƒãƒƒãƒ•ã‚¡
+        &m_bufferManager,         // â˜…å®šæ•°ãƒãƒƒãƒ•ã‚¡ï¼ˆå…±é€šã§ä½¿ã£ã¦ã‚‹ãªã‚‰ã“ã‚Œã§OKï¼‰
         GetModelVertexInfo()
     );
 
@@ -84,7 +86,7 @@ void EngineManager::Update() {
     }
 
 
-    auto* player = m_gameObjects[4]; // 2”Ô–Ú‚ªƒvƒŒƒCƒ„[Cube‚Ìê‡
+    auto* player = m_gameObjects[4]; // 2ç•ªç›®ãŒãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼Cubeã®å ´åˆ
     auto* tr = player->GetComponent<Transform>();
     float moveSpeed = 0.1f;
     if (GetAsyncKeyState('W') & 0x8000) tr->position.z += moveSpeed;
@@ -96,12 +98,12 @@ void EngineManager::Update() {
 }
 
 void EngineManager::Draw() {
-    // --- ’Ç]‚µ‚½‚¢ƒLƒƒƒ‰‚ÌTransformæ“¾
-    auto* player = m_gameObjects[4]; // ”Ô†‚Í©•ª‚ÌƒvƒŒƒCƒ„[Cube‚É‡‚í‚¹‚Ä‚Ë
+    // --- è¿½å¾“ã—ãŸã„ã‚­ãƒ£ãƒ©ã®Transformå–å¾—
+    auto* player = m_gameObjects[4]; // ç•ªå·ã¯è‡ªåˆ†ã®ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼Cubeã«åˆã‚ã›ã¦ã­
     auto* tr = player->GetComponent<Transform>();
     XMFLOAT3 playerPos = tr->position;
 
-    // --- ƒJƒƒ‰ˆÊ’u‚ğŒˆ‚ß‚éiŒã‚ë•ãj
+    // --- ã‚«ãƒ¡ãƒ©ä½ç½®ã‚’æ±ºã‚ã‚‹ï¼ˆå¾Œã‚ï¼†ä¸Šï¼‰
     XMFLOAT3 cameraOffset = { 0.0f, 5.0f, -20.0f };
     XMFLOAT3 cameraPos = {
         playerPos.x + cameraOffset.x,
@@ -120,7 +122,7 @@ void EngineManager::Draw() {
         0.1f, 100.0f
     );
 
-    // ’è”ƒoƒbƒtƒ@‘‚«‚İiTransform‚ÉŠî‚Ã‚­Worlds—ñj
+    // å®šæ•°ãƒãƒƒãƒ•ã‚¡æ›¸ãè¾¼ã¿ï¼ˆTransformã«åŸºã¥ãWorldè¡Œåˆ—ï¼‰
     void* mapped = nullptr;
     constexpr size_t CBV_SIZE = 256;
     m_bufferManager.GetConstantBuffer()->Map(0, nullptr, &mapped);
@@ -150,5 +152,5 @@ void EngineManager::Shutdown() {
     m_gameObjects.clear();
     m_deviceManager.Cleanup();
     m_swapChainManager.Cleanup();
-    // •K—v‚É‰‚¶‚Ä‘¼Manager‚àCleanup
+    // å¿…è¦ã«å¿œã˜ã¦ä»–Managerã‚‚Cleanup
 }
