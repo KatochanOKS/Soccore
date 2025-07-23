@@ -149,6 +149,7 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Animator.cpp" />
     <ClCompile Include="ApplicationManager.cpp" />
     <ClCompile Include="BufferManager.cpp" />
     <ClCompile Include="DepthBufferManager.cpp" />
@@ -165,6 +166,7 @@
     <ClCompile Include="TextureManager.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Animator.h" />
     <ClInclude Include="ApplicationManager.h" />
     <ClInclude Include="BIN_FILE12.h" />
     <ClInclude Include="BufferManager.h" />

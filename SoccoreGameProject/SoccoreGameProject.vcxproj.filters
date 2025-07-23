@@ -66,6 +66,9 @@
     <ClCompile Include="FbxModelLoader.cpp">
       <Filter>ソース ファイル\FBX</Filter>
     </ClCompile>
+    <ClCompile Include="Animator.cpp">
+      <Filter>ソース ファイル\Animation</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stb_image.h">
@@ -127,6 +130,9 @@
     </ClInclude>
     <ClInclude Include="FbxModelLoader.h">
       <Filter>ソース ファイル\FBX</Filter>
+    </ClInclude>
+    <ClInclude Include="Animator.h">
+      <Filter>ソース ファイル\Animation</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
