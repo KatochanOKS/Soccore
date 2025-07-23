@@ -3,6 +3,7 @@
 #include "MeshRenderer.h"
 #include "Colors.h"
 #include "ObjectFactory.h" // ★追加
+#include <chrono>  // ← これを必ず追加！！
 using namespace DirectX;
 using namespace Colors;
 
@@ -13,13 +14,16 @@ void EngineManager::Initialize() {
     m_swapChainManager.Initialize(m_hWnd, device, cmdQueue, 1280, 720);
     m_depthBufferManager.Initialize(device, 1280, 720);
     m_pipelineManager.Initialize(device, L"assets/VertexShader.cso", L"assets/PixelShader.cso");
+    m_pipelineManager.InitializeSkinning(device, L"assets/SkinningVertexShader.cso", L"assets/SkinningPixelShader.cso");
     m_textureManager.Initialize(device);
+    m_fbxInstance = FbxModelLoader::LoadAndCache("assets/Dying.fbx");
 
     ID3D12GraphicsCommandList* cmdList = m_deviceManager.GetCommandList();
     int groundTex = m_textureManager.LoadTexture(L"assets/penguin2.png", cmdList);
     int playerTex = m_textureManager.LoadTexture(L"assets/penguin1.png", cmdList);
     int cubeTex = m_textureManager.LoadTexture(L"assets/penguin2.png", cmdList);
     int enemyTex = m_textureManager.LoadTexture(L"assets/penguin2.png", cmdList);
+    int bossTexIdx = m_textureManager.LoadTexture(L"assets/MixamoModel.fbm/Boss_diffuse.png", cmdList);
 
     m_gameObjects.clear();
 
@@ -28,8 +32,9 @@ void EngineManager::Initialize() {
     ObjectFactory::CreateCube(this, { 0,  0.0f, 0 }, { 1, 1, 1 }, playerTex, White);           // プレイヤー
     ObjectFactory::CreateCube(this, { -2,  0.0f, 0 }, { 1, 1, 1 }, cubeTex, White);             // Cube1
     ObjectFactory::CreateCube(this, { 2,  2.0f, 2 }, { 1, 1, 1 }, cubeTex, White);             // Cube2
-    int bossTexIdx = m_textureManager.LoadTexture(L"assets/MixamoModel.fbm/Boss_diffuse.png", cmdList);
     ObjectFactory::CreateModel(this, "assets/MixamoModel.fbx", { 0,0,0 }, { 0.05f,0.05f,0.05f }, bossTexIdx, White);
+    OutputDebugStringA("★CreateSkinningModel呼び出し直前\n");
+    ObjectFactory::CreateSkinningModel(this, "assets/Dying.fbx", { -1,0,-2 }, { 0.05f,0.05f,0.05f }, bossTexIdx, Red);
 
     // 定数バッファ
     constexpr size_t CBV_SIZE = 256;
@@ -53,6 +58,32 @@ void EngineManager::Initialize() {
 
 void EngineManager::Start() {}
 void EngineManager::Update() {
+
+    static auto prevTime = std::chrono::steady_clock::now();
+    auto now = std::chrono::steady_clock::now();
+    std::chrono::duration<double> elapsed = now - prevTime;
+    prevTime = now;
+    double deltaTime = elapsed.count();
+    m_animTime += deltaTime;
+
+    for (auto* obj : m_gameObjects) {
+        auto* mr = obj->GetComponent<MeshRenderer>();
+        if (mr && mr->meshType == 2 && mr->skinInfo && mr->boneBuffer && m_fbxInstance) {
+            FbxModelLoader::CalcCurrentBoneMatrices(
+                m_fbxInstance,
+                m_animTime,
+                mr->boneMatrices
+            );
+            void* mapped = nullptr;
+            mr->boneBuffer->GetBoneConstantBuffer()->Map(0, nullptr, &mapped);
+            memcpy(mapped, mr->boneMatrices.data(), sizeof(DirectX::XMMATRIX) * mr->boneMatrices.size());
+            mr->boneBuffer->GetBoneConstantBuffer()->Unmap(0, nullptr);
+            OutputDebugStringA(("boneMatrices.size()=" + std::to_string(mr->boneMatrices.size()) + " boneNames.size()=" + std::to_string(mr->skinInfo->boneNames.size()) + "\n").c_str());
+
+        }
+    }
+
+
     auto* player = m_gameObjects[4]; // 2番目がプレイヤーCubeの場合
     auto* tr = player->GetComponent<Transform>();
     float moveSpeed = 0.1f;
@@ -60,6 +91,8 @@ void EngineManager::Update() {
     if (GetAsyncKeyState('S') & 0x8000) tr->position.z -= moveSpeed;
     if (GetAsyncKeyState('A') & 0x8000) tr->position.x -= moveSpeed;
     if (GetAsyncKeyState('D') & 0x8000) tr->position.x += moveSpeed;
+
+
 }
 
 void EngineManager::Draw() {
