@@ -16,7 +16,7 @@ void EngineManager::Initialize() {
     m_pipelineManager.Initialize(device, L"assets/VertexShader.cso", L"assets/PixelShader.cso");
     m_pipelineManager.InitializeSkinning(device, L"assets/SkinningVertexShader.cso", L"assets/SkinningPixelShader.cso");
     m_textureManager.Initialize(device);
-    m_fbxInstance = FbxModelLoader::LoadAndCache("assets/Dying.fbx");
+    m_fbxInstance = FbxModelLoader::LoadAndCache("assets/Defeated.fbx");
 
     ID3D12GraphicsCommandList* cmdList = m_deviceManager.GetCommandList();
     int groundTex = m_textureManager.LoadTexture(L"assets/penguin2.png", cmdList);
@@ -34,7 +34,7 @@ void EngineManager::Initialize() {
     ObjectFactory::CreateCube(this, { 2,  2.0f, 2 }, { 1, 1, 1 }, cubeTex, White);             // Cube2
     ObjectFactory::CreateModel(this, "assets/MixamoModel.fbx", { 0,0,0 }, { 0.05f,0.05f,0.05f }, bossTexIdx, White);
     OutputDebugStringA("★CreateSkinningModel呼び出し直前\n");
-    ObjectFactory::CreateSkinningModel(this, "assets/Dying.fbx", { -1,0,-2 }, { 0.05f,0.05f,0.05f }, bossTexIdx, Red);
+    ObjectFactory::CreateSkinningModel(this, "assets/Defeated.fbx", { -1,0,-2 }, { 0.05f,0.05f,0.05f }, bossTexIdx, Red);
 
     // 定数バッファ
     constexpr size_t CBV_SIZE = 256;
