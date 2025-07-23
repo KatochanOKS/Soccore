@@ -3,8 +3,6 @@
 #include "MeshRenderer.h"
 #include "Colors.h"
 #include "ObjectFactory.h" // ★追加aaaaaaaaaaaaaaaaaaaaaaaaaaa
-=======
-#include "ObjectFactory.h" // ★追加
 #include <chrono>  // ← これを必ず追加！
 using namespace DirectX;
 using namespace Colors;
