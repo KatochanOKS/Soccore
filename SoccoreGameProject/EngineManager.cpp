@@ -2,7 +2,7 @@
 #include "Transform.h"
 #include "MeshRenderer.h"
 #include "Colors.h"
-#include "ObjectFactory.h" // Åöí«â¡
+#include "ObjectFactory.h" // Åöí«â¡aaaaaaaaaaaaaaaaaaaaaaaaaaa
 using namespace DirectX;
 using namespace Colors;
 
