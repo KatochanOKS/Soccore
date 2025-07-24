@@ -22,6 +22,10 @@ struct SkinningVertex {
 class BufferManager {
 public:
     void CreateVertexBuffer(ID3D12Device* device, const std::vector<Vertex>& vertices);
+
+    // スキニングメッシュ用
+    void CreateSkinningVertexBuffer(ID3D12Device* device, const std::vector<SkinningVertex>& vertices);
+	// インデックスバッファを作成
     void CreateIndexBuffer(ID3D12Device* device, const std::vector<uint16_t>& indices);
 
    
