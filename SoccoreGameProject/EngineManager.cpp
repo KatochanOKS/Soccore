@@ -93,6 +93,14 @@ void EngineManager::Initialize() {
 void EngineManager::Start() {}
 void EngineManager::Update() {
 
+    if (m_animator) {
+        m_animator->Update(1.0f / 60.0f);
+        // --- デバッグ：再生中のアニメと現在時刻をprint ---
+        char msg[128];
+        sprintf_s(msg, "[Debug] anim=%s, time=%.3f\n", m_animator->currentAnim.c_str(), m_animator->currentTime);
+        OutputDebugStringA(msg);
+    }
+
 
     auto* player = m_gameObjects[4]; // 2番目がプレイヤーCubeの場合
     auto* tr = player->GetComponent<Transform>();

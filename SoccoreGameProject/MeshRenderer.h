@@ -5,6 +5,7 @@
 #include "FbxModelLoader.h"       // VertexInfo/SkinningVertexInfo
 #include <vector>
 #include <string>
+class Animator; // ← 前方宣言を必ず追加！
 
 class MeshRenderer : public Component {
 public:
@@ -20,6 +21,8 @@ public:
 
     BufferManager* skinBuffer = nullptr; // スキンメッシュ用
     FbxModelLoader::SkinningVertexInfo* skinVertexInfo = nullptr; // スキン用
+
+    Animator* animator = nullptr; // アニメ付きモデル用ポインタ
 
     // デストラクタで安全に解放（nullptrチェック付き！）
     virtual ~MeshRenderer() {

@@ -1,10 +1,4 @@
-// ----------------------
-// スキニング対応 ピクセルシェーダ
-// RootParameter
-//   t0 : テクスチャSRV
-// サンプラーはroot sigでstatic
-// ----------------------
-
+// SkinningPS.hlsl
 Texture2D gTex : register(t0);
 SamplerState gSmp : register(s0);
 

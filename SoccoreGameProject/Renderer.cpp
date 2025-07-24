@@ -67,6 +67,35 @@ void Renderer::DrawObject(GameObject* obj, size_t idx, const XMMATRIX& view, con
     auto* mr = obj->GetComponent<MeshRenderer>();
     if (!mr) return;
 
+    // === スキニングアニメ用メッシュ判定 ===
+// meshType==2 などで「スキンメッシュ」判定（ここは設計に合わせて修正OK！）
+    if (mr->meshType == 2 && mr->skinVertexInfo && mr->animator) {
+        // ここに「アニメーションモデルの描画処理」を追記します！
+
+        // 1. AnimatorからboneMatricesを取得
+        const auto& boneMats = mr->animator->GetCurrentPose();
+
+        // --- デバッグ：boneMatsのサイズ・一部の値をprint ---
+        char msg[128];
+        sprintf_s(msg, "[Debug] boneCount=%zu first[3]=%.2f\n", boneMats.size(), boneMats[0].r[3].m128_f32[0]);
+        OutputDebugStringA(msg);
+
+        // 2. 専用のCBVに書き込み（BufferManagerまたは専用リソース、設計により違う）
+        // 例：m_skinCB->Map(..., &mapped); memcpy(mapped, boneMats.data(), sizeof(XMMATRIX)*boneMats.size()); Unmap...
+
+        // 3. b1（ボーン行列用スロット）にCBVバインド
+        // m_cmdList->SetGraphicsRootConstantBufferView(1, m_skinCB->GetGPUVirtualAddress());
+
+        // 4. 通常通り、SRVや頂点バッファ・インデックスバッファもskinning用をセット
+        // 頂点バッファ: mr->skinVertexBufferView
+        // インデックスバッファ: mr->skinIndexBufferView
+
+        // m_cmdList->IASetVertexBuffers...
+        // m_cmdList->IASetIndexBuffer...
+        // m_cmdList->DrawIndexedInstanced(...);
+        return;
+    }
+
     constexpr size_t CBV_SIZE = 256;
     void* mapped = nullptr;
 
