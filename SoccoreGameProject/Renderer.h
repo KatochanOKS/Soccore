@@ -41,6 +41,10 @@ private:
     FbxModelLoader::VertexInfo* m_modelVertexInfo = nullptr;
     BufferManager* m_cbvBufferMgr = nullptr;  // 定数バッファ用だけに使うバッファマネージャ
 
+    Microsoft::WRL::ComPtr<ID3D12Resource> m_skinningConstantBuffer; // スキニング用CBV
+    D3D12_GPU_VIRTUAL_ADDRESS m_skinCBGpuAddr = 0; // アドレス保持用
+    size_t m_skinCBSize = 0; // バッファサイズ
+
     UINT m_backBufferIndex = 0;
     ID3D12GraphicsCommandList* m_cmdList = nullptr;
     float m_width = 1280.0f;

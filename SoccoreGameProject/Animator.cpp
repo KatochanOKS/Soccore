@@ -1,27 +1,36 @@
-#include "Animator.h"
-
+ï»¿#include "Animator.h"
+#include"windows.h"
+#include <DirectXMath.h>
+using namespace DirectX;
 //--------------------------------------
-// ƒRƒ“ƒXƒgƒ‰ƒNƒ^
+// ã‚³ãƒ³ã‚¹ãƒˆãƒ©ã‚¯ã‚¿
 //--------------------------------------
 Animator::Animator() {}
 
 //--------------------------------------
-// ƒAƒjƒ[ƒVƒ‡ƒ“ƒf[ƒ^Eƒ{[ƒ“–¼‚ğƒZƒbƒgi‰Šú‰»‚ÉŒÄ‚Ôj
+// ã‚¢ãƒ‹ãƒ¡ãƒ¼ã‚·ãƒ§ãƒ³ãƒ‡ãƒ¼ã‚¿ãƒ»ãƒœãƒ¼ãƒ³åã‚’ã‚»ãƒƒãƒˆï¼ˆåˆæœŸåŒ–æ™‚ã«å‘¼ã¶ï¼‰
 //--------------------------------------
-void Animator::SetAnimations(const std::unordered_map<std::string, std::vector<Keyframe>>& anims, const std::vector<std::string>& bones) {
+void Animator::SetAnimations(
+    const std::unordered_map<std::string, std::vector<Keyframe>>& anims,
+    const std::vector<std::string>& bones,
+    const std::vector<DirectX::XMMATRIX>& bindPoseMatrices
+) {
     animations = anims;
     boneNames = bones;
+    bindPoses = bindPoseMatrices; // â˜…è¿½åŠ 
     if (!anims.empty())
-        currentAnim = anims.begin()->first; // Å‰‚ÌƒAƒjƒ‚ÉƒZƒbƒg
+        currentAnim = anims.begin()->first;
     currentTime = 0.0;
     isPlaying = true;
+
     boneMatrices.clear();
     if (!boneNames.empty())
         boneMatrices.resize(boneNames.size(), DirectX::XMMatrixIdentity());
 }
 
+
 //--------------------------------------
-// Ä¶ƒAƒjƒ[ƒVƒ‡ƒ“‚ğØ‚è‘Ö‚¦‚éiWalk, Jump“™j
+// å†ç”Ÿã‚¢ãƒ‹ãƒ¡ãƒ¼ã‚·ãƒ§ãƒ³ã‚’åˆ‡ã‚Šæ›¿ãˆã‚‹ï¼ˆWalk, Jumpç­‰ï¼‰
 //--------------------------------------
 void Animator::SetAnimation(const std::string& animName) {
     if (animations.find(animName) != animations.end()) {
@@ -31,30 +40,49 @@ void Animator::SetAnimation(const std::string& animName) {
 }
 
 //--------------------------------------
-// –ˆƒtƒŒ[ƒ€AŒ»İ‚Ìƒ{[ƒ“s—ñ‚ğXV‚·‚é
+// æ¯ãƒ•ãƒ¬ãƒ¼ãƒ ã€ç¾åœ¨ã®ãƒœãƒ¼ãƒ³è¡Œåˆ—ã‚’æ›´æ–°ã™ã‚‹
 //--------------------------------------
 void Animator::Update(float deltaTime) {
     if (!isPlaying || animations.count(currentAnim) == 0) return;
     const auto& frames = animations[currentAnim];
     if (frames.empty()) return;
 
-    // ŠÔ‚ği‚ß‚Äƒ‹[ƒv
+    // æ™‚é–“ã‚’é€²ã‚ã¦ãƒ«ãƒ¼ãƒ—
     currentTime += deltaTime;
     double animLength = frames.back().time;
     if (currentTime > animLength)
         currentTime = fmod(currentTime, animLength);
 
-    // Œ»İ‚ÉÅ‚à‹ß‚¢ƒL[ƒtƒŒ[ƒ€‚ğ’T‚·
+    // ç¾åœ¨æ™‚åˆ»ã«æœ€ã‚‚è¿‘ã„ã‚­ãƒ¼ãƒ•ãƒ¬ãƒ¼ãƒ ã‚’æ¢ã™
     size_t frameIdx = 0;
     while (frameIdx + 1 < frames.size() && frames[frameIdx + 1].time <= currentTime)
         ++frameIdx;
 
-    // ƒL[ƒtƒŒ[ƒ€‚©‚çƒ{[ƒ“s—ñƒZƒbƒg
-    boneMatrices = frames[frameIdx].pose;
+    boneMatrices.clear();
+    for (size_t i = 0; i < frames[frameIdx].pose.size(); ++i) {
+        DirectX::XMMATRIX pose = frames[frameIdx].pose[i];
+        DirectX::XMMATRIX invBind = XMMatrixInverse(nullptr, bindPoses[i]);
+        boneMatrices.push_back(invBind * pose); // âœ… æ­£ã—ã„é †åº
+
+    }
+    if (bindPoses.size() != frames[frameIdx].pose.size()) {
+        char msg[256];
+        sprintf_s(msg, "[Error] ãƒœãƒ¼ãƒ³æ•°ä¸ä¸€è‡´ï¼bind=%zu, pose=%zu\n",
+            bindPoses.size(), frames[frameIdx].pose.size());
+        OutputDebugStringA(msg);
+    }
 }
 
+// Animator.cpp
+std::vector<XMMATRIX> Animator::GetSkinnedPose(const std::vector<XMMATRIX>& bindPoses) const {
+    return boneMatrices; // âœ… ã‚‚ã†ã‚¹ã‚­ãƒ‹ãƒ³ã‚°è¡Œåˆ—ã«ãªã£ã¦ã‚‹ã®ã§ã“ã‚Œã§OKï¼
+}
+
+
+
+
 //--------------------------------------
-// Œ»İ‚Ìƒ{[ƒ“s—ñi•`‰æ—pj‚ğ•Ô‚·
+// ç¾åœ¨ã®ãƒœãƒ¼ãƒ³è¡Œåˆ—ï¼ˆæç”»ç”¨ï¼‰ã‚’è¿”ã™
 //--------------------------------------
 const std::vector<DirectX::XMMATRIX>& Animator::GetCurrentPose() const {
     return boneMatrices;

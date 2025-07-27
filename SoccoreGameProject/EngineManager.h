@@ -58,5 +58,5 @@ private:
 
     std::unique_ptr<Animator> m_animator;
 
-
+	bool isMoving = false; // 0:’âŽ~, 1:ˆÚ“®’†
 };

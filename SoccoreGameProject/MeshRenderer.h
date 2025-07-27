@@ -20,6 +20,7 @@ public:
     FbxModelLoader::VertexInfo* vertexInfo = nullptr;             // 静的モデル用
 
     BufferManager* skinBuffer = nullptr; // スキンメッシュ用
+    BufferManager* skinningConstantBuffer = nullptr; // ★ボーンCBVバッファ（スキン用のみ）
     FbxModelLoader::SkinningVertexInfo* skinVertexInfo = nullptr; // スキン用
 
     Animator* animator = nullptr; // アニメ付きモデル用ポインタ

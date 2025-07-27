@@ -1,4 +1,8 @@
 #include "Renderer.h"
+#include"d3dx12.h"
+#include "Transform.h"
+
+
 using namespace DirectX;
 
 // 初期化
@@ -22,6 +26,18 @@ void Renderer::Initialize(
     m_modelVertexInfo = modelVertexInfo;
     m_width = static_cast<float>(m_swapMgr->GetWidth());
     m_height = static_cast<float>(m_swapMgr->GetHeight());
+
+    // --- スキニング用CBVバッファ作成（80ボーン想定、1ボーンは16×4＝64byte, XMMATRIX）
+    m_skinCBSize = sizeof(DirectX::XMMATRIX) * 80; // ボーン最大数は適宜
+    CD3DX12_HEAP_PROPERTIES heapProps(D3D12_HEAP_TYPE_UPLOAD);
+    CD3DX12_RESOURCE_DESC cbDesc = CD3DX12_RESOURCE_DESC::Buffer((m_skinCBSize + 255) & ~255); // 256アライン
+
+    m_deviceMgr->GetDevice()->CreateCommittedResource(
+        &heapProps, D3D12_HEAP_FLAG_NONE, &cbDesc,
+        D3D12_RESOURCE_STATE_GENERIC_READ, nullptr,
+        IID_PPV_ARGS(&m_skinningConstantBuffer)
+    );
+    m_skinCBGpuAddr = m_skinningConstantBuffer->GetGPUVirtualAddress();
 }
 
 // フレーム開始（バッファクリア・ターゲット設定）
@@ -67,71 +83,75 @@ void Renderer::DrawObject(GameObject* obj, size_t idx, const XMMATRIX& view, con
     auto* mr = obj->GetComponent<MeshRenderer>();
     if (!mr) return;
 
-    // === スキニングアニメ用メッシュ判定 ===
-// meshType==2 などで「スキンメッシュ」判定（ここは設計に合わせて修正OK！）
+    constexpr size_t CBV_SIZE = 256;
+
+    // -----------------------------------
+    // スキニングモデル（アニメーション付き）
+    // -----------------------------------
     if (mr->meshType == 2 && mr->skinVertexInfo && mr->animator) {
-        // ここに「アニメーションモデルの描画処理」を追記します！
+        m_cmdList->SetPipelineState(m_pipeMgr->GetPipelineState(true));
+        m_cmdList->SetGraphicsRootSignature(m_pipeMgr->GetRootSignature(true));
 
-        // 1. AnimatorからboneMatricesを取得
-        const auto& boneMats = mr->animator->GetCurrentPose();
+        if (mr->texIndex >= 0)
+            m_cmdList->SetGraphicsRootDescriptorTable(0, m_texMgr->GetSRV(mr->texIndex));
 
-        // --- デバッグ：boneMatsのサイズ・一部の値をprint ---
-        char msg[128];
-        sprintf_s(msg, "[Debug] boneCount=%zu first[3]=%.2f\n", boneMats.size(), boneMats[0].r[3].m128_f32[0]);
-        OutputDebugStringA(msg);
+        XMMATRIX world = obj->GetComponent<Transform>()->GetWorldMatrix();
+        XMMATRIX wvp = XMMatrixTranspose(world * view * proj);
 
-        // 2. 専用のCBVに書き込み（BufferManagerまたは専用リソース、設計により違う）
-        // 例：m_skinCB->Map(..., &mapped); memcpy(mapped, boneMats.data(), sizeof(XMMATRIX)*boneMats.size()); Unmap...
+        // ← bindPose補正後のスキニング行列を取得
+        std::vector<XMMATRIX> skinnedMats = mr->animator->GetSkinnedPose(mr->skinVertexInfo->bindPoses);
 
-        // 3. b1（ボーン行列用スロット）にCBVバインド
-        // m_cmdList->SetGraphicsRootConstantBufferView(1, m_skinCB->GetGPUVirtualAddress());
+        for (auto& m : skinnedMats)
+            m = XMMatrixTranspose(m);
 
-        // 4. 通常通り、SRVや頂点バッファ・インデックスバッファもskinning用をセット
-        // 頂点バッファ: mr->skinVertexBufferView
-        // インデックスバッファ: mr->skinIndexBufferView
 
-        // m_cmdList->IASetVertexBuffers...
-        // m_cmdList->IASetIndexBuffer...
-        // m_cmdList->DrawIndexedInstanced(...);
+        void* mapped = nullptr;
+        if (SUCCEEDED(m_skinningConstantBuffer->Map(0, nullptr, &mapped))) {
+            memcpy((char*)mapped, &wvp, sizeof(XMMATRIX)); // b0: WVP
+            memcpy((char*)mapped + 256, skinnedMats.data(), sizeof(XMMATRIX) * skinnedMats.size()); // b1: Bone array
+            m_skinningConstantBuffer->Unmap(0, nullptr);
+
+            m_cmdList->SetGraphicsRootConstantBufferView(1, m_skinCBGpuAddr);           // b0
+            m_cmdList->SetGraphicsRootConstantBufferView(2, m_skinCBGpuAddr + 256);     // b1
+        }
+
+        auto vbv = mr->modelBuffer->GetVertexBufferView();
+        auto ibv = mr->modelBuffer->GetIndexBufferView();
+        m_cmdList->IASetVertexBuffers(0, 1, &vbv);
+        m_cmdList->IASetIndexBuffer(&ibv);
+        m_cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+        m_cmdList->DrawIndexedInstanced((UINT)mr->skinVertexInfo->indices.size(), 1, 0, 0, 0);
         return;
     }
 
-    constexpr size_t CBV_SIZE = 256;
-    void* mapped = nullptr;
 
-    // ----------------------
-    // 通常キューブ・モデル描画
-    // ----------------------
+    // 通常モデル・キューブ描画（非スキン）※Unmap削除済み
     if (mr->meshType == 0 || (mr->meshType == 1 && mr->modelBuffer && mr->vertexInfo)) {
-        // 定数バッファ設定
-        m_cubeBufMgr->GetConstantBuffer()->Map(0, nullptr, &mapped);
         D3D12_GPU_VIRTUAL_ADDRESS cbvAddr = m_cubeBufMgr->GetConstantBufferGPUAddress() + CBV_SIZE * idx;
         m_cmdList->SetGraphicsRootConstantBufferView(1, cbvAddr);
 
-        // SRV（テクスチャ）
         if (mr->texIndex >= 0)
             m_cmdList->SetGraphicsRootDescriptorTable(0, m_texMgr->GetSRV(mr->texIndex));
         m_cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-        // モデル or キューブ描画
         if (mr->meshType == 1) {
-            D3D12_VERTEX_BUFFER_VIEW vbv = mr->modelBuffer->GetVertexBufferView();
-            D3D12_INDEX_BUFFER_VIEW ibv = mr->modelBuffer->GetIndexBufferView();
+            auto vbv = mr->modelBuffer->GetVertexBufferView();
+            auto ibv = mr->modelBuffer->GetIndexBufferView();
             m_cmdList->IASetVertexBuffers(0, 1, &vbv);
             m_cmdList->IASetIndexBuffer(&ibv);
             m_cmdList->DrawIndexedInstanced((UINT)mr->vertexInfo->indices.size(), 1, 0, 0, 0);
         }
         else {
-            D3D12_VERTEX_BUFFER_VIEW vbv = m_cubeBufMgr->GetVertexBufferView();
-            D3D12_INDEX_BUFFER_VIEW ibv = m_cubeBufMgr->GetIndexBufferView();
+            auto vbv = m_cubeBufMgr->GetVertexBufferView();
+            auto ibv = m_cubeBufMgr->GetIndexBufferView();
             m_cmdList->IASetVertexBuffers(0, 1, &vbv);
             m_cmdList->IASetIndexBuffer(&ibv);
             m_cmdList->DrawIndexedInstanced(36, 1, 0, 0, 0);
         }
-        m_cubeBufMgr->GetConstantBuffer()->Unmap(0, nullptr);
-        return;
     }
 }
+
+
 
 // フレーム終了（Present & コマンドリストリセット）
 void Renderer::EndFrame() {

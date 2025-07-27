@@ -15,7 +15,13 @@ void EngineManager::Initialize() {
     auto* cmdQueue = m_deviceManager.GetCommandQueue();
     m_swapChainManager.Initialize(m_hWnd, device, cmdQueue, 1280, 720);
     m_depthBufferManager.Initialize(device, 1280, 720);
-    m_pipelineManager.Initialize(device, L"assets/VertexShader.cso", L"assets/PixelShader.cso");
+   /* m_pipelineManager.Initialize(device, L"assets/VertexShader.cso", L"assets/PixelShader.cso");*/
+    m_pipelineManager.Initialize(
+        device,
+        L"assets/VertexShader.cso", L"assets/PixelShader.cso",
+        L"assets/SkinningVS.cso", L"assets/SkinningPS.cso" // ← これが無いとダメ！
+    );
+
     m_textureManager.Initialize(device);
 
     ID3D12GraphicsCommandList* cmdList = m_deviceManager.GetCommandList();
@@ -24,52 +30,54 @@ void EngineManager::Initialize() {
     int cubeTex = m_textureManager.LoadTexture(L"assets/penguin2.png", cmdList);
     int enemyTex = m_textureManager.LoadTexture(L"assets/penguin2.png", cmdList);
     int bossTexIdx = m_textureManager.LoadTexture(L"assets/MixamoModel.fbm/Boss_diffuse.png", cmdList);
-
+	int bugEnemyTexIdx = m_textureManager.LoadTexture(L"assets/UnarmedWalkForward.fbm/Mutant_diffuse.png", cmdList);
     m_gameObjects.clear();
 
     // ---- Unity風配置 ----
-    ObjectFactory::CreateCube(this, { 0, -1.0f, 0 }, { 50, 0.2f, 50 }, groundTex, White);      // 地面
+    ObjectFactory::CreateCube(this, { 0, -5.0f, 0 }, { 50, 0.2f, 50 }, playerTex, White);      // 地面
     ObjectFactory::CreateCube(this, { 0,  0.0f, 0 }, { 1, 1, 1 }, playerTex, White);           // プレイヤー
     ObjectFactory::CreateCube(this, { -2,  0.0f, 0 }, { 1, 1, 1 }, cubeTex, White);             // Cube1
     ObjectFactory::CreateCube(this, { 2,  2.0f, 2 }, { 1, 1, 1 }, cubeTex, White);             // Cube2
-    ObjectFactory::CreateModel(this, "assets/MixamoModel.fbx", { 0,0,0 }, { 0.05f,0.05f,0.05f }, bossTexIdx, White);
-    OutputDebugStringA("★CreateSkinningModel呼び出し直前\n");
+   /* ObjectFactory::CreateModel(this, "assets/MixamoModel.fbx", { 0,0,0 }, { 0.05f,0.05f,0.05f }, bossTexIdx, White);
+    OutputDebugStringA("★CreateSkinningModel呼び出し直前\n");*/
+    // ★スキニングモデルを追加
+    ObjectFactory::CreateSkinningModel(this, "assets/UnarmedWalkForward.fbx",
+        { 0, 0, 0 }, { 0.05f, 0.05f, 0.05f }, bugEnemyTexIdx, Colors::White);
     // 定数バッファ
 
-    // アニメーション付きFBXのロード
-    FbxModelLoader::SkinningVertexInfo skinInfo;
-    bool result = FbxModelLoader::LoadSkinningModel("assets/UnarmedWalkForward.fbx", &skinInfo);
-    if (result) {
-        OutputDebugStringA("[Test] アニメーション付きモデルロード成功！\n");
-        for (auto& anim : skinInfo.animations) {
-            char msg[256];
-            sprintf_s(msg, "[Test] anim name: %s, length: %.2f, frame count: %zu\n",
-                anim.name.c_str(), anim.length, anim.keyframes.size());
-            OutputDebugStringA(msg);
-        }
+    ////// アニメーション付きFBXのロード
+    ////FbxModelLoader::SkinningVertexInfo skinInfo;
+    ////bool result = FbxModelLoader::LoadSkinningModel("assets/UnarmedWalkForward.fbx", &skinInfo);
+    ////if (result) {
+    ////    OutputDebugStringA("[Test] アニメーション付きモデルロード成功！\n");
+    ////    for (auto& anim : skinInfo.animations) {
+    ////        char msg[256];
+    ////        sprintf_s(msg, "[Test] anim name: %s, length: %.2f, frame count: %zu\n",
+    ////            anim.name.c_str(), anim.length, anim.keyframes.size());
+    ////        OutputDebugStringA(msg);
+    ////    }
 
-        // ★ここでAnimatorインスタンス生成
-        m_animator = std::make_unique<Animator>();
+    //    // ★ここでAnimatorインスタンス生成
+    //    m_animator = std::make_unique<Animator>();
 
-        // vector→unordered_mapに変換
-        std::unordered_map<std::string, std::vector<Animator::Keyframe>> anims;
-        for (auto& anim : skinInfo.animations)
-            anims[anim.name] = anim.keyframes;
+    //    // vector→unordered_mapに変換
+    //    std::unordered_map<std::string, std::vector<Animator::Keyframe>> anims;
+    //    for (auto& anim : skinInfo.animations)
+    //        anims[anim.name] = anim.keyframes;
 
-        m_animator->SetAnimations(anims, skinInfo.boneNames);
+    //    m_animator->SetAnimations(anims, skinInfo.boneNames);
 
-        // 初期アニメ再生セット（例："mixamo.com"や"Armature|Walk"等）
-        m_animator->SetAnimation(skinInfo.animations[0].name);
+    //    // 初期アニメ再生セット（例："mixamo.com"や"Armature|Walk"等）
+    //    m_animator->SetAnimation(skinInfo.animations[0].name);
 
-        // Debug
-        char msg2[128];
-        sprintf_s(msg2, "[Debug] アニメセット: %s\n", skinInfo.animations[0].name.c_str());
-        OutputDebugStringA(msg2);
-    }
-    else {
-        OutputDebugStringA("[Test] ロード失敗！\n");
-    }
-
+    //    // Debug
+    //    char msg2[128];
+    //    sprintf_s(msg2, "[Debug] アニメセット: %s\n", skinInfo.animations[0].name.c_str());
+    //    OutputDebugStringA(msg2);
+    //}
+    //else {
+    //    OutputDebugStringA("[Test] ロード失敗！\n");
+    //}
 
 
     constexpr size_t CBV_SIZE = 256;
@@ -93,22 +101,39 @@ void EngineManager::Initialize() {
 void EngineManager::Start() {}
 void EngineManager::Update() {
 
-    if (m_animator) {
-        m_animator->Update(1.0f / 60.0f);
-        // --- デバッグ：再生中のアニメと現在時刻をprint ---
-        char msg[128];
-        sprintf_s(msg, "[Debug] anim=%s, time=%.3f\n", m_animator->currentAnim.c_str(), m_animator->currentTime);
-        OutputDebugStringA(msg);
+    for (auto* obj : m_gameObjects) {
+        auto* animator = obj->GetComponent<Animator>();
+        if (animator) {
+            animator->Update(1.0f / 60.0f); // フレームレートに応じて時間進行
+            char msg[128];
+            sprintf_s(msg, "[Debug] anim=%s, time=%.3f\n", animator->currentAnim.c_str(), animator->currentTime);
+            OutputDebugStringA(msg);
+
+        }
     }
+
 
 
     auto* player = m_gameObjects[4]; // 2番目がプレイヤーCubeの場合
     auto* tr = player->GetComponent<Transform>();
     float moveSpeed = 0.1f;
-    if (GetAsyncKeyState('W') & 0x8000) tr->position.z += moveSpeed;
-    if (GetAsyncKeyState('S') & 0x8000) tr->position.z -= moveSpeed;
-    if (GetAsyncKeyState('A') & 0x8000) tr->position.x -= moveSpeed;
-    if (GetAsyncKeyState('D') & 0x8000) tr->position.x += moveSpeed;
+    if (GetAsyncKeyState('W') & 0x8000) {
+        tr->position.z += moveSpeed;
+        tr->rotation.y = XMConvertToRadians(0.0f); // 前向き
+    }
+    if (GetAsyncKeyState('S') & 0x8000) {
+        tr->position.z -= moveSpeed;
+        tr->rotation.y = XMConvertToRadians(180.0f); // 後ろ向き
+    }
+    if (GetAsyncKeyState('A') & 0x8000) {
+        tr->position.x -= moveSpeed;
+        tr->rotation.y = XMConvertToRadians(-90.0f); // 左向き
+    }
+    if (GetAsyncKeyState('D') & 0x8000) {
+        tr->position.x += moveSpeed;
+        tr->rotation.y = XMConvertToRadians(90.0f); // 右向き
+    }
+
 
 
 }

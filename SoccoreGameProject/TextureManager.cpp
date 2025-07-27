@@ -68,6 +68,9 @@ int TextureManager::LoadTexture(const std::wstring& filename, ID3D12GraphicsComm
     m_textureIndices[filename] = texIndex;
     m_nextIndex++;
     m_uploadBuffers.push_back(uploadBuffer);
+    if (FAILED(hr)) {
+        OutputDebugStringA("★テクスチャ読み込み失敗！\n");
+    }
 
     return texIndex;
 

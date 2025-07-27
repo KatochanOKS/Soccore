@@ -23,10 +23,15 @@ struct VS_OUT
 VS_OUT main(VS_IN vin)
 {
     float4 skinnedPos = float4(0, 0, 0, 0);
+[unroll]
     for (int i = 0; i < 4; ++i)
     {
-        skinnedPos += mul(float4(vin.pos, 1), gBoneMatrices[vin.boneIndices[i]]) * vin.boneWeights[i];
+        if (vin.boneWeights[i] > 0.0001f)
+        {
+            skinnedPos += mul(float4(vin.pos, 1), gBoneMatrices[vin.boneIndices[i]]) * vin.boneWeights[i];
+        }
     }
+
     VS_OUT vout;
     vout.pos = mul(skinnedPos, gWorldViewProj);
     vout.uv = vin.uv;

@@ -22,14 +22,21 @@ public:
     std::vector<std::string> boneNames;                   // ボーン名リスト
     std::vector<DirectX::XMMATRIX> boneMatrices;           // 今の全ボーンの姿勢
 
+    std::vector<DirectX::XMMATRIX> bindPoses; // ★バインドポーズを保存しておく
+
+
     std::string currentAnim;  // 現在のアニメ名
     double currentTime = 0.0; // アニメ再生位置
     bool isPlaying = true;    // 再生中フラグ
 
     Animator();
 
-    // アニメ・ボーン情報をセット（初期化時に呼ぶ）
-    void SetAnimations(const std::unordered_map<std::string, std::vector<Keyframe>>& anims, const std::vector<std::string>& bones);
+    void SetAnimations(
+        const std::unordered_map<std::string, std::vector<Keyframe>>& anims,
+        const std::vector<std::string>& bones,
+        const std::vector<DirectX::XMMATRIX>& bindPoseMatrices
+    );
+
 
     // 再生アニメーションを切り替える（Walk, Jump等）
     void SetAnimation(const std::string& animName);
@@ -39,4 +46,8 @@ public:
 
     // 現在のボーン行列（描画用）
     const std::vector<DirectX::XMMATRIX>& GetCurrentPose() const;
+
+    // アニメーション姿勢 × BindPose補正を行ったスキニング行列を返す
+    std::vector<DirectX::XMMATRIX> GetSkinnedPose(const std::vector<DirectX::XMMATRIX>& bindPoses) const;
+
 };

@@ -310,64 +310,60 @@ bool FbxModelLoader::LoadSkinningModel(const std::string& filePath, SkinningVert
     outInfo->bindPoses.clear();
     auto* pose = scene->GetPose(0);
     if (pose && pose->IsBindPose()) {
-        OutputDebugStringA("[FBX] BindPoseから行列取得\n");
+        // --- 1. 通常のBindPose取得処理 ---
         for (const std::string& boneName : outInfo->boneNames) {
             FbxNode* boneNode = scene->FindNodeByName(boneName.c_str());
             if (!boneNode) {
-                char err[128];
-                sprintf_s(err, "[FBX] ボーンノードが見つからない: %s\n", boneName.c_str());
-                OutputDebugStringA(err);
+                OutputDebugStringA(("[FBX] Bone not found: " + boneName + "\n").c_str());
                 outInfo->bindPoses.push_back(DirectX::XMMatrixIdentity());
                 continue;
             }
-            // Pose配列をループして一致するノードを探す
+
             FbxMatrix mat;
             bool found = false;
-            for (int pi = 0; pi < pose->GetCount(); ++pi) {
-                if (pose->GetNode(pi) == boneNode) {
-                    mat = pose->GetMatrix(pi);
+            for (int i = 0; i < pose->GetCount(); ++i) {
+                if (pose->GetNode(i) == boneNode) {
+                    mat = pose->GetMatrix(i);
                     found = true;
                     break;
                 }
             }
+
             if (!found) {
-                char err[128];
-                sprintf_s(err, "[FBX] BindPoseが見つからない: %s\n", boneName.c_str());
-                OutputDebugStringA(err);
+                OutputDebugStringA(("[FBX] BindPose missing for bone: " + boneName + "\n").c_str());
                 outInfo->bindPoses.push_back(DirectX::XMMatrixIdentity());
                 continue;
             }
 
-            DirectX::XMMATRIX dxMat = DirectX::XMMatrixIdentity();
+            DirectX::XMMATRIX dxMat;
             for (int r = 0; r < 4; ++r)
                 for (int c = 0; c < 4; ++c)
-                    dxMat.r[r].m128_f32[c] = static_cast<float>(mat.Get(r, c));
-            outInfo->bindPoses.push_back(dxMat);
+                    dxMat.r[r].m128_f32[c] = (float)mat.Get(r, c);
 
-            char msg[256];
-            sprintf_s(msg, "[FBX] Bone: %s, BindPose: (%.2f, %.2f, %.2f)\n",
-                boneName.c_str(),
-                (float)mat.Get(0, 3), (float)mat.Get(1, 3), (float)mat.Get(2, 3));
-            OutputDebugStringA(msg);
+            outInfo->bindPoses.push_back(dxMat);
         }
     }
     else {
-        // Fallback: EvaluateGlobalTransform
-        OutputDebugStringA("[FBX] BindPoseが見つからない！EvaluateGlobalTransformで代用\n");
+        // --- 2. Fallback: EvaluateGlobalTransform() で取得 ---
+        OutputDebugStringA("[FBX] BindPoseが無効！EvaluateGlobalTransformで代用\n");
+
         for (const std::string& boneName : outInfo->boneNames) {
-            FbxNode* boneNode = scene->FindNodeByName(boneName.c_str());
+            FbxNode* boneNode = rootNode->FindChild(boneName.c_str(), true); // 再帰で検索
             if (!boneNode) {
-                char err[128];
-                sprintf_s(err, "[FBX] ボーンノードが見つからない: %s\n", boneName.c_str());
-                OutputDebugStringA(err);
+                std::string err = "[FBX][ERROR] Bone node not found: " + boneName + "\n";
+                OutputDebugStringA(err.c_str());
                 outInfo->bindPoses.push_back(DirectX::XMMatrixIdentity());
                 continue;
             }
+
+
+
             FbxAMatrix bindPoseMatrix = boneNode->EvaluateGlobalTransform();
-            DirectX::XMMATRIX dxMat = DirectX::XMMatrixIdentity();
+            DirectX::XMMATRIX dxMat;
             for (int r = 0; r < 4; ++r)
                 for (int c = 0; c < 4; ++c)
-                    dxMat.r[r].m128_f32[c] = static_cast<float>(bindPoseMatrix.Get(r, c));
+                    dxMat.r[r].m128_f32[c] = (float)bindPoseMatrix.Get(r, c);
+
             outInfo->bindPoses.push_back(dxMat);
 
             char msg[256];

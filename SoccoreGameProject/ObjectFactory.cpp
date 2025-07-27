@@ -107,13 +107,15 @@ GameObject* ObjectFactory::CreateSkinningModel(
     mr->modelBuffer->CreateSkinningVertexBuffer(engine->GetDeviceManager()->GetDevice(), skinInfo->vertices);
     mr->modelBuffer->CreateIndexBuffer(engine->GetDeviceManager()->GetDevice(), skinInfo->indices);
 
-    // Animatorセットアップ
     auto* animator = obj->AddComponent<Animator>();
     if (!skinInfo->animations.empty()) {
         std::unordered_map<std::string, std::vector<Animator::Keyframe>> animMap;
         for (const auto& anim : skinInfo->animations)
             animMap[anim.name] = anim.keyframes;
-        animator->SetAnimations(animMap, skinInfo->boneNames);
+
+        // ★ bindPose も渡す！
+        animator->SetAnimations(animMap, skinInfo->boneNames, skinInfo->bindPoses);
+        // ★これが必要！
     }
     mr->animator = animator; // MeshRendererにもセット（描画用）
 

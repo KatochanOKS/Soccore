@@ -10,6 +10,16 @@ public:
     XMFLOAT3 rotation = { 0,0,0 };
     XMFLOAT3 scale = { 1,1,1 };
 
+    // === ’Ç‰Á ===
+    XMFLOAT3 GetPosition() const {
+        return position;
+    }
+
+    void SetPosition(const XMFLOAT3& pos) {
+        position = pos;
+    }
+    // ============
+
     XMMATRIX GetWorldMatrix() const {
         XMMATRIX matS = XMMatrixScaling(scale.x, scale.y, scale.z);
         XMMATRIX matR = XMMatrixRotationRollPitchYaw(rotation.x, rotation.y, rotation.z);
@@ -17,3 +27,4 @@ public:
         return matS * matR * matT;
     }
 };
+
