@@ -41,7 +41,7 @@ void EngineManager::Initialize() {
    /* ObjectFactory::CreateModel(this, "assets/MixamoModel.fbx", { 0,0,0 }, { 0.05f,0.05f,0.05f }, bossTexIdx, White);
     OutputDebugStringA("★CreateSkinningModel呼び出し直前\n");*/
     // ★スキニングモデルを追加
-    ObjectFactory::CreateSkinningModel(this, "assets/UnarmedWalkForward.fbx",
+    ObjectFactory::CreateSkinningModel(this, "assets/Walking.fbx",
         { 0, 0, 0 }, { 0.05f, 0.05f, 0.05f }, bugEnemyTexIdx, Colors::White);
     // 定数バッファ
 
@@ -104,7 +104,7 @@ void EngineManager::Update() {
     for (auto* obj : m_gameObjects) {
         auto* animator = obj->GetComponent<Animator>();
         if (animator) {
-            animator->Update(1.0f / 60.0f); // フレームレートに応じて時間進行
+            animator->Update(1.0f / 120.0f); // フレームレートに応じて時間進行
             char msg[128];
             sprintf_s(msg, "[Debug] anim=%s, time=%.3f\n", animator->currentAnim.c_str(), animator->currentTime);
             OutputDebugStringA(msg);
