@@ -471,17 +471,17 @@ bool FbxModelLoader::LoadSkinningModel(const std::string& filePath, SkinningVert
                 outInfo->vertices.push_back(v);
                 outInfo->indices.push_back((unsigned short)outInfo->vertices.size() - 1);
 
-                    char uvmsg[256];
+                    /*char uvmsg[256];
                 sprintf_s(uvmsg, "[FBX][UV] Vtx[%d] Pos=(%.2f, %.2f, %.2f) UV=(%.3f, %.3f)\n",
                     (int)outInfo->vertices.size() - 1, v.x, v.y, v.z, v.u, v.v);
-                OutputDebugStringA(uvmsg);
+                OutputDebugStringA(uvmsg);*/
 
-                char msg[128];
+                /*char msg[128];
                 sprintf_s(msg, "[FBX] Vtx[%d]: BoneIdx=(%d,%d,%d,%d) Weight=(%.2f,%.2f,%.2f,%.2f)\n",
                     (int)outInfo->vertices.size() - 1,
                     v.boneIndices[0], v.boneIndices[1], v.boneIndices[2], v.boneIndices[3],
                     v.boneWeights[0], v.boneWeights[1], v.boneWeights[2], v.boneWeights[3]);
-                OutputDebugStringA(msg);
+                OutputDebugStringA(msg);*/
             }
         }
     }
