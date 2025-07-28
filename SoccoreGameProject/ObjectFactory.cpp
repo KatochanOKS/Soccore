@@ -122,3 +122,43 @@ GameObject* ObjectFactory::CreateSkinningModel(
     engine->m_gameObjects.push_back(obj);
     return obj;
 }
+
+GameObject* ObjectFactory::CreateSkinningBaseModel(
+    EngineManager* engine,
+    const std::string& fbxPath,
+    const XMFLOAT3& pos,
+    const XMFLOAT3& scale,
+    int texIndex,
+    const XMFLOAT4& color
+) {
+    auto* obj = new GameObject();
+    auto* tr = obj->AddComponent<Transform>();
+    tr->position = pos;
+    tr->scale = scale;
+
+    auto* mr = obj->AddComponent<MeshRenderer>();
+    mr->meshType = 2;
+    mr->texIndex = texIndex;
+    mr->color = color;
+
+    // モデル・ボーン・バインドポーズのみ読み込む
+    auto* skinInfo = new FbxModelLoader::SkinningVertexInfo();
+    if (!FbxModelLoader::LoadSkinningModel(fbxPath, skinInfo)) {
+        delete obj;
+        return nullptr;
+    }
+    mr->skinVertexInfo = skinInfo;
+
+    mr->modelBuffer = new BufferManager();
+    mr->modelBuffer->CreateSkinningVertexBuffer(engine->GetDeviceManager()->GetDevice(), skinInfo->vertices);
+    mr->modelBuffer->CreateIndexBuffer(engine->GetDeviceManager()->GetDevice(), skinInfo->indices);
+
+    auto* animator = obj->AddComponent<Animator>();
+    // アニメはここでは登録しない
+    animator->boneNames = skinInfo->boneNames;
+    animator->bindPoses = skinInfo->bindPoses;
+    mr->animator = animator;
+
+    engine->m_gameObjects.push_back(obj);
+    return obj;
+}
