@@ -1,10 +1,12 @@
+// EngineManager.cpp - 完全版
 #include "EngineManager.h"
 #include "Transform.h"
 #include "MeshRenderer.h"
 #include "Colors.h"
-#include "ObjectFactory.h" // ★追加aaaaaaaaaaaaaaaaaaaaaaaaaaa
-#include <chrono>  // ← これを必ず追加！
+#include "ObjectFactory.h"
+#include <chrono>
 #include <memory>
+#include "FbxModelLoader.h"
 
 using namespace DirectX;
 using namespace Colors;
@@ -15,74 +17,46 @@ void EngineManager::Initialize() {
     auto* cmdQueue = m_deviceManager.GetCommandQueue();
     m_swapChainManager.Initialize(m_hWnd, device, cmdQueue, 1280, 720);
     m_depthBufferManager.Initialize(device, 1280, 720);
-   /* m_pipelineManager.Initialize(device, L"assets/VertexShader.cso", L"assets/PixelShader.cso");*/
     m_pipelineManager.Initialize(
         device,
         L"assets/VertexShader.cso", L"assets/PixelShader.cso",
-        L"assets/SkinningVS.cso", L"assets/SkinningPS.cso" // ← これが無いとダメ！
+        L"assets/SkinningVS.cso", L"assets/SkinningPS.cso"
     );
 
     m_textureManager.Initialize(device);
-
     ID3D12GraphicsCommandList* cmdList = m_deviceManager.GetCommandList();
     int groundTex = m_textureManager.LoadTexture(L"assets/penguin2.png", cmdList);
     int playerTex = m_textureManager.LoadTexture(L"assets/penguin1.png", cmdList);
     int cubeTex = m_textureManager.LoadTexture(L"assets/penguin2.png", cmdList);
     int enemyTex = m_textureManager.LoadTexture(L"assets/penguin2.png", cmdList);
-    int bossTexIdx = m_textureManager.LoadTexture(L"assets/MixamoModel.fbm/Boss_diffuse.png", cmdList);
-	int bugEnemyTexIdx = m_textureManager.LoadTexture(L"assets/UnarmedWalkForward.fbm/Mutant_diffuse.png", cmdList);
+    int bugEnemyTexIdx = m_textureManager.LoadTexture(L"assets/Mutant.fbm/Mutant_diffuse.png", cmdList);
     m_gameObjects.clear();
 
-    // ---- Unity風配置 ----
-    ObjectFactory::CreateCube(this, { 0, -5.0f, 0 }, { 50, 0.2f, 50 }, playerTex, White);      // 地面
-    ObjectFactory::CreateCube(this, { 0,  0.0f, 0 }, { 1, 1, 1 }, playerTex, White);           // プレイヤー
-    ObjectFactory::CreateCube(this, { -2,  0.0f, 0 }, { 1, 1, 1 }, cubeTex, White);             // Cube1
-    ObjectFactory::CreateCube(this, { 2,  2.0f, 2 }, { 1, 1, 1 }, cubeTex, White);             // Cube2
-   /* ObjectFactory::CreateModel(this, "assets/MixamoModel.fbx", { 0,0,0 }, { 0.05f,0.05f,0.05f }, bossTexIdx, White);
-    OutputDebugStringA("★CreateSkinningModel呼び出し直前\n");*/
-    // ★スキニングモデルを追加
-    ObjectFactory::CreateSkinningModel(this, "assets/Walking.fbx",
-        { 0, 0, 0 }, { 0.05f, 0.05f, 0.05f }, bugEnemyTexIdx, Colors::White);
-    // 定数バッファ
+    // 地面とキューブ設置
+    ObjectFactory::CreateCube(this, { 0, -5.0f, 0 }, { 50, 0.2f, 50 }, groundTex, White);
+    ObjectFactory::CreateCube(this, { 0,  0.0f, 0 }, { 1, 1, 1 }, playerTex, White);
+    ObjectFactory::CreateCube(this, { -2, 0.0f, 0 }, { 1, 1, 1 }, cubeTex, White);
+    ObjectFactory::CreateCube(this, { 2, 2.0f, 2 }, { 1, 1, 1 }, cubeTex, White);
 
-    ////// アニメーション付きFBXのロード
-    ////FbxModelLoader::SkinningVertexInfo skinInfo;
-    ////bool result = FbxModelLoader::LoadSkinningModel("assets/UnarmedWalkForward.fbx", &skinInfo);
-    ////if (result) {
-    ////    OutputDebugStringA("[Test] アニメーション付きモデルロード成功！\n");
-    ////    for (auto& anim : skinInfo.animations) {
-    ////        char msg[256];
-    ////        sprintf_s(msg, "[Test] anim name: %s, length: %.2f, frame count: %zu\n",
-    ////            anim.name.c_str(), anim.length, anim.keyframes.size());
-    ////        OutputDebugStringA(msg);
-    ////    }
+    // ★プレイヤー用スキニングベースモデル作成
+    GameObject* player = ObjectFactory::CreateSkinningBaseModel(
+        this, "assets/Mutant.fbx", { 0, 0, 0 }, { 0.05f, 0.05f, 0.05f }, bugEnemyTexIdx, Colors::White);
 
-    //    // ★ここでAnimatorインスタンス生成
-    //    m_animator = std::make_unique<Animator>();
-
-    //    // vector→unordered_mapに変換
-    //    std::unordered_map<std::string, std::vector<Animator::Keyframe>> anims;
-    //    for (auto& anim : skinInfo.animations)
-    //        anims[anim.name] = anim.keyframes;
-
-    //    m_animator->SetAnimations(anims, skinInfo.boneNames);
-
-    //    // 初期アニメ再生セット（例："mixamo.com"や"Armature|Walk"等）
-    //    m_animator->SetAnimation(skinInfo.animations[0].name);
-
-    //    // Debug
-    //    char msg2[128];
-    //    sprintf_s(msg2, "[Debug] アニメセット: %s\n", skinInfo.animations[0].name.c_str());
-    //    OutputDebugStringA(msg2);
-    //}
-    //else {
-    //    OutputDebugStringA("[Test] ロード失敗！\n");
-    //}
-
+    // ★アニメーション登録
+    auto* animator = player->GetComponent<Animator>();
+    std::vector<Animator::Keyframe> idleKeys;
+    double idleLength;
+    if (FbxModelLoader::LoadAnimationOnly("assets/Idle.fbx", idleKeys, idleLength)) {
+        animator->AddAnimation("Idle", idleKeys);
+    }
+    std::vector<Animator::Keyframe> walkKeys;
+    double walkLength;
+    if (FbxModelLoader::LoadAnimationOnly("assets/Walking.fbx", walkKeys, walkLength)) {
+        animator->AddAnimation("Walk", walkKeys);
+    }
 
     constexpr size_t CBV_SIZE = 256;
     m_bufferManager.CreateConstantBuffer(device, CBV_SIZE * m_gameObjects.size());
-
 
     m_renderer.Initialize(
         &m_deviceManager,
@@ -90,61 +64,63 @@ void EngineManager::Initialize() {
         &m_depthBufferManager,
         &m_pipelineManager,
         &m_textureManager,
-        &m_bufferManager,         // Cube用バッファ
-        &m_bufferManager,         // ★定数バッファ（共通で使ってるならこれでOK）
+        &m_bufferManager,
+        &m_bufferManager,
         GetModelVertexInfo()
     );
-
 }
 
-
 void EngineManager::Start() {}
-void EngineManager::Update() {
 
+void EngineManager::Update() {
     for (auto* obj : m_gameObjects) {
         auto* animator = obj->GetComponent<Animator>();
-        if (animator) {
-            animator->Update(1.0f / 120.0f); // フレームレートに応じて時間進行
-            char msg[128];
-            sprintf_s(msg, "[Debug] anim=%s, time=%.3f\n", animator->currentAnim.c_str(), animator->currentTime);
-            OutputDebugStringA(msg);
-
-        }
+        if (animator) animator->Update(1.0f / 120.0f);
     }
 
-
-
-    auto* player = m_gameObjects[4]; // 2番目がプレイヤーCubeの場合
+    // --- プレイヤー制御 ---
+    auto* player = m_gameObjects.back(); // 最後に追加したのがプレイヤーと仮定
     auto* tr = player->GetComponent<Transform>();
+    auto* animator = player->GetComponent<Animator>();
     float moveSpeed = 0.1f;
+    bool isMoving = false;
+
     if (GetAsyncKeyState('W') & 0x8000) {
         tr->position.z += moveSpeed;
-        tr->rotation.y = XMConvertToRadians(0.0f); // 前向き
+        tr->rotation.y = XMConvertToRadians(0.0f);
+        isMoving = true;
     }
     if (GetAsyncKeyState('S') & 0x8000) {
         tr->position.z -= moveSpeed;
-        tr->rotation.y = XMConvertToRadians(180.0f); // 後ろ向き
+        tr->rotation.y = XMConvertToRadians(180.0f);
+        isMoving = true;
     }
     if (GetAsyncKeyState('A') & 0x8000) {
         tr->position.x -= moveSpeed;
-        tr->rotation.y = XMConvertToRadians(-90.0f); // 左向き
+        tr->rotation.y = XMConvertToRadians(-90.0f);
+        isMoving = true;
     }
     if (GetAsyncKeyState('D') & 0x8000) {
         tr->position.x += moveSpeed;
-        tr->rotation.y = XMConvertToRadians(90.0f); // 右向き
+        tr->rotation.y = XMConvertToRadians(90.0f);
+        isMoving = true;
     }
 
-
-
+    if (animator) {
+        if (isMoving && animator->currentAnim != "Walk") {
+            animator->SetAnimation("Walk");
+        }
+        else if (!isMoving && animator->currentAnim != "Idle") {
+            animator->SetAnimation("Idle");
+        }
+    }
 }
 
 void EngineManager::Draw() {
-    // --- 追従したいキャラのTransform取得
-    auto* player = m_gameObjects[4]; // 番号は自分のプレイヤーCubeに合わせてね
+    auto* player = m_gameObjects.back();
     auto* tr = player->GetComponent<Transform>();
     XMFLOAT3 playerPos = tr->position;
 
-    // --- カメラ位置を決める（後ろ＆上）
     XMFLOAT3 cameraOffset = { 0.0f, 5.0f, -20.0f };
     XMFLOAT3 cameraPos = {
         playerPos.x + cameraOffset.x,
@@ -163,9 +139,8 @@ void EngineManager::Draw() {
         0.1f, 100.0f
     );
 
-    // 定数バッファ書き込み（Transformに基づくWorld行列）
-    void* mapped = nullptr;
     constexpr size_t CBV_SIZE = 256;
+    void* mapped = nullptr;
     m_bufferManager.GetConstantBuffer()->Map(0, nullptr, &mapped);
     for (size_t i = 0; i < m_gameObjects.size(); ++i) {
         GameObject* obj = m_gameObjects[i];
@@ -174,8 +149,7 @@ void EngineManager::Draw() {
         if (!tr || !mr) continue;
 
         ObjectCB cb;
-        XMMATRIX world = tr->GetWorldMatrix();
-        cb.WorldViewProj = XMMatrixTranspose(world * view * proj);
+        cb.WorldViewProj = XMMatrixTranspose(tr->GetWorldMatrix() * view * proj);
         cb.Color = mr->color;
         cb.UseTexture = (mr->texIndex >= 0 ? 1 : 0);
         memcpy((char*)mapped + CBV_SIZE * i, &cb, sizeof(cb));
@@ -193,5 +167,4 @@ void EngineManager::Shutdown() {
     m_gameObjects.clear();
     m_deviceManager.Cleanup();
     m_swapChainManager.Cleanup();
-    // 必要に応じて他ManagerもCleanup
 }

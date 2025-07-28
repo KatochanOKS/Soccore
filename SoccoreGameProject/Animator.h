@@ -50,4 +50,8 @@ public:
     // アニメーション姿勢 × BindPose補正を行ったスキニング行列を返す
     std::vector<DirectX::XMMATRIX> GetSkinnedPose(const std::vector<DirectX::XMMATRIX>& bindPoses) const;
 
+    // アニメーション追加関数
+    void AddAnimation(const std::string& name, const std::vector<Keyframe>& keyframes);
+
+
 };

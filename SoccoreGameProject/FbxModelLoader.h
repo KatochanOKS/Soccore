@@ -71,7 +71,8 @@ public:
     // return    : 成功でtrue
     // -------------------------------
     static bool LoadSkinningModel(const std::string& filePath, SkinningVertexInfo* outInfo);
-
+    // Animationだけ読み込む関数（モデルや頂点は不要）
+    static bool LoadAnimationOnly(const std::string& fbxPath,std::vector<Animator::Keyframe>& outKeyframes,double& outLength);
 private:
     // 既存のユーティリティ関数群
     static bool IsExistNormalUVInfo(const std::vector<float>& vertexInfo);

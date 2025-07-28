@@ -87,3 +87,20 @@ std::vector<XMMATRIX> Animator::GetSkinnedPose(const std::vector<XMMATRIX>& bind
 const std::vector<DirectX::XMMATRIX>& Animator::GetCurrentPose() const {
     return boneMatrices;
 }
+
+
+void Animator::AddAnimation(const std::string& name, const std::vector<Keyframe>& keyframes) {
+    if (keyframes.empty()) return;
+
+    animations[name] = keyframes;
+
+    // 最初のアニメなら currentAnim に設定
+    if (currentAnim.empty()) {
+        currentAnim = name;
+        currentTime = 0.0;
+    }
+
+    char msg[128];
+    sprintf_s(msg, "[Animator] アニメ '%s' を登録 (%zuフレーム)\n", name.c_str(), keyframes.size());
+    OutputDebugStringA(msg);
+}

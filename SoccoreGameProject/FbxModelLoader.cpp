@@ -566,4 +566,94 @@ bool FbxModelLoader::LoadSkinningModel(const std::string& filePath, SkinningVert
     return true; // まずは「ファイル読めてノード一覧がprintできる」ことを目標に！
 }
 
+bool FbxModelLoader::LoadAnimationOnly(
+    const std::string& fbxPath,
+    std::vector<Animator::Keyframe>& outKeyframes,
+    double& outLength
+) {
+    FbxManager* manager = FbxManager::Create();
+    FbxImporter* importer = FbxImporter::Create(manager, "");
+    if (!importer->Initialize(fbxPath.c_str(), -1, manager->GetIOSettings())) {
+        OutputDebugStringA("[FBX] LoadAnimationOnly: 初期化失敗\n");
+        return false;
+    }
+
+    FbxScene* scene = FbxScene::Create(manager, "");
+    if (!importer->Import(scene)) {
+        OutputDebugStringA("[FBX] LoadAnimationOnly: インポート失敗\n");
+        importer->Destroy();
+        manager->Destroy();
+        return false;
+    }
+    importer->Destroy();
+
+    // --- ボーンノード取得（mixamorig系）
+    std::vector<std::string> boneNames;
+    std::function<void(FbxNode*)> FindBoneNodes = [&](FbxNode* node) {
+        std::string name = node->GetName();
+        if (name.find("mixamorig:") != std::string::npos)
+            boneNames.push_back(name);
+        for (int i = 0; i < node->GetChildCount(); ++i)
+            FindBoneNodes(node->GetChild(i));
+        };
+    FindBoneNodes(scene->GetRootNode());
+
+    // --- アニメーション抽出
+    int animStackCount = scene->GetSrcObjectCount<FbxAnimStack>();
+    if (animStackCount == 0) {
+        OutputDebugStringA("[FBX] アニメーションなし\n");
+        scene->Destroy();
+        manager->Destroy();
+        return false;
+    }
+
+    FbxAnimStack* animStack = scene->GetSrcObject<FbxAnimStack>(0);
+    FbxAnimLayer* animLayer = animStack->GetMember<FbxAnimLayer>(0);
+    if (!animLayer) {
+        OutputDebugStringA("[FBX] アニメーションレイヤ取得失敗\n");
+        scene->Destroy();
+        manager->Destroy();
+        return false;
+    }
+
+    FbxTimeSpan timeSpan = animStack->GetLocalTimeSpan();
+    FbxTime start = timeSpan.GetStart();
+    FbxTime end = timeSpan.GetStop();
+    double startSec = start.GetSecondDouble();
+    double endSec = end.GetSecondDouble();
+    double frameRate = 30.0;
+    int numFrames = static_cast<int>((endSec - startSec) * frameRate) + 1;
+    outLength = endSec - startSec;
+
+    outKeyframes.clear();
+    for (int f = 0; f < numFrames; ++f) {
+        double sec = startSec + f / frameRate;
+        FbxTime t;
+        t.SetSecondDouble(sec);
+
+        std::vector<DirectX::XMMATRIX> pose;
+        for (const std::string& boneName : boneNames) {
+            FbxNode* boneNode = scene->FindNodeByName(boneName.c_str());
+            if (!boneNode) {
+                pose.push_back(DirectX::XMMatrixIdentity());
+                continue;
+            }
+            FbxAMatrix mat = boneNode->EvaluateGlobalTransform(t);
+            DirectX::XMMATRIX dxMat = DirectX::XMMatrixIdentity();
+            for (int r = 0; r < 4; ++r)
+                for (int c = 0; c < 4; ++c)
+                    dxMat.r[r].m128_f32[c] = static_cast<float>(mat.Get(r, c));
+            pose.push_back(dxMat);
+        }
+
+        Animator::Keyframe kf;
+        kf.time = sec;
+        kf.pose = pose;
+        outKeyframes.push_back(kf);
+    }
+
+    scene->Destroy();
+    manager->Destroy();
+    return true;
+}
 
