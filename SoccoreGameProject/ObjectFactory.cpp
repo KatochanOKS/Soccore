@@ -1,7 +1,8 @@
 #include "ObjectFactory.h"
 #include "GameObject.h"
 #include "Transform.h"
-#include "MeshRenderer.h"
+#include "StaticMeshRenderer.h"   // ← 追加！
+#include "SkinnedMeshRenderer.h"  // ← 追加！
 #include "Animator.h"
 #include "EngineManager.h"
 #include "MeshLibrary.h"
@@ -9,6 +10,9 @@
 
 using namespace DirectX;
 
+//---------------------------------------------
+// 1. Cube（静的メッシュ）の生成
+//---------------------------------------------
 GameObject* ObjectFactory::CreateCube(
     EngineManager* engine,
     const XMFLOAT3& pos,
@@ -21,8 +25,8 @@ GameObject* ObjectFactory::CreateCube(
     tr->position = pos;
     tr->scale = scale;
 
-    auto* mr = obj->AddComponent<MeshRenderer>();
-    mr->meshType = 0;
+    // 旧: auto* mr = obj->AddComponent<MeshRenderer>();
+    auto* mr = obj->AddComponent<StaticMeshRenderer>();
     mr->texIndex = texIdx;
     mr->color = color;
 
@@ -41,6 +45,9 @@ GameObject* ObjectFactory::CreateCube(
     return obj;
 }
 
+//---------------------------------------------
+// 2. 普通のFBX（静的メッシュ）の生成
+//---------------------------------------------
 GameObject* ObjectFactory::CreateModel(
     EngineManager* engine,
     const std::string& path,
@@ -55,8 +62,7 @@ GameObject* ObjectFactory::CreateModel(
     tr->scale = scale;
     tr->rotation.y = XMConvertToRadians(180.0f);
 
-    auto* mr = obj->AddComponent<MeshRenderer>();
-    mr->meshType = 1;
+    auto* mr = obj->AddComponent<StaticMeshRenderer>();
     mr->texIndex = texIndex;
     mr->color = color;
 
@@ -89,10 +95,9 @@ GameObject* ObjectFactory::CreateSkinningModel(
     tr->position = pos;
     tr->scale = scale;
 
-    auto* mr = obj->AddComponent<MeshRenderer>();
-    mr->meshType = 2; // スキンメッシュ判定用
-    mr->texIndex = texIndex;
-    mr->color = color;
+    auto* smr = obj->AddComponent<SkinnedMeshRenderer>();
+    smr->texIndex = texIndex;
+    smr->color = color;
 
     // スキニング情報読込
     auto* skinInfo = new FbxModelLoader::SkinningVertexInfo();
@@ -100,29 +105,30 @@ GameObject* ObjectFactory::CreateSkinningModel(
         delete obj;
         return nullptr;
     }
-    mr->skinVertexInfo = skinInfo;
+    smr->skinVertexInfo = skinInfo;
 
-    // バッファ生成（型専用バージョンに分けてね！）
-    mr->modelBuffer = new BufferManager();
-    mr->modelBuffer->CreateSkinningVertexBuffer(engine->GetDeviceManager()->GetDevice(), skinInfo->vertices);
-    mr->modelBuffer->CreateIndexBuffer(engine->GetDeviceManager()->GetDevice(), skinInfo->indices);
+    // バッファ生成
+    smr->modelBuffer = new BufferManager();
+    smr->modelBuffer->CreateSkinningVertexBuffer(engine->GetDeviceManager()->GetDevice(), skinInfo->vertices);
+    smr->modelBuffer->CreateIndexBuffer(engine->GetDeviceManager()->GetDevice(), skinInfo->indices);
 
+    // Animatorを追加
     auto* animator = obj->AddComponent<Animator>();
     if (!skinInfo->animations.empty()) {
         std::unordered_map<std::string, std::vector<Animator::Keyframe>> animMap;
         for (const auto& anim : skinInfo->animations)
             animMap[anim.name] = anim.keyframes;
-
-        // ★ bindPose も渡す！
         animator->SetAnimations(animMap, skinInfo->boneNames, skinInfo->bindPoses);
-        // ★これが必要！
     }
-    mr->animator = animator; // MeshRendererにもセット（描画用）
+    smr->animator = animator;
 
     engine->m_gameObjects.push_back(obj);
     return obj;
 }
 
+//---------------------------------------------
+// 4. スキンベース（アニメ登録前の素体モデル）
+//---------------------------------------------
 GameObject* ObjectFactory::CreateSkinningBaseModel(
     EngineManager* engine,
     const std::string& fbxPath,
@@ -136,10 +142,9 @@ GameObject* ObjectFactory::CreateSkinningBaseModel(
     tr->position = pos;
     tr->scale = scale;
 
-    auto* mr = obj->AddComponent<MeshRenderer>();
-    mr->meshType = 2;
-    mr->texIndex = texIndex;
-    mr->color = color;
+    auto* smr = obj->AddComponent<SkinnedMeshRenderer>();
+    smr->texIndex = texIndex;
+    smr->color = color;
 
     // モデル・ボーン・バインドポーズのみ読み込む
     auto* skinInfo = new FbxModelLoader::SkinningVertexInfo();
@@ -147,17 +152,17 @@ GameObject* ObjectFactory::CreateSkinningBaseModel(
         delete obj;
         return nullptr;
     }
-    mr->skinVertexInfo = skinInfo;
+    smr->skinVertexInfo = skinInfo;
 
-    mr->modelBuffer = new BufferManager();
-    mr->modelBuffer->CreateSkinningVertexBuffer(engine->GetDeviceManager()->GetDevice(), skinInfo->vertices);
-    mr->modelBuffer->CreateIndexBuffer(engine->GetDeviceManager()->GetDevice(), skinInfo->indices);
+    smr->modelBuffer = new BufferManager();
+    smr->modelBuffer->CreateSkinningVertexBuffer(engine->GetDeviceManager()->GetDevice(), skinInfo->vertices);
+    smr->modelBuffer->CreateIndexBuffer(engine->GetDeviceManager()->GetDevice(), skinInfo->indices);
 
+    // Animator追加（アニメ登録は外から可能）
     auto* animator = obj->AddComponent<Animator>();
-    // アニメはここでは登録しない
     animator->boneNames = skinInfo->boneNames;
     animator->bindPoses = skinInfo->bindPoses;
-    mr->animator = animator;
+    smr->animator = animator;
 
     engine->m_gameObjects.push_back(obj);
     return obj;

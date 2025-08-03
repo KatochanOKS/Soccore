@@ -9,7 +9,7 @@
 #include "BufferManager.h"
 #include "GameObject.h"
 #include "FbxModelLoader.h"
-#include"MeshRenderer.h"
+
 
 class Renderer {
 public:
