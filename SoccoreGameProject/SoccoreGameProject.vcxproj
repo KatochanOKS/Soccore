@@ -163,12 +163,15 @@
     <ClCompile Include="ObjectFactory.h" />
     <ClCompile Include="PipelineManager.cpp" />
     <ClCompile Include="Renderer.cpp" />
+    <ClCompile Include="SkinnedMeshRenderer.cpp" />
+    <ClCompile Include="StaticMeshRenderer.cpp" />
     <ClCompile Include="SwapChainManager.cpp" />
     <ClCompile Include="TextureManager.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Animator.h" />
     <ClInclude Include="ApplicationManager.h" />
+    <ClInclude Include="BaseMeshRenderer.h" />
     <ClInclude Include="BIN_FILE12.h" />
     <ClInclude Include="BufferManager.h" />
     <ClInclude Include="Colors.h" />
@@ -179,11 +182,11 @@
     <ClInclude Include="EngineManager.h" />
     <ClInclude Include="FbxModelLoader.h" />
     <ClInclude Include="GameObject.h" />
-    <ClInclude Include="Main.h" />
     <ClInclude Include="MeshLibrary.h" />
-    <ClInclude Include="MeshRenderer.h" />
     <ClInclude Include="PipelineManager.h" />
     <ClInclude Include="Renderer.h" />
+    <ClInclude Include="SkinnedMeshRenderer.h" />
+    <ClInclude Include="StaticMeshRenderer.h" />
     <ClInclude Include="stb_image.h" />
     <ClInclude Include="SwapChainManager.h" />
     <ClInclude Include="TextureManager.h" />

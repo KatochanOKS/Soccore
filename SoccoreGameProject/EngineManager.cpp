@@ -1,7 +1,7 @@
-// EngineManager.cpp - 完全版
 #include "EngineManager.h"
 #include "Transform.h"
-#include "MeshRenderer.h"
+#include "StaticMeshRenderer.h"   // ← 追加
+#include "SkinnedMeshRenderer.h"  // ← 追加
 #include "Colors.h"
 #include "ObjectFactory.h"
 #include <chrono>
@@ -145,13 +145,20 @@ void EngineManager::Draw() {
     for (size_t i = 0; i < m_gameObjects.size(); ++i) {
         GameObject* obj = m_gameObjects[i];
         auto* tr = obj->GetComponent<Transform>();
-        auto* mr = obj->GetComponent<MeshRenderer>();
-        if (!tr || !mr) continue;
 
-        ObjectCB cb;
+        ObjectCB cb{};
+        // 型ごとにRenderer情報を取得
+        if (auto* smr = obj->GetComponent<SkinnedMeshRenderer>()) {
+            cb.Color = smr->color;
+            cb.UseTexture = (smr->texIndex >= 0 ? 1 : 0);
+        } else if (auto* mr = obj->GetComponent<StaticMeshRenderer>()) {
+            cb.Color = mr->color;
+            cb.UseTexture = (mr->texIndex >= 0 ? 1 : 0);
+        } else {
+            continue;
+        }
         cb.WorldViewProj = XMMatrixTranspose(tr->GetWorldMatrix() * view * proj);
-        cb.Color = mr->color;
-        cb.UseTexture = (mr->texIndex >= 0 ? 1 : 0);
+
         memcpy((char*)mapped + CBV_SIZE * i, &cb, sizeof(cb));
     }
     m_bufferManager.GetConstantBuffer()->Unmap(0, nullptr);
