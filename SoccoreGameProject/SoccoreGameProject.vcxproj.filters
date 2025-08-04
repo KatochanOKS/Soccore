@@ -30,6 +30,9 @@
     <Filter Include="F\Rederer">
       <UniqueIdentifier>{88799566-a06c-4eb9-9fc2-f27c0e2be63d}</UniqueIdentifier>
     </Filter>
+    <Filter Include="F\Scene">
+      <UniqueIdentifier>{5a210913-fb45-4fe8-8ac9-16ae1ff7e225}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="GameObject.cpp">
@@ -85,6 +88,9 @@
     </ClCompile>
     <ClCompile Include="SkinnedMeshRenderer.cpp">
       <Filter>F\Rederer</Filter>
+    </ClCompile>
+    <ClCompile Include="GameScene.cpp">
+      <Filter>F\Scene</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -153,6 +159,12 @@
     </ClInclude>
     <ClInclude Include="BaseMeshRenderer.h">
       <Filter>F\Rederer</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene.h">
+      <Filter>F\Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="GameScene.h">
+      <Filter>F\Scene</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
