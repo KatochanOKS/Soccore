@@ -13,6 +13,7 @@
 #include "FbxModelLoader.h"
 #include "Renderer.h"
 #include "Animator.h"
+#include "Scene.h"
 #include <memory>
 
 struct ObjectCB {
@@ -41,6 +42,7 @@ public:
     TextureManager* GetTextureManager() { return &m_textureManager; }
     FbxModelLoader::VertexInfo* GetModelVertexInfo() { return &m_modelVertexInfo; }
     BufferManager* GetModelBufferManager() { return &m_modelBufferManager; }
+    Renderer* GetRenderer() { return &m_renderer; }  // ★追加
     std::vector<GameObject*> m_gameObjects;
     int m_texIdx = -1;
     int m_cubeTexIdx = -1;
@@ -57,6 +59,6 @@ private:
     Renderer m_renderer; // ★描画管理クラス！
 
     std::unique_ptr<Animator> m_animator;
-
+    std::unique_ptr<Scene> m_activeScene; // アクティブなシーン
 	bool isMoving = false; // 0:停止, 1:移動中
 };

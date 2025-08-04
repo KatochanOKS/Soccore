@@ -12,6 +12,9 @@ public:
     BufferManager* modelBuffer = nullptr;               // 頂点・インデックスバッファ
     FbxModelLoader::VertexInfo* vertexInfo = nullptr;   // モデルデータ（頂点・インデックス配列）
 
+    bool isQuad2D = false;
+
+
     // デストラクタ（newしたものは必ずdelete！）
     ~StaticMeshRenderer() override;
 
