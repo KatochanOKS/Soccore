@@ -48,3 +48,14 @@ void MeshLibrary::GetCubeMesh(std::vector<Vertex>& vertices, std::vector<uint16_
         20,21,22, 20,22,23
     };
 }
+
+void MeshLibrary::GetQuadMesh2D(std::vector<Vertex>& vertices, std::vector<uint16_t>& indices) {
+    // 画面XY平面に貼り付ける四角（左上基準、NDC想定で中心0,0）
+    vertices = {
+        { -0.5f,  0.5f, 0.0f, 0,0,-1, 0,0 }, // 左上
+        {  0.5f,  0.5f, 0.0f, 0,0,-1, 1,0 }, // 右上
+        {  0.5f, -0.5f, 0.0f, 0,0,-1, 1,1 }, // 右下
+        { -0.5f, -0.5f, 0.0f, 0,0,-1, 0,1 }, // 左下
+    };
+    indices = { 0,1,2, 0,2,3 };
+}

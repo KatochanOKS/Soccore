@@ -168,6 +168,7 @@
     <ClCompile Include="StaticMeshRenderer.cpp" />
     <ClCompile Include="SwapChainManager.cpp" />
     <ClCompile Include="TextureManager.cpp" />
+    <ClCompile Include="UIImage.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Animator.h" />
@@ -194,6 +195,8 @@
     <ClInclude Include="SwapChainManager.h" />
     <ClInclude Include="TextureManager.h" />
     <ClInclude Include="Transform.h" />
+    <ClInclude Include="UIComponent.h" />
+    <ClInclude Include="UIImage.h" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="PixelShader.hlsl">

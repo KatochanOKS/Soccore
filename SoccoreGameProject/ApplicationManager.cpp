@@ -35,7 +35,7 @@ int ApplicationManager::Run(EngineManager* engine, HINSTANCE hInstance, int nCmd
     engine->Start();
     while (!ShouldQuit()) {
         PollEvents();
-        engine->Update();
+         engine->Update();
         engine->Draw();
     }
     engine->Shutdown();
