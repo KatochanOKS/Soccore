@@ -1,5 +1,6 @@
 #include "EngineManager.h"
 #include "GameScene.h" // ← シーン分離型
+#include "MeshLibrary.h"
 #include <memory>
 
 void EngineManager::Initialize() {
@@ -20,6 +21,13 @@ void EngineManager::Initialize() {
     constexpr size_t CBV_SIZE = 256;
     m_bufferManager.CreateConstantBuffer(device, CBV_SIZE * 100);
 
+    std::vector<Vertex> quadVertices;
+    std::vector<uint16_t> quadIndices;
+    MeshLibrary::GetQuadMesh2D(quadVertices, quadIndices);
+    m_quadBufferManager.CreateVertexBuffer(device, quadVertices);
+    m_quadBufferManager.CreateIndexBuffer(device, quadIndices);
+    // ★ここを追加！！
+    m_quadBufferManager.CreateConstantBuffer(device, CBV_SIZE * 100);
     // Renderer初期化
     m_renderer.Initialize(
         &m_deviceManager,
@@ -27,8 +35,9 @@ void EngineManager::Initialize() {
         &m_depthBufferManager,
         &m_pipelineManager,
         &m_textureManager,
-        &m_bufferManager,
-        &m_bufferManager,
+        &m_bufferManager,          // Cube, 地面用バッファ
+        &m_modelBufferManager,     // FBXモデル用バッファ
+        &m_quadBufferManager, // ★Quad用バッファを渡す
         GetModelVertexInfo()
     );
 

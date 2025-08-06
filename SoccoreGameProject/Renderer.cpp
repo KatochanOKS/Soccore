@@ -1,12 +1,13 @@
-#include "Renderer.h"
+ï»¿#include "Renderer.h"
 #include "d3dx12.h"
 #include "Transform.h"
-#include "StaticMeshRenderer.h"   // © ’Ç‰ÁI
-#include "SkinnedMeshRenderer.h"  // © ’Ç‰ÁI
-
+#include "StaticMeshRenderer.h"   // â† è¿½åŠ ï¼
+#include "SkinnedMeshRenderer.h"  // â† è¿½åŠ ï¼
+#include"EngineManager.h"
+#include "UIImage.h"
 using namespace DirectX;
 
-// ‰Šú‰»
+// åˆæœŸåŒ–
 void Renderer::Initialize(
     DeviceManager* deviceMgr,
     SwapChainManager* swapMgr,
@@ -15,6 +16,7 @@ void Renderer::Initialize(
     TextureManager* texMgr,
     BufferManager* cubeBufMgr,
     BufferManager* modelBufMgr,
+	BufferManager* quadBufMgr, // Quadç”¨ãƒãƒƒãƒ•ã‚¡
     FbxModelLoader::VertexInfo* modelVertexInfo
 ) {
     m_deviceMgr = deviceMgr;
@@ -24,14 +26,15 @@ void Renderer::Initialize(
     m_texMgr = texMgr;
     m_cubeBufMgr = cubeBufMgr;
     m_modelBufMgr = modelBufMgr;
+	m_quadBufferMgr = quadBufMgr; // Quadç”¨ãƒãƒƒãƒ•ã‚¡ã‚’ä¿æŒ
     m_modelVertexInfo = modelVertexInfo;
     m_width = static_cast<float>(m_swapMgr->GetWidth());
     m_height = static_cast<float>(m_swapMgr->GetHeight());
 
-    // --- ƒXƒLƒjƒ“ƒO—pCBVƒoƒbƒtƒ@ì¬i80ƒ{[ƒ“‘z’èj
-    m_skinCBSize = sizeof(DirectX::XMMATRIX) * 80; // •K—v‚É‰‚¶‚Ä’²®
+    // --- ã‚¹ã‚­ãƒ‹ãƒ³ã‚°ç”¨CBVãƒãƒƒãƒ•ã‚¡ä½œæˆï¼ˆ80ãƒœãƒ¼ãƒ³æƒ³å®šï¼‰
+    m_skinCBSize = sizeof(DirectX::XMMATRIX) * 80; // å¿…è¦ã«å¿œã˜ã¦èª¿æ•´
     CD3DX12_HEAP_PROPERTIES heapProps(D3D12_HEAP_TYPE_UPLOAD);
-    CD3DX12_RESOURCE_DESC cbDesc = CD3DX12_RESOURCE_DESC::Buffer((m_skinCBSize + 255) & ~255); // 256ƒAƒ‰ƒCƒ“
+    CD3DX12_RESOURCE_DESC cbDesc = CD3DX12_RESOURCE_DESC::Buffer((m_skinCBSize + 255) & ~255); // 256ã‚¢ãƒ©ã‚¤ãƒ³
 
     m_deviceMgr->GetDevice()->CreateCommittedResource(
         &heapProps, D3D12_HEAP_FLAG_NONE, &cbDesc,
@@ -41,12 +44,12 @@ void Renderer::Initialize(
     m_skinCBGpuAddr = m_skinningConstantBuffer->GetGPUVirtualAddress();
 }
 
-// ƒtƒŒ[ƒ€ŠJniƒoƒbƒtƒ@ƒNƒŠƒAEƒ^[ƒQƒbƒgİ’èj
+// ãƒ•ãƒ¬ãƒ¼ãƒ é–‹å§‹ï¼ˆãƒãƒƒãƒ•ã‚¡ã‚¯ãƒªã‚¢ãƒ»ã‚¿ãƒ¼ã‚²ãƒƒãƒˆè¨­å®šï¼‰
 void Renderer::BeginFrame() {
     m_backBufferIndex = m_swapMgr->GetSwapChain()->GetCurrentBackBufferIndex();
     m_cmdList = m_deviceMgr->GetCommandList();
 
-    // ƒoƒŠƒAİ’èiPresent¨RenderTargetj
+    // ãƒãƒªã‚¢è¨­å®šï¼ˆPresentâ†’RenderTargetï¼‰
     D3D12_RESOURCE_BARRIER barrier = {};
     barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
     barrier.Transition.pResource = m_swapMgr->GetBackBuffer(m_backBufferIndex);
@@ -55,35 +58,35 @@ void Renderer::BeginFrame() {
     barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
     m_cmdList->ResourceBarrier(1, &barrier);
 
-    // RTV/DSVİ’è
+    // RTV/DSVè¨­å®š
     D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle = m_swapMgr->GetRTVHeap()->GetCPUDescriptorHandleForHeapStart();
     rtvHandle.ptr += m_backBufferIndex * m_swapMgr->GetRTVHeapSize();
     D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = m_depthMgr->GetDSVHeap()->GetCPUDescriptorHandleForHeapStart();
     m_cmdList->OMSetRenderTargets(1, &rtvHandle, FALSE, &dsvHandle);
 
-    // ‰æ–ÊƒNƒŠƒA
+    // ç”»é¢ã‚¯ãƒªã‚¢
     const float clearColor[] = { 0.1f, 0.3f, 0.6f, 1.0f };
     m_cmdList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
     m_cmdList->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
 
-    // ƒrƒ…[ƒ|[ƒgEƒVƒU[İ’è
+    // ãƒ“ãƒ¥ãƒ¼ãƒãƒ¼ãƒˆãƒ»ã‚·ã‚¶ãƒ¼è¨­å®š
     D3D12_VIEWPORT viewport = { 0, 0, m_width, m_height, 0.0f, 1.0f };
     D3D12_RECT scissorRect = { 0, 0, (LONG)m_width, (LONG)m_height };
     m_cmdList->RSSetViewports(1, &viewport);
     m_cmdList->RSSetScissorRects(1, &scissorRect);
 
-    // ƒfƒtƒHƒ‹ƒg‚Í”ñƒXƒLƒjƒ“ƒOƒpƒCƒvƒ‰ƒCƒ“
+    // ãƒ‡ãƒ•ã‚©ãƒ«ãƒˆã¯éã‚¹ã‚­ãƒ‹ãƒ³ã‚°ãƒ‘ã‚¤ãƒ—ãƒ©ã‚¤ãƒ³
     m_cmdList->SetPipelineState(m_pipeMgr->GetPipelineState(false));
     m_cmdList->SetGraphicsRootSignature(m_pipeMgr->GetRootSignature(false));
     ID3D12DescriptorHeap* heaps[] = { m_texMgr->GetSRVHeap() };
     m_cmdList->SetDescriptorHeaps(_countof(heaps), heaps);
 }
 
-// •`‰æˆ—iŒ^‚²‚Æ‚É•ªŠòIj
+// æç”»å‡¦ç†ï¼ˆå‹ã”ã¨ã«åˆ†å²ï¼ï¼‰
 void Renderer::DrawObject(GameObject* obj, size_t idx, const XMMATRIX& view, const XMMATRIX& proj) {
     constexpr size_t CBV_SIZE = 256;
 
-    // 1. ƒXƒLƒjƒ“ƒOƒƒbƒVƒ…iƒAƒjƒ•t‚«ƒ‚ƒfƒ‹j
+    // 1. ã‚¹ã‚­ãƒ‹ãƒ³ã‚°ãƒ¡ãƒƒã‚·ãƒ¥ï¼ˆã‚¢ãƒ‹ãƒ¡ä»˜ããƒ¢ãƒ‡ãƒ«ï¼‰
     if (auto* smr = obj->GetComponent<SkinnedMeshRenderer>()) {
         m_cmdList->SetPipelineState(m_pipeMgr->GetPipelineState(true));
         m_cmdList->SetGraphicsRootSignature(m_pipeMgr->GetRootSignature(true));
@@ -94,7 +97,7 @@ void Renderer::DrawObject(GameObject* obj, size_t idx, const XMMATRIX& view, con
         XMMATRIX world = obj->GetComponent<Transform>()->GetWorldMatrix();
         XMMATRIX wvp = XMMatrixTranspose(world * view * proj);
 
-        // ƒXƒLƒjƒ“ƒOs—ñæ“¾iƒAƒjƒ[ƒ^[•K{Ij
+        // ã‚¹ã‚­ãƒ‹ãƒ³ã‚°è¡Œåˆ—å–å¾—ï¼ˆã‚¢ãƒ‹ãƒ¡ãƒ¼ã‚¿ãƒ¼å¿…é ˆï¼ï¼‰
         std::vector<XMMATRIX> skinnedMats;
         if (smr->animator && smr->skinVertexInfo) {
             skinnedMats = smr->animator->GetSkinnedPose(smr->skinVertexInfo->bindPoses);
@@ -102,7 +105,7 @@ void Renderer::DrawObject(GameObject* obj, size_t idx, const XMMATRIX& view, con
                 m = XMMatrixTranspose(m);
         }
 
-        // ƒ{[ƒ“s—ñ{WVP‚ğ’è”ƒoƒbƒtƒ@‚É‘‚«‚Ş
+        // ãƒœãƒ¼ãƒ³è¡Œåˆ—ï¼‹WVPã‚’å®šæ•°ãƒãƒƒãƒ•ã‚¡ã«æ›¸ãè¾¼ã‚€
         void* mapped = nullptr;
         if (SUCCEEDED(m_skinningConstantBuffer->Map(0, nullptr, &mapped))) {
             memcpy((char*)mapped, &wvp, sizeof(XMMATRIX)); // b0: WVP
@@ -125,7 +128,7 @@ void Renderer::DrawObject(GameObject* obj, size_t idx, const XMMATRIX& view, con
         return;
     }
 
-    // 2. Ã“IƒƒbƒVƒ…iCube‚â’ÊíFBXj
+    // 2. é™çš„ãƒ¡ãƒƒã‚·ãƒ¥ï¼ˆCubeã‚„é€šå¸¸FBXï¼‰
     if (auto* mr = obj->GetComponent<StaticMeshRenderer>()) {
         D3D12_GPU_VIRTUAL_ADDRESS cbvAddr = m_cubeBufMgr->GetConstantBufferGPUAddress() + CBV_SIZE * idx;
         m_cmdList->SetGraphicsRootConstantBufferView(1, cbvAddr);
@@ -134,7 +137,7 @@ void Renderer::DrawObject(GameObject* obj, size_t idx, const XMMATRIX& view, con
             m_cmdList->SetGraphicsRootDescriptorTable(0, m_texMgr->GetSRV(mr->texIndex));
         m_cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-        // FBXƒ‚ƒfƒ‹‚Ìê‡
+        // FBXãƒ¢ãƒ‡ãƒ«ã®å ´åˆ
         if (mr->modelBuffer && mr->vertexInfo) {
             auto vbv = mr->modelBuffer->GetVertexBufferView();
             auto ibv = mr->modelBuffer->GetIndexBufferView();
@@ -142,7 +145,7 @@ void Renderer::DrawObject(GameObject* obj, size_t idx, const XMMATRIX& view, con
             m_cmdList->IASetIndexBuffer(&ibv);
             m_cmdList->DrawIndexedInstanced((UINT)mr->vertexInfo->indices.size(), 1, 0, 0, 0);
         }
-        // Cube‚È‚Ç‚Ì‹¤’Êƒoƒbƒtƒ@‚Ìê‡
+        // Cubeãªã©ã®å…±é€šãƒãƒƒãƒ•ã‚¡ã®å ´åˆ
         else {
             auto vbv = m_cubeBufMgr->GetVertexBufferView();
             auto ibv = m_cubeBufMgr->GetIndexBufferView();
@@ -152,11 +155,17 @@ void Renderer::DrawObject(GameObject* obj, size_t idx, const XMMATRIX& view, con
         }
         return;
     }
+
+    if (auto* uiImage = obj->GetComponent<UIImage>()) {
+        DrawUIImage(uiImage, idx);
+        return;
+    }
+        
 }
 
-// ƒtƒŒ[ƒ€I—¹iPresent & ƒRƒ}ƒ“ƒhƒŠƒXƒgƒŠƒZƒbƒgj
+// ãƒ•ãƒ¬ãƒ¼ãƒ çµ‚äº†ï¼ˆPresent & ã‚³ãƒãƒ³ãƒ‰ãƒªã‚¹ãƒˆãƒªã‚»ãƒƒãƒˆï¼‰
 void Renderer::EndFrame() {
-    // ƒoƒŠƒAİ’èiRenderTarget¨Presentj
+    // ãƒãƒªã‚¢è¨­å®šï¼ˆRenderTargetâ†’Presentï¼‰
     D3D12_RESOURCE_BARRIER barrier = {};
     barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
     barrier.Transition.pResource = m_swapMgr->GetBackBuffer(m_backBufferIndex);
@@ -165,14 +174,62 @@ void Renderer::EndFrame() {
     barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
     m_cmdList->ResourceBarrier(1, &barrier);
 
-    // ƒRƒ}ƒ“ƒhƒŠƒXƒgÀs‚ÆPresent
+    // ã‚³ãƒãƒ³ãƒ‰ãƒªã‚¹ãƒˆå®Ÿè¡Œã¨Present
     m_cmdList->Close();
     ID3D12CommandList* commandLists[] = { m_cmdList };
     m_deviceMgr->GetCommandQueue()->ExecuteCommandLists(1, commandLists);
     m_deviceMgr->WaitForGpu();
     m_swapMgr->GetSwapChain()->Present(1, 0);
 
-    // ƒRƒ}ƒ“ƒhƒAƒƒP[ƒ^/ƒŠƒXƒg‚ğƒŠƒZƒbƒg
+    // ã‚³ãƒãƒ³ãƒ‰ã‚¢ãƒ­ã‚±ãƒ¼ã‚¿/ãƒªã‚¹ãƒˆã‚’ãƒªã‚»ãƒƒãƒˆ
     m_deviceMgr->GetCommandAllocator()->Reset();
     m_cmdList->Reset(m_deviceMgr->GetCommandAllocator(), nullptr);
+}
+
+
+void Renderer::DrawUIImage(UIImage* image, size_t idx) {
+    // ----- 1. ãƒ‘ã‚¤ãƒ—ãƒ©ã‚¤ãƒ³ï¼ˆé€šå¸¸ï¼‰ã‚’ä½¿ã† -----
+    m_cmdList->SetPipelineState(m_pipeMgr->GetPipelineState(false));
+    m_cmdList->SetGraphicsRootSignature(m_pipeMgr->GetRootSignature(false));
+    ID3D12DescriptorHeap* heaps[] = { m_texMgr->GetSRVHeap() };
+    m_cmdList->SetDescriptorHeaps(_countof(heaps), heaps);
+
+    // ----- 2. ãƒ†ã‚¯ã‚¹ãƒãƒ£SRV -----
+    if (image->texIndex >= 0)
+        m_cmdList->SetGraphicsRootDescriptorTable(0, m_texMgr->GetSRV(image->texIndex));
+
+    // ----- 3. NDCå¤‰æ›ï¼ˆãƒ”ã‚¯ã‚»ãƒ«â†’-1ã€œ1æ­£è¦åŒ–ï¼‰ -----
+    float ndcX = (image->position.x / m_width) * 2.0f - 1.0f;
+    float ndcY = 1.0f - (image->position.y / m_height) * 2.0f;
+    float ndcW = image->size.x / m_width;
+    float ndcH = image->size.y / m_height;
+
+    DirectX::XMMATRIX world =
+        DirectX::XMMatrixScaling(ndcW, ndcH, 1.0f) *
+        DirectX::XMMatrixTranslation(ndcX, ndcY, 0);
+
+    // ----- 4. å®šæ•°ãƒãƒƒãƒ•ã‚¡ï¼ˆè‰²ãƒ»WorldViewProjï¼‰ -----
+    ObjectCB cbData{};
+    cbData.WorldViewProj = DirectX::XMMatrixTranspose(world);
+    cbData.Color = image->color;
+    cbData.UseTexture = (image->texIndex >= 0) ? 1 : 0;
+
+    constexpr size_t CBV_SIZE = 256;
+    void* mapped = nullptr;
+    m_quadBufferMgr->GetConstantBuffer()->Map(0, nullptr, &mapped);
+    memcpy((char*)mapped + CBV_SIZE * idx, &cbData, sizeof(cbData));
+    m_quadBufferMgr->GetConstantBuffer()->Unmap(0, nullptr);
+
+    D3D12_GPU_VIRTUAL_ADDRESS cbvAddr = m_quadBufferMgr->GetConstantBufferGPUAddress() + CBV_SIZE * idx;
+    m_cmdList->SetGraphicsRootConstantBufferView(1, cbvAddr);
+
+    // ----- 5. é ‚ç‚¹ãƒ»ã‚¤ãƒ³ãƒ‡ãƒƒã‚¯ã‚¹ãƒãƒƒãƒ•ã‚¡ -----
+    auto vbv = m_quadBufferMgr->GetVertexBufferView();
+    auto ibv = m_quadBufferMgr->GetIndexBufferView();
+    m_cmdList->IASetVertexBuffers(0, 1, &vbv);
+    m_cmdList->IASetIndexBuffer(&ibv);
+    m_cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+    // ----- 6. æç”» -----
+    m_cmdList->DrawIndexedInstanced(6, 1, 0, 0, 0);
 }

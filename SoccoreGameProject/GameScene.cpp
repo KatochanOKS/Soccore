@@ -2,8 +2,10 @@
 #include "ObjectFactory.h"
 #include "Transform.h"
 #include "Animator.h"
-#include"SkinnedMeshRenderer.h"
-#include"StaticMeshRenderer.h"
+#include "SkinnedMeshRenderer.h"
+#include "StaticMeshRenderer.h"
+#include "UIImage.h"      // ← これを追加！
+
 #include <DirectXMath.h>
 using namespace DirectX;
 
@@ -12,11 +14,21 @@ GameScene::GameScene(EngineManager* engine) : engine(engine) {}
 void GameScene::Start() {
     m_sceneObjects.clear();
 
-    // 地面とキューブ
+    // ==== 1. UI画像GameObject生成 ====
+    int logoTex = engine->GetTextureManager()->LoadTexture(L"assets/UI.png", engine->GetDeviceManager()->GetCommandList());
+    GameObject* uiObj = new GameObject();
+    auto* logo = uiObj->AddComponent<UIImage>();
+    logo->texIndex = logoTex;
+    logo->position = { 300, 100 };   // 画面左上基準(px)
+    logo->size = { 400, 400 };
+    logo->color = { 1, 1, 1, 1 };
+    m_sceneObjects.push_back(uiObj);
+
+    // ==== 2. 地面とキューブ ====
     int groundTex = engine->GetTextureManager()->LoadTexture(L"assets/penguin2.png", engine->GetDeviceManager()->GetCommandList());
     m_sceneObjects.push_back(ObjectFactory::CreateCube(engine, { 0, -5.0f, 0 }, { 50, 0.2f, 50 }, groundTex, Colors::White));
 
-    // プレイヤー
+    // ==== 3. プレイヤー ====
     int bugEnemyTexIdx = engine->GetTextureManager()->LoadTexture(L"assets/Mutant.fbm/Mutant_diffuse.png", engine->GetDeviceManager()->GetCommandList());
     GameObject* player = ObjectFactory::CreateSkinningBaseModel(
         engine, "assets/Mutant.fbx", { 0, 0, 0 }, { 0.05f, 0.05f, 0.05f }, bugEnemyTexIdx, Colors::White);
@@ -34,12 +46,17 @@ void GameScene::Start() {
     }
     m_sceneObjects.push_back(player);
 
-    // 追加キューブなど必要に応じて
+    // 必要に応じて他オブジェクトも追加
 }
 
 void GameScene::Update() {
     // プレイヤーだけ移動処理
-    GameObject* player = m_sceneObjects.back();
+    GameObject* player = nullptr;
+    // プレイヤーGameObjectは2番目（m_sceneObjects[1]）
+    if (m_sceneObjects.size() > 1)
+        player = m_sceneObjects[1];
+    if (!player) return;
+
     auto* tr = player->GetComponent<Transform>();
     auto* animator = player->GetComponent<Animator>();
     float moveSpeed = 0.1f;
@@ -86,7 +103,10 @@ void GameScene::Draw() {
     if (m_sceneObjects.empty()) return;
 
     // プレイヤー位置でカメラ
-    GameObject* player = m_sceneObjects.back();
+    GameObject* player = nullptr;
+    if (m_sceneObjects.size() > 1)
+        player = m_sceneObjects[1];
+    if (!player) return;
     auto* tr = player->GetComponent<Transform>();
     XMFLOAT3 playerPos = tr ? tr->position : XMFLOAT3{ 0,0,0 };
 
@@ -136,4 +156,12 @@ void GameScene::Draw() {
     for (size_t i = 0; i < m_sceneObjects.size(); ++i)
         engine->GetRenderer()->DrawObject(m_sceneObjects[i], i, view, proj);
     engine->GetRenderer()->EndFrame();
+}
+
+// デストラクタで後始末
+GameScene::~GameScene() {
+    for (auto* obj : m_sceneObjects) {
+        delete obj;
+    }
+    m_sceneObjects.clear();
 }

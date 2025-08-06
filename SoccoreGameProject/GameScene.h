@@ -6,7 +6,7 @@
 class GameScene : public Scene {
 public:
     GameScene(EngineManager* engine);
-
+    ~GameScene() override; // Å©í«â¡
     void Start() override;
     void Update() override;
     void Draw() override;
