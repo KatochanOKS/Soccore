@@ -1,9 +1,9 @@
 ﻿#include "Renderer.h"
 #include "d3dx12.h"
 #include "Transform.h"
-#include "StaticMeshRenderer.h"   // ← 追加！
-#include "SkinnedMeshRenderer.h"  // ← 追加！
-#include"EngineManager.h"
+#include "StaticMeshRenderer.h"
+#include "SkinnedMeshRenderer.h"
+#include "EngineManager.h"
 #include "UIImage.h"
 using namespace DirectX;
 
@@ -16,7 +16,7 @@ void Renderer::Initialize(
     TextureManager* texMgr,
     BufferManager* cubeBufMgr,
     BufferManager* modelBufMgr,
-	BufferManager* quadBufMgr, // Quad用バッファ
+    BufferManager* quadBufMgr,
     FbxModelLoader::VertexInfo* modelVertexInfo
 ) {
     m_deviceMgr = deviceMgr;
@@ -26,15 +26,15 @@ void Renderer::Initialize(
     m_texMgr = texMgr;
     m_cubeBufMgr = cubeBufMgr;
     m_modelBufMgr = modelBufMgr;
-	m_quadBufferMgr = quadBufMgr; // Quad用バッファを保持
+    m_quadBufferMgr = quadBufMgr;
     m_modelVertexInfo = modelVertexInfo;
     m_width = static_cast<float>(m_swapMgr->GetWidth());
     m_height = static_cast<float>(m_swapMgr->GetHeight());
 
-    // --- スキニング用CBVバッファ作成（80ボーン想定）
-    m_skinCBSize = sizeof(DirectX::XMMATRIX) * 80; // 必要に応じて調整
+    // スキニング用CBVバッファ作成（80ボーン想定）
+    m_skinCBSize = sizeof(DirectX::XMMATRIX) * 80;
     CD3DX12_HEAP_PROPERTIES heapProps(D3D12_HEAP_TYPE_UPLOAD);
-    CD3DX12_RESOURCE_DESC cbDesc = CD3DX12_RESOURCE_DESC::Buffer((m_skinCBSize + 255) & ~255); // 256アライン
+    CD3DX12_RESOURCE_DESC cbDesc = CD3DX12_RESOURCE_DESC::Buffer((m_skinCBSize + 255) & ~255);
 
     m_deviceMgr->GetDevice()->CreateCommittedResource(
         &heapProps, D3D12_HEAP_FLAG_NONE, &cbDesc,
@@ -44,12 +44,12 @@ void Renderer::Initialize(
     m_skinCBGpuAddr = m_skinningConstantBuffer->GetGPUVirtualAddress();
 }
 
-// フレーム開始（バッファクリア・ターゲット設定）
+// フレーム開始
 void Renderer::BeginFrame() {
     m_backBufferIndex = m_swapMgr->GetSwapChain()->GetCurrentBackBufferIndex();
     m_cmdList = m_deviceMgr->GetCommandList();
 
-    // バリア設定（Present→RenderTarget）
+    // バリア設定
     D3D12_RESOURCE_BARRIER barrier = {};
     barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
     barrier.Transition.pResource = m_swapMgr->GetBackBuffer(m_backBufferIndex);
@@ -75,14 +75,12 @@ void Renderer::BeginFrame() {
     m_cmdList->RSSetViewports(1, &viewport);
     m_cmdList->RSSetScissorRects(1, &scissorRect);
 
-    // デフォルトは非スキニングパイプライン
-    m_cmdList->SetPipelineState(m_pipeMgr->GetPipelineState(false));
-    m_cmdList->SetGraphicsRootSignature(m_pipeMgr->GetRootSignature(false));
+    // テクスチャヒープをセット（どのPSOでも共通）
     ID3D12DescriptorHeap* heaps[] = { m_texMgr->GetSRVHeap() };
     m_cmdList->SetDescriptorHeaps(_countof(heaps), heaps);
 }
 
-// 描画処理（型ごとに分岐！）
+// 描画処理（型ごとに必ずPSOセット！）
 void Renderer::DrawObject(GameObject* obj, size_t idx, const XMMATRIX& view, const XMMATRIX& proj) {
     constexpr size_t CBV_SIZE = 256;
 
@@ -97,7 +95,7 @@ void Renderer::DrawObject(GameObject* obj, size_t idx, const XMMATRIX& view, con
         XMMATRIX world = obj->GetComponent<Transform>()->GetWorldMatrix();
         XMMATRIX wvp = XMMatrixTranspose(world * view * proj);
 
-        // スキニング行列取得（アニメーター必須！）
+        // スキニング行列取得
         std::vector<XMMATRIX> skinnedMats;
         if (smr->animator && smr->skinVertexInfo) {
             skinnedMats = smr->animator->GetSkinnedPose(smr->skinVertexInfo->bindPoses);
@@ -108,13 +106,13 @@ void Renderer::DrawObject(GameObject* obj, size_t idx, const XMMATRIX& view, con
         // ボーン行列＋WVPを定数バッファに書き込む
         void* mapped = nullptr;
         if (SUCCEEDED(m_skinningConstantBuffer->Map(0, nullptr, &mapped))) {
-            memcpy((char*)mapped, &wvp, sizeof(XMMATRIX)); // b0: WVP
+            memcpy((char*)mapped, &wvp, sizeof(XMMATRIX));
             if (!skinnedMats.empty())
-                memcpy((char*)mapped + 256, skinnedMats.data(), sizeof(XMMATRIX) * skinnedMats.size()); // b1: Bone array
+                memcpy((char*)mapped + 256, skinnedMats.data(), sizeof(XMMATRIX) * skinnedMats.size());
             m_skinningConstantBuffer->Unmap(0, nullptr);
 
-            m_cmdList->SetGraphicsRootConstantBufferView(1, m_skinCBGpuAddr);           // b0
-            m_cmdList->SetGraphicsRootConstantBufferView(2, m_skinCBGpuAddr + 256);     // b1
+            m_cmdList->SetGraphicsRootConstantBufferView(1, m_skinCBGpuAddr);
+            m_cmdList->SetGraphicsRootConstantBufferView(2, m_skinCBGpuAddr + 256);
         }
 
         if (smr->modelBuffer && smr->skinVertexInfo) {
@@ -130,6 +128,10 @@ void Renderer::DrawObject(GameObject* obj, size_t idx, const XMMATRIX& view, con
 
     // 2. 静的メッシュ（Cubeや通常FBX）
     if (auto* mr = obj->GetComponent<StaticMeshRenderer>()) {
+        // ←必ずPSOとRootSignatureをセット！（これ抜けてるとブレンドONになる！）
+        m_cmdList->SetPipelineState(m_pipeMgr->GetPipelineState(false));
+        m_cmdList->SetGraphicsRootSignature(m_pipeMgr->GetRootSignature(false));
+
         D3D12_GPU_VIRTUAL_ADDRESS cbvAddr = m_cubeBufMgr->GetConstantBufferGPUAddress() + CBV_SIZE * idx;
         m_cmdList->SetGraphicsRootConstantBufferView(1, cbvAddr);
 
@@ -156,16 +158,16 @@ void Renderer::DrawObject(GameObject* obj, size_t idx, const XMMATRIX& view, con
         return;
     }
 
+    // 3. UI画像
     if (auto* uiImage = obj->GetComponent<UIImage>()) {
         DrawUIImage(uiImage, idx);
         return;
     }
-        
 }
 
-// フレーム終了（Present & コマンドリストリセット）
+// フレーム終了
 void Renderer::EndFrame() {
-    // バリア設定（RenderTarget→Present）
+    // バリア設定
     D3D12_RESOURCE_BARRIER barrier = {};
     barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
     barrier.Transition.pResource = m_swapMgr->GetBackBuffer(m_backBufferIndex);
@@ -186,19 +188,19 @@ void Renderer::EndFrame() {
     m_cmdList->Reset(m_deviceMgr->GetCommandAllocator(), nullptr);
 }
 
-
+// UI専用描画
 void Renderer::DrawUIImage(UIImage* image, size_t idx) {
-    // ----- 1. パイプライン（通常）を使う -----
-    m_cmdList->SetPipelineState(m_pipeMgr->GetPipelineState(false));
-    m_cmdList->SetGraphicsRootSignature(m_pipeMgr->GetRootSignature(false));
+    // ★UI専用PSO/RootSignatureに切り替え
+    m_cmdList->SetPipelineState(m_pipeMgr->GetPipelineStateUI());
+    m_cmdList->SetGraphicsRootSignature(m_pipeMgr->GetRootSignatureUI());
     ID3D12DescriptorHeap* heaps[] = { m_texMgr->GetSRVHeap() };
     m_cmdList->SetDescriptorHeaps(_countof(heaps), heaps);
 
-    // ----- 2. テクスチャSRV -----
+    // テクスチャSRV
     if (image->texIndex >= 0)
         m_cmdList->SetGraphicsRootDescriptorTable(0, m_texMgr->GetSRV(image->texIndex));
 
-    // ----- 3. NDC変換（ピクセル→-1〜1正規化） -----
+    // NDC変換
     float ndcX = (image->position.x / m_width) * 2.0f - 1.0f;
     float ndcY = 1.0f - (image->position.y / m_height) * 2.0f;
     float ndcW = image->size.x / m_width;
@@ -208,7 +210,7 @@ void Renderer::DrawUIImage(UIImage* image, size_t idx) {
         DirectX::XMMatrixScaling(ndcW, ndcH, 1.0f) *
         DirectX::XMMatrixTranslation(ndcX, ndcY, 0);
 
-    // ----- 4. 定数バッファ（色・WorldViewProj） -----
+    // 定数バッファ
     ObjectCB cbData{};
     cbData.WorldViewProj = DirectX::XMMatrixTranspose(world);
     cbData.Color = image->color;
@@ -223,13 +225,13 @@ void Renderer::DrawUIImage(UIImage* image, size_t idx) {
     D3D12_GPU_VIRTUAL_ADDRESS cbvAddr = m_quadBufferMgr->GetConstantBufferGPUAddress() + CBV_SIZE * idx;
     m_cmdList->SetGraphicsRootConstantBufferView(1, cbvAddr);
 
-    // ----- 5. 頂点・インデックスバッファ -----
+    // 頂点・インデックスバッファ
     auto vbv = m_quadBufferMgr->GetVertexBufferView();
     auto ibv = m_quadBufferMgr->GetIndexBufferView();
     m_cmdList->IASetVertexBuffers(0, 1, &vbv);
     m_cmdList->IASetIndexBuffer(&ibv);
     m_cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-    // ----- 6. 描画 -----
+    // 描画
     m_cmdList->DrawIndexedInstanced(6, 1, 0, 0, 0);
 }

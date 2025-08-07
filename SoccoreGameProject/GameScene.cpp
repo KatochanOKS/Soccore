@@ -21,7 +21,7 @@ void GameScene::Start() {
     logo->texIndex = logoTex;
     logo->position = { 300, 100 };   // 画面左上基準(px)
     logo->size = { 400, 400 };
-    logo->color = { 1, 1, 1, 1 };
+    logo->color = { 1, 1, 1, 1 };  // ←これでOK！
     m_sceneObjects.push_back(uiObj);
 
     // ==== 2. 地面とキューブ ====
@@ -54,7 +54,7 @@ void GameScene::Update() {
     GameObject* player = nullptr;
     // プレイヤーGameObjectは2番目（m_sceneObjects[1]）
     if (m_sceneObjects.size() > 1)
-        player = m_sceneObjects[1];
+        player = m_sceneObjects[2];
     if (!player) return;
 
     auto* tr = player->GetComponent<Transform>();

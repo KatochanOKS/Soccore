@@ -11,8 +11,9 @@ void EngineManager::Initialize() {
     m_depthBufferManager.Initialize(device, 1280, 720);
     m_pipelineManager.Initialize(
         device,
-        L"assets/VertexShader.cso", L"assets/PixelShader.cso",
-        L"assets/SkinningVS.cso", L"assets/SkinningPS.cso"
+        L"assets/VertexShader.cso", L"assets/PixelShader.cso",   // 通常
+        L"assets/SkinningVS.cso", L"assets/SkinningPS.cso",     // スキン
+        L"assets/UIVertexShader.cso", L"assets/UIPixelShader.cso" // ★UI用
     );
 
     m_textureManager.Initialize(device);
