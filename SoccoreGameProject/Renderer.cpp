@@ -65,7 +65,8 @@ void Renderer::BeginFrame() {
     m_cmdList->OMSetRenderTargets(1, &rtvHandle, FALSE, &dsvHandle);
 
     // 画面クリア
-    const float clearColor[] = { 0.1f, 0.3f, 0.6f, 1.0f };
+    const float clearColor[] = { 0.75f, 0.85f, 0.95f, 1.0f }; // 明るい空色
+
     m_cmdList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
     m_cmdList->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
 
