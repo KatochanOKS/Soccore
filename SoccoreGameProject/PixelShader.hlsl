@@ -42,7 +42,8 @@ float4 main(VS_OUTPUT input) : SV_TARGET
 
     // 合成（RGB各要素で）
     float3 finalColor = (ambient + diff) * baseColor.rgb + spec * float3(1, 1, 1);
-    return float4(saturate(finalColor), baseColor.a);
+    return baseColor;
+
 }
 //float4 main(VS_OUTPUT input) : SV_TARGET
 //{

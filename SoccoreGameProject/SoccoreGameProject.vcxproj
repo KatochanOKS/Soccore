@@ -152,6 +152,7 @@
     <ClCompile Include="Animator.cpp" />
     <ClCompile Include="ApplicationManager.cpp" />
     <ClCompile Include="BufferManager.cpp" />
+    <ClCompile Include="Collider.cpp" />
     <ClCompile Include="DepthBufferManager.cpp" />
     <ClCompile Include="DeviceManager.cpp" />
     <ClCompile Include="EngineManager.cpp" />
@@ -176,6 +177,7 @@
     <ClInclude Include="BaseMeshRenderer.h" />
     <ClInclude Include="BIN_FILE12.h" />
     <ClInclude Include="BufferManager.h" />
+    <ClInclude Include="Collider.h" />
     <ClInclude Include="Colors.h" />
     <ClInclude Include="Component.h" />
     <ClInclude Include="d3dx12.h" />
