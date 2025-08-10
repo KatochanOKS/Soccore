@@ -27,25 +27,24 @@ GameObject* ObjectFactory::CreateCube(
     int texIdx,
     const XMFLOAT4& color
 ) {
-    // GameObject本体を生成
     auto* obj = new GameObject();
 
-    // 位置・スケール（大きさ）設定
+    // Transform設定
     auto* tr = obj->AddComponent<Transform>();
     tr->position = pos;
-    tr->scale = scale;
+    tr->scale = scale;  // 見た目と当たり判定の拡大縮小はscaleで！
 
-    // 描画用のStaticMeshRendererを追加・テクスチャや色もセット
+    // 描画
     auto* mr = obj->AddComponent<StaticMeshRenderer>();
     mr->texIndex = texIdx;
     mr->color = color;
 
+    // ★ Collider（中心0, サイズ1固定、scaleで見た目拡大OK！）
     auto* col = obj->AddComponent<Collider>();
     col->center = { 0, 0, 0 };
-    col->size = { 1, 1, 1 }; // ←必ず「1,1,1」！！！
+    col->size = { 1, 1, 1 }; // Meshが±0.5範囲なので1でOK
 
-
-    // 初回のみ、共通バッファを一度だけ作成（効率UP）
+    // バッファ（初回のみ生成）
     static bool initialized = false;
     if (!initialized) {
         std::vector<Vertex> vertices;
@@ -56,10 +55,10 @@ GameObject* ObjectFactory::CreateCube(
         initialized = true;
     }
 
-    // 作ったオブジェクトをエンジンの管理リストに登録
     engine->m_gameObjects.push_back(obj);
     return obj;
 }
+
 
 //---------------------------------------------
 // 2. 静的FBXモデル（建物・オブジェ等）の生成
@@ -168,8 +167,9 @@ GameObject* ObjectFactory::CreateSkinningBaseModel(
 
     // プレイヤーなどキャラクター用のコライダーもここで付与
     auto* pcol = obj->AddComponent<Collider>();
-    pcol->center = { 0, 1.0f, 0 }; // Y方向を少し上げて「足元」を基準に
-    pcol->size = { 0.5f, 2.0f, 0.5f }; // 身長と幅をキャラに合わせる
+    pcol->center = {0, 1.0f, 0};   // 足元から頭まで
+pcol->size   = {0.5f, 2.0f, 0.5f};
+
 
     // FBXからボーン・バインドポーズだけ取得（アニメは後付けOK）
     auto* skinInfo = new FbxModelLoader::SkinningVertexInfo();
@@ -206,37 +206,36 @@ GameObject* ObjectFactory::CreateBall(
     int texIndex,
     const XMFLOAT4& color
 ) {
-    // 1. GameObject本体を生成
     auto* obj = new GameObject();
 
-    // 2. 位置・大きさをセット（scaleはボール半径ベースで調整！）
+    // Transform（球の半径はscaleで調整！）
     auto* tr = obj->AddComponent<Transform>();
     tr->position = pos;
-    tr->scale = scale; // 例：{0.5f, 0.5f, 0.5f} なら直径1mの球
+    tr->scale = scale;
 
-    // 3. 描画（静的メッシュでOK：Cube or あればSphereでも）
+    // 描画
     auto* mr = obj->AddComponent<StaticMeshRenderer>();
     mr->texIndex = texIndex;
     mr->color = color;
 
-    // ここではCubeメッシュを流用（本格的には球体メッシュも可）
+    // ★ Collider（必ず1,1,1！scaleで拡大するのでOK）
+    auto* col = obj->AddComponent<Collider>();
+    col->center = { 0, 0, 0 };
+    col->size = { 1, 1, 1 };
+
+    // バッファ（初回のみ生成）
     static bool ballMeshInitialized = false;
     if (!ballMeshInitialized) {
         std::vector<Vertex> vertices;
         std::vector<uint16_t> indices;
-        MeshLibrary::GetCubeMesh(vertices, indices); // ←Cubeのまま
+        MeshLibrary::GetCubeMesh(vertices, indices); // 仮でCube流用
         engine->GetBufferManager()->CreateVertexBuffer(engine->GetDeviceManager()->GetDevice(), vertices);
         engine->GetBufferManager()->CreateIndexBuffer(engine->GetDeviceManager()->GetDevice(), indices);
         ballMeshInitialized = true;
     }
 
-    // 4. 当たり判定（AABBのColliderを追加）
-    auto* col = obj->AddComponent<Collider>();
-    col->center = { 0, 0, 0 };
-    col->size = { 1.0f, 1.0f, 1.0f }; // 直径1m相当。scaleに合わせてあげてください
-
-    // 5. エンジンの管理リストに登録
     engine->m_gameObjects.push_back(obj);
-
     return obj;
 }
+
+

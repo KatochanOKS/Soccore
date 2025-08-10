@@ -13,7 +13,7 @@ public:
     FbxModelLoader::VertexInfo* vertexInfo = nullptr;   // モデルデータ（頂点・インデックス配列）
 
     bool isQuad2D = false;
-
+    bool isSkySphere = false; // 2D平面用・球体用のフラグ（QuadやSphereなら特別な処理をする）
 
     // デストラクタ（newしたものは必ずdelete！）
     ~StaticMeshRenderer() override;

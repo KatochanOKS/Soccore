@@ -16,7 +16,7 @@ bool PipelineManager::Initialize(
     ID3D12Device* device,
     LPCWSTR vsPath, LPCWSTR psPath,
     LPCWSTR skinVSPath, LPCWSTR skinPSPath,
-	LPCWSTR uiVSPath, LPCWSTR uiPSPath
+    LPCWSTR uiVSPath, LPCWSTR uiPSPath
 ) {
     // --- 非スキン（通常） ---
     {
@@ -61,6 +61,8 @@ bool PipelineManager::Initialize(
         psoDesc.PS = { psCode.data(), psCode.size() };
         psoDesc.InputLayout = { layout, _countof(layout) };
         psoDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
+        // --- ★裏面カリングOFFに設定 ---
+        psoDesc.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;  // ← この1行で裏面も描画！
         psoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
         psoDesc.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
         psoDesc.SampleMask = UINT_MAX;
@@ -69,8 +71,6 @@ bool PipelineManager::Initialize(
         psoDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
         psoDesc.DSVFormat = DXGI_FORMAT_D32_FLOAT;
         psoDesc.SampleDesc.Count = 1;
-
-
 
         hr = device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&m_pipelineStateNormal));
         if (FAILED(hr)) { Cleanup(); return false; }
@@ -122,6 +122,8 @@ bool PipelineManager::Initialize(
         psoDesc.PS = { psCode.data(), psCode.size() };
         psoDesc.InputLayout = { layout, _countof(layout) };
         psoDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
+        // --- ★裏面カリングOFFに設定 ---
+        psoDesc.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;
         psoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
         psoDesc.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
         psoDesc.SampleMask = UINT_MAX;
@@ -174,7 +176,8 @@ bool PipelineManager::Initialize(
         psoDesc.PS = { psCode.data(), psCode.size() };
         psoDesc.InputLayout = { layout, _countof(layout) };
         psoDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
-
+        // --- ★裏面カリングOFFに設定 ---
+        psoDesc.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;
         // --- ★アルファブレンド有効 ---
         D3D12_BLEND_DESC blendDesc = {};
         blendDesc.AlphaToCoverageEnable = FALSE;
