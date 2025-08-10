@@ -31,7 +31,8 @@ public:
     void DrawObject(GameObject* obj, size_t idx, const DirectX::XMMATRIX& view, const DirectX::XMMATRIX& proj);
     // Renderer.h
     void DrawUIImage(class UIImage* image, size_t idx);
-
+    // SkySphere ï`âÊópä÷êîÅií«â¡Åj
+    void DrawSkySphere(GameObject* obj, size_t idx, const DirectX::XMMATRIX& view, const DirectX::XMMATRIX& proj);
     void EndFrame();
 
 private:

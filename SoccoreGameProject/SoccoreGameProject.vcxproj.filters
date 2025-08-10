@@ -33,6 +33,12 @@
     <Filter Include="F\Scene">
       <UniqueIdentifier>{5a210913-fb45-4fe8-8ac9-16ae1ff7e225}</UniqueIdentifier>
     </Filter>
+    <Filter Include="F\Collider">
+      <UniqueIdentifier>{d0cf796b-834d-40b3-96b0-c27809da7cc5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="F\UI">
+      <UniqueIdentifier>{713db6fc-8c25-4417-820f-03c18371e77d}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="GameObject.cpp">
@@ -91,6 +97,12 @@
     </ClCompile>
     <ClCompile Include="GameScene.cpp">
       <Filter>F\Scene</Filter>
+    </ClCompile>
+    <ClCompile Include="Collider.cpp">
+      <Filter>F\Collider</Filter>
+    </ClCompile>
+    <ClCompile Include="UIImage.cpp">
+      <Filter>F\UI</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -166,6 +178,15 @@
     <ClInclude Include="GameScene.h">
       <Filter>F\Scene</Filter>
     </ClInclude>
+    <ClInclude Include="Collider.h">
+      <Filter>F\Collider</Filter>
+    </ClInclude>
+    <ClInclude Include="UIComponent.h">
+      <Filter>F\UI</Filter>
+    </ClInclude>
+    <ClInclude Include="UIImage.h">
+      <Filter>F\UI</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="VertexShader.hlsl">
@@ -180,5 +201,7 @@
     <FxCompile Include="SkinningPS.hlsl">
       <Filter>リソース ファイル</Filter>
     </FxCompile>
+    <FxCompile Include="UIPixelShader.hlsl" />
+    <FxCompile Include="UIVertexShader.hlsl" />
   </ItemGroup>
 </Project>
