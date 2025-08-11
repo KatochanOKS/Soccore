@@ -17,6 +17,8 @@ void Renderer::Initialize(
     BufferManager* cubeBufMgr,
     BufferManager* modelBufMgr,
     BufferManager* quadBufMgr,
+	// ★追加：スカイドーム専用バッファ
+	BufferManager* skyBufMgr,
     FbxModelLoader::VertexInfo* modelVertexInfo
 ) {
     m_deviceMgr = deviceMgr;
@@ -27,6 +29,7 @@ void Renderer::Initialize(
     m_cubeBufMgr = cubeBufMgr;
     m_modelBufMgr = modelBufMgr;
     m_quadBufferMgr = quadBufMgr;
+	m_skyBufferMgr = skyBufMgr; // スカイドーム専用バッファ
     m_modelVertexInfo = modelVertexInfo;
     m_width = static_cast<float>(m_swapMgr->GetWidth());
     m_height = static_cast<float>(m_swapMgr->GetHeight());
@@ -96,7 +99,6 @@ void Renderer::DrawObject(GameObject* obj, size_t idx, const XMMATRIX& view, con
         XMMATRIX world = obj->GetComponent<Transform>()->GetWorldMatrix();
         XMMATRIX wvp = XMMatrixTranspose(world * view * proj);
 
-        // スキニング行列取得
         std::vector<XMMATRIX> skinnedMats;
         if (smr->animator && smr->skinVertexInfo) {
             skinnedMats = smr->animator->GetSkinnedPose(smr->skinVertexInfo->bindPoses);
@@ -104,7 +106,6 @@ void Renderer::DrawObject(GameObject* obj, size_t idx, const XMMATRIX& view, con
                 m = XMMatrixTranspose(m);
         }
 
-        // ボーン行列＋WVPを定数バッファに書き込む
         void* mapped = nullptr;
         if (SUCCEEDED(m_skinningConstantBuffer->Map(0, nullptr, &mapped))) {
             memcpy((char*)mapped, &wvp, sizeof(XMMATRIX));
@@ -127,9 +128,15 @@ void Renderer::DrawObject(GameObject* obj, size_t idx, const XMMATRIX& view, con
         return;
     }
 
-    // 2. 静的メッシュ（Cubeや通常FBX）
+    // 2. 静的メッシュ（CubeやFBXモデル、スカイドーム）
     if (auto* mr = obj->GetComponent<StaticMeshRenderer>()) {
-        // ←必ずPSOとRootSignatureをセット！（これ抜けてるとブレンドONになる！）
+        if (mr->isSkySphere) {
+            OutputDebugStringA("[DrawObject] スカイドームに分岐した！\n"); // ← 追加
+            DrawSkySphere(obj, idx, view, proj);
+            return;
+        }
+
+
         m_cmdList->SetPipelineState(m_pipeMgr->GetPipelineState(false));
         m_cmdList->SetGraphicsRootSignature(m_pipeMgr->GetRootSignature(false));
 
@@ -140,7 +147,6 @@ void Renderer::DrawObject(GameObject* obj, size_t idx, const XMMATRIX& view, con
             m_cmdList->SetGraphicsRootDescriptorTable(0, m_texMgr->GetSRV(mr->texIndex));
         m_cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-        // FBXモデルの場合
         if (mr->modelBuffer && mr->vertexInfo) {
             auto vbv = mr->modelBuffer->GetVertexBufferView();
             auto ibv = mr->modelBuffer->GetIndexBufferView();
@@ -148,7 +154,6 @@ void Renderer::DrawObject(GameObject* obj, size_t idx, const XMMATRIX& view, con
             m_cmdList->IASetIndexBuffer(&ibv);
             m_cmdList->DrawIndexedInstanced((UINT)mr->vertexInfo->indices.size(), 1, 0, 0, 0);
         }
-        // Cubeなどの共通バッファの場合
         else {
             auto vbv = m_cubeBufMgr->GetVertexBufferView();
             auto ibv = m_cubeBufMgr->GetIndexBufferView();
@@ -165,6 +170,7 @@ void Renderer::DrawObject(GameObject* obj, size_t idx, const XMMATRIX& view, con
         return;
     }
 }
+
 
 // フレーム終了
 void Renderer::EndFrame() {
@@ -235,4 +241,34 @@ void Renderer::DrawUIImage(UIImage* image, size_t idx) {
 
     // 描画
     m_cmdList->DrawIndexedInstanced(6, 1, 0, 0, 0);
+}
+
+void Renderer::DrawSkySphere(GameObject* obj, size_t idx, const DirectX::XMMATRIX& view, const DirectX::XMMATRIX& proj)
+{
+    constexpr size_t CBV_SIZE = 256;
+    OutputDebugStringA("[DrawSkySphere] 関数に入った！\n"); // ← ここ
+    // スカイドーム専用PSO/RootSignatureに切り替え（必要に応じて用意）
+    // 例: m_pipeMgr->GetPipelineStateSkyDome(), m_pipeMgr->GetRootSignatureSkyDome()
+    m_cmdList->SetPipelineState(m_pipeMgr->GetPipelineStateSkyDome());
+    m_cmdList->SetGraphicsRootSignature(m_pipeMgr->GetRootSignatureSkyDome());
+
+    // 定数バッファアドレス
+    D3D12_GPU_VIRTUAL_ADDRESS cbvAddr = m_cubeBufMgr->GetConstantBufferGPUAddress() + CBV_SIZE * idx;
+    m_cmdList->SetGraphicsRootConstantBufferView(1, cbvAddr);
+
+    // テクスチャ
+    auto* mr = obj->GetComponent<StaticMeshRenderer>();
+    if (mr && mr->texIndex >= 0)
+        m_cmdList->SetGraphicsRootDescriptorTable(0, m_texMgr->GetSRV(mr->texIndex));
+
+    m_cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+    // 頂点・インデックスバッファ（球体バッファを使う）
+    auto vbv = m_skyBufferMgr->GetVertexBufferView();
+    auto ibv = m_skyBufferMgr->GetIndexBufferView();
+    m_cmdList->IASetVertexBuffers(0, 1, &vbv);
+    m_cmdList->IASetIndexBuffer(&ibv);
+
+    // 球体のインデックス数（MeshLibraryで使ってる値と合わせる）
+    m_cmdList->DrawIndexedInstanced(32 * 64 * 6, 1, 0, 0, 0);
 }

@@ -43,6 +43,7 @@ public:
     FbxModelLoader::VertexInfo* GetModelVertexInfo() { return &m_modelVertexInfo; }
     BufferManager* GetModelBufferManager() { return &m_modelBufferManager; }
 	BufferManager* GetQuadBufferManager() { return &m_quadBufferManager; } // ★追加！
+	BufferManager* GetSkyBufferManager() { return &m_skyBufferManager; } // スカイドーム専用バッファ
     Renderer* GetRenderer() { return &m_renderer; }  // ★追加
     std::vector<GameObject*> m_gameObjects;
     int m_texIdx = -1;
@@ -56,6 +57,8 @@ private:
     BufferManager m_bufferManager;      // 共通バッファ（Cube, Ground等）
     BufferManager m_modelBufferManager; // FBXモデル専用バッファ
     BufferManager m_quadBufferManager;  // ←追加！
+    BufferManager m_skyBufferManager; // スカイドーム専用バッファ
+
     TextureManager m_textureManager;
     FbxModelLoader::VertexInfo m_modelVertexInfo;
     Renderer m_renderer; // ★描画管理クラス！

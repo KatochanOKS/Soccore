@@ -39,6 +39,7 @@ void EngineManager::Initialize() {
         &m_bufferManager,          // Cube, 地面用バッファ
         &m_modelBufferManager,     // FBXモデル用バッファ
         &m_quadBufferManager, // ★Quad用バッファを渡す
+		&m_skyBufferManager, // スカイドーム専用バッファ
         GetModelVertexInfo()
     );
 

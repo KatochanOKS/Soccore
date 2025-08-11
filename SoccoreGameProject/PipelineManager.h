@@ -20,6 +20,10 @@ public:
 
     ID3D12PipelineState* GetPipelineStateUI() const { return m_pipelineStateUI.Get(); }
     ID3D12RootSignature* GetRootSignatureUI() const { return m_rootSignatureUI.Get(); }
+
+    ID3D12PipelineState* GetPipelineStateSkyDome() const { return m_pipelineStateSkyDome.Get(); }
+    ID3D12RootSignature* GetRootSignatureSkyDome() const { return m_rootSignatureSkyDome.Get(); }
+
 private:
     // ”ñƒXƒLƒ“—p
     Microsoft::WRL::ComPtr<ID3D12RootSignature> m_rootSignatureNormal;
@@ -30,4 +34,7 @@ private:
 
     Microsoft::WRL::ComPtr<ID3D12RootSignature> m_rootSignatureUI;
     Microsoft::WRL::ComPtr<ID3D12PipelineState> m_pipelineStateUI;
+
+    Microsoft::WRL::ComPtr<ID3D12PipelineState> m_pipelineStateSkyDome;
+    Microsoft::WRL::ComPtr<ID3D12RootSignature> m_rootSignatureSkyDome;
 };

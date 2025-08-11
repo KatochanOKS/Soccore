@@ -21,11 +21,10 @@ public:
         TextureManager* texMgr,
         BufferManager* cubeBufMgr,
         BufferManager* modelBufMgr,
-		BufferManager* quadBufMgr, // Quad用バッファ
+        BufferManager* quadBufMgr, // Quad用バッファ
+		BufferManager* skyBufMgr, // スカイドーム専用バッファ
         FbxModelLoader::VertexInfo* modelVertexInfo
     );
-
-
 
     void BeginFrame();
     void DrawObject(GameObject* obj, size_t idx, const DirectX::XMMATRIX& view, const DirectX::XMMATRIX& proj);
@@ -46,6 +45,7 @@ private:
     FbxModelLoader::VertexInfo* m_modelVertexInfo = nullptr;
     BufferManager* m_cbvBufferMgr = nullptr;  // 定数バッファ用だけに使うバッファマネージャ
     BufferManager* m_quadBufferMgr = nullptr;  // “実体”じゃなく“ポインタ”
+	BufferManager* m_skyBufferMgr = nullptr; // スカイドーム専用バッファ
     Microsoft::WRL::ComPtr<ID3D12Resource> m_skinningConstantBuffer; // スキニング用CBV
     D3D12_GPU_VIRTUAL_ADDRESS m_skinCBGpuAddr = 0; // アドレス保持用
     size_t m_skinCBSize = 0; // バッファサイズ

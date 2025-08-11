@@ -65,4 +65,8 @@ public:
         int texIndex = -1,
         const DirectX::XMFLOAT4& color = Colors::White
     );
+
+	// 例：スカイドーム用の球体メッシュ生成
+    // ObjectFactory.h（宣言を追加）
+    static GameObject* CreateSkyDome(EngineManager* engine, int texIndex, float radius = 500.0f);
 };
