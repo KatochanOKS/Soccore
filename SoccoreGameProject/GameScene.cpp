@@ -17,6 +17,13 @@ GameScene::GameScene(EngineManager* engine) : engine(engine) {}
 void GameScene::Start() {
     m_sceneObjects.clear(); // シーン開始時に全オブジェクト消去（リセット）
 
+    int skyTex = engine->GetTextureManager()->LoadTexture(
+        L"assets/SkyDome.png",
+        engine->GetDeviceManager()->GetCommandList()
+    );
+    auto* sky = ObjectFactory::CreateSkyDome(engine, skyTex, 600.0f);
+    m_sceneObjects.push_back(sky);
+
     // ==== 1. UI画像のGameObject生成 ====
     int logoTex = engine->GetTextureManager()->LoadTexture(L"assets/UI.png", engine->GetDeviceManager()->GetCommandList());
     GameObject* uiObj = new GameObject();
@@ -57,13 +64,21 @@ void GameScene::Start() {
     }
     m_sceneObjects.push_back(player);
 
+
+    if (skyTex < 0) {
+        OutputDebugStringA("スカイドームのテクスチャ読み込みに失敗しました！\n");
+    }
+    else {
+        OutputDebugStringA("スカイドームの生成成功！\n");
+    }
+
     // --- 必要があればここに追加オブジェクトを登録 ---
 }
 
 void GameScene::Update() {
     // ===== 1. プレイヤーの入力による移動とアニメ制御 =====
     if (m_sceneObjects.size() <= 3) return;
-    GameObject* player = m_sceneObjects[3];
+    GameObject* player = m_sceneObjects[4];
     auto* tr = player->GetComponent<Transform>();
     auto* animator = player->GetComponent<Animator>();
 
@@ -87,7 +102,7 @@ void GameScene::Update() {
 
     // ===== 2. プレイヤーの重力・接地（地面補正） =====
     auto* playerCol = player->GetComponent<Collider>();
-    GameObject* ground = m_sceneObjects[1];
+    GameObject* ground = m_sceneObjects[2];
     auto* groundCol = ground->GetComponent<Collider>();
 
     if (playerCol && groundCol) {
@@ -163,7 +178,7 @@ void GameScene::Draw() {
     // --- プレイヤー座標にカメラを追従 ---
     GameObject* player = nullptr;
     if (m_sceneObjects.size() > 1)
-        player = m_sceneObjects[3];
+        player = m_sceneObjects[4];
     if (!player) return;
     auto* tr = player->GetComponent<Transform>();
     XMFLOAT3 playerPos = tr ? tr->position : XMFLOAT3{ 0,0,0 };
@@ -174,6 +189,9 @@ void GameScene::Draw() {
         playerPos.y + cameraOffset.y,
         playerPos.z + cameraOffset.z
     };
+    char buf[128];
+    sprintf_s(buf, "CameraPos: %.2f, %.2f, %.2f\n", cameraPos.x, cameraPos.y, cameraPos.z);
+    OutputDebugStringA(buf);
 
     XMVECTOR eye = XMLoadFloat3(&cameraPos);
     XMVECTOR target = XMLoadFloat3(&playerPos);
@@ -183,8 +201,15 @@ void GameScene::Draw() {
     XMMATRIX proj = XMMatrixPerspectiveFovLH(
         XMConvertToRadians(70.0f),
         engine->GetSwapChainManager()->GetWidth() / (float)engine->GetSwapChainManager()->GetHeight(),
-        0.1f, 100.0f
+        0.1f, 1000.0f // ← farを1000.0fなど大きくする
     );
+
+    // cameraPos が決まった直後あたり
+    if (!m_sceneObjects.empty()) {
+        auto* skyTr = m_sceneObjects[0]->GetComponent<Transform>(); // 先頭をSkyDomeにしている想定
+        if (skyTr) skyTr->position = cameraPos;
+    }
+
 
     // --- 各GameObjectの定数バッファ（CBV）を更新 ---
     constexpr size_t CBV_SIZE = 256;

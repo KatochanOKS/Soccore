@@ -238,4 +238,32 @@ GameObject* ObjectFactory::CreateBall(
     return obj;
 }
 
+// ObjectFactory.cpp（実装を追加）
+GameObject* ObjectFactory::CreateSkyDome(EngineManager* engine, int texIndex, float radius) {
+    auto* obj = new GameObject();
+
+    // 位置は後でカメラに追従させるので初期値0でOK
+    auto* tr = obj->AddComponent<Transform>();
+    tr->position = { 0,0,0 };
+    tr->scale = { radius, radius, radius }; // 大きめの球で包む
+
+    auto* mr = obj->AddComponent<StaticMeshRenderer>();
+    mr->texIndex = texIndex;
+    mr->color = Colors::White;
+    mr->isSkySphere = true; // ← 特殊扱いフラグ
+
+    // 初回だけ、共有の頂点/インデックスバッファを作る（既存のBufferManagerを流用）
+    static bool inited = false;
+    if (!inited) {
+        std::vector<Vertex> v; std::vector<uint16_t> i;
+        MeshLibrary::GetSphereMesh(v, i, 32, 64); // 分割はお好みで
+        auto* dev = engine->GetDeviceManager()->GetDevice();
+        engine->GetSkyBufferManager()->CreateVertexBuffer(dev, v);
+        engine->GetSkyBufferManager()->CreateIndexBuffer(dev, i);
+        inited = true;
+    }
+
+    engine->m_gameObjects.push_back(obj);
+    return obj;
+}
 
