@@ -20,7 +20,7 @@ void GameScene::Start() {
         engine->GetDeviceManager()->GetCommandList()
     );
     auto* sky = ObjectFactory::CreateSkyDome(engine, skyTex, 600.0f);
-    m_sceneObjects.push_back(sky);
+    m_sceneObjects.push_back(sky); //0
 
     int logoTex = engine->GetTextureManager()->LoadTexture(L"assets/UI.png", engine->GetDeviceManager()->GetCommandList());
     GameObject* uiObj = new GameObject();
@@ -29,13 +29,13 @@ void GameScene::Start() {
     logo->position = { 300, 100 };
     logo->size = { 400, 400 };
     logo->color = { 1, 1, 1, 1 };
-    m_sceneObjects.push_back(uiObj);
+    m_sceneObjects.push_back(uiObj); //1
 
     int groundTex = engine->GetTextureManager()->LoadTexture(L"assets/penguin2.png", engine->GetDeviceManager()->GetCommandList());
     m_sceneObjects.push_back(ObjectFactory::CreateCube(engine, { 0, -5.0f, 0 }, { 50, 0.2f, 50 }, -1, Colors::Red));
 
     auto* oldBall = ObjectFactory::CreateBall(engine, { 0, 2, 10 }, { 5.0f, 5.0f, 5.0f }, -1, Colors::Blue);
-    m_sceneObjects.push_back(oldBall);
+    m_sceneObjects.push_back(oldBall); //2
 
     int bugEnemyTexIdx = engine->GetTextureManager()->LoadTexture(L"assets/Mutant.fbm/Mutant_diffuse.png", engine->GetDeviceManager()->GetCommandList());
     GameObject* player = ObjectFactory::CreateSkinningBaseModel(
@@ -52,7 +52,7 @@ void GameScene::Start() {
         ballTexIdx,
         Colors::White
     );
-    m_sceneObjects.push_back(soccoreBall);
+    m_sceneObjects.push_back(soccoreBall); //3
 
 	int studiumTexIdx = engine->GetTextureManager()->LoadTexture(L"assets/football/textures/Football_BaseColor.png", engine->GetDeviceManager()->GetCommandList());
 
@@ -64,7 +64,7 @@ void GameScene::Start() {
         ballTexIdx,
         Colors::White
     );
-    m_sceneObjects.push_back(soccoreBall);
+    m_sceneObjects.push_back(soccoreBall); //4
 
     auto* animator = player->GetComponent<Animator>();
     std::vector<Animator::Keyframe> idleKeys;
@@ -77,7 +77,7 @@ void GameScene::Start() {
     if (FbxModelLoader::LoadAnimationOnly("assets/Walking.fbx", walkKeys, walkLen)) {
         animator->AddAnimation("Walk", walkKeys);
     }
-    m_sceneObjects.push_back(player);
+    m_sceneObjects.push_back(player); //5
 
     if (skyTex < 0) {
         OutputDebugStringA("SkyDome texture load failed!\n");
@@ -122,6 +122,7 @@ void GameScene::Update() {
 
     // プレイヤーとボールの距離を測定
     XMFLOAT3 playerPos = tr->position;
+	GameObject* m_soccerBall = m_sceneObjects[3]; // サッカーボールのオブジェクト
     XMFLOAT3 ballPos = m_soccerBall->GetComponent<Transform>()->position;
 
     float dx = ballPos.x - playerPos.x;
