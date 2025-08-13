@@ -14,6 +14,7 @@
 #include "Renderer.h"
 #include "Animator.h"
 #include "Scene.h"
+#include "Camera.h"
 #include <memory>
 
 struct ObjectCB {
@@ -22,6 +23,7 @@ struct ObjectCB {
     int UseTexture;
     float padding[3]; // 16バイトアライン
 };
+
 
 class EngineManager {
 public:
@@ -44,7 +46,13 @@ public:
     BufferManager* GetModelBufferManager() { return &m_modelBufferManager; }
 	BufferManager* GetQuadBufferManager() { return &m_quadBufferManager; } // ★追加！
 	BufferManager* GetSkyBufferManager() { return &m_skyBufferManager; } // スカイドーム専用バッファ
+	BufferManager* GetSphereBufferManager() { return &m_sphereBufferManager; } // サッカーボール用の球体バッファ
     Renderer* GetRenderer() { return &m_renderer; }  // ★追加
+
+    // public アクセス関数を追加
+    Camera* GetCamera() { return &m_camera; }
+    const DirectX::XMFLOAT3& GetCameraPosition() const { return m_camera.GetPosition(); }
+
     std::vector<GameObject*> m_gameObjects;
     int m_texIdx = -1;
     int m_cubeTexIdx = -1;
@@ -58,10 +66,13 @@ private:
     BufferManager m_modelBufferManager; // FBXモデル専用バッファ
     BufferManager m_quadBufferManager;  // ←追加！
     BufferManager m_skyBufferManager; // スカイドーム専用バッファ
-
+    BufferManager m_sphereBufferManager; // サッカーボール用の球体バッファ
     TextureManager m_textureManager;
     FbxModelLoader::VertexInfo m_modelVertexInfo;
     Renderer m_renderer; // ★描画管理クラス！
+
+    Camera m_camera;
+
 
     std::unique_ptr<Animator> m_animator;
     std::unique_ptr<Scene> m_activeScene; // アクティブなシーン

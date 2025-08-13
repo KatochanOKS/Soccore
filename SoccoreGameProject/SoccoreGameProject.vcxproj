@@ -177,6 +177,7 @@
     <ClInclude Include="BaseMeshRenderer.h" />
     <ClInclude Include="BIN_FILE12.h" />
     <ClInclude Include="BufferManager.h" />
+    <ClInclude Include="Camera.h" />
     <ClInclude Include="Collider.h" />
     <ClInclude Include="Colors.h" />
     <ClInclude Include="Component.h" />

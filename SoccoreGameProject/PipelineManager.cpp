@@ -1,11 +1,11 @@
-#include "PipelineManager.h"
+ï»¿#include "PipelineManager.h"
 #include <d3dcompiler.h>
 #include <vector>
 #include <fstream>
 #include <cassert>
 #include "d3dx12.h"
 
-// ƒtƒ@ƒCƒ‹“Ç‚İ‚İƒ†[ƒeƒBƒŠƒeƒB
+// ãƒ•ã‚¡ã‚¤ãƒ«èª­ã¿è¾¼ã¿ãƒ¦ãƒ¼ãƒ†ã‚£ãƒªãƒ†ã‚£
 static std::vector<char> LoadShaderFile(LPCWSTR filename) {
     std::ifstream ifs(filename, std::ios::binary);
     return std::vector<char>((std::istreambuf_iterator<char>(ifs)), std::istreambuf_iterator<char>());
@@ -18,9 +18,9 @@ bool PipelineManager::Initialize(
     LPCWSTR skinVSPath, LPCWSTR skinPSPath,
     LPCWSTR uiVSPath, LPCWSTR uiPSPath
 ) {
-    // --- ”ñƒXƒLƒ“i’Êíj ---
+    // --- éã‚¹ã‚­ãƒ³ï¼ˆé€šå¸¸ï¼‰ ---
     {
-        // ƒ‹[ƒgƒpƒ‰ƒ[ƒ^ SRV(t0), CBV(b0)
+        // ãƒ«ãƒ¼ãƒˆãƒ‘ãƒ©ãƒ¡ãƒ¼ã‚¿ SRV(t0), CBV(b0)
         CD3DX12_ROOT_PARAMETER rootParam[2] = {};
         CD3DX12_DESCRIPTOR_RANGE descRange;
         descRange.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
@@ -48,7 +48,7 @@ bool PipelineManager::Initialize(
 
         auto vsCode = LoadShaderFile(vsPath);
         auto psCode = LoadShaderFile(psPath);
-        // ’¸“_ƒŒƒCƒAƒEƒg
+        // é ‚ç‚¹ãƒ¬ã‚¤ã‚¢ã‚¦ãƒˆ
         D3D12_INPUT_ELEMENT_DESC layout[] = {
             { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0,  D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
             { "NORMAL",   0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
@@ -61,8 +61,8 @@ bool PipelineManager::Initialize(
         psoDesc.PS = { psCode.data(), psCode.size() };
         psoDesc.InputLayout = { layout, _countof(layout) };
         psoDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
-        // --- š— –ÊƒJƒŠƒ“ƒOOFF‚Éİ’è ---
-        psoDesc.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;  // © ‚±‚Ì1s‚Å— –Ê‚à•`‰æI
+        // --- â˜…è£é¢ã‚«ãƒªãƒ³ã‚°OFFã«è¨­å®š ---
+        psoDesc.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;  // â† ã“ã®1è¡Œã§è£é¢ã‚‚æç”»ï¼
         psoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
         psoDesc.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
         psoDesc.SampleMask = UINT_MAX;
@@ -76,15 +76,15 @@ bool PipelineManager::Initialize(
         if (FAILED(hr)) { Cleanup(); return false; }
     }
 
-    // --- ƒXƒLƒ“iƒXƒLƒjƒ“ƒOj—p ---
+    // --- ã‚¹ã‚­ãƒ³ï¼ˆã‚¹ã‚­ãƒ‹ãƒ³ã‚°ï¼‰ç”¨ ---
     if (skinVSPath && skinPSPath) {
-        // ƒ‹[ƒgƒpƒ‰ƒ[ƒ^ SRV(t0), CBV(b0), CBV(b1) (b1=ƒ{[ƒ“”z—ñ)
+        // ãƒ«ãƒ¼ãƒˆãƒ‘ãƒ©ãƒ¡ãƒ¼ã‚¿ SRV(t0), CBV(b0), CBV(b1) (b1=ãƒœãƒ¼ãƒ³é…åˆ—)
         CD3DX12_ROOT_PARAMETER rootParam[3] = {};
         CD3DX12_DESCRIPTOR_RANGE descRange;
         descRange.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
         rootParam[0].InitAsDescriptorTable(1, &descRange, D3D12_SHADER_VISIBILITY_PIXEL);
-        rootParam[1].InitAsConstantBufferView(0, 0, D3D12_SHADER_VISIBILITY_ALL); // ƒ[ƒ‹ƒhs—ñ
-        rootParam[2].InitAsConstantBufferView(1, 0, D3D12_SHADER_VISIBILITY_ALL); // ƒ{[ƒ“”z—ñ
+        rootParam[1].InitAsConstantBufferView(0, 0, D3D12_SHADER_VISIBILITY_ALL); // ãƒ¯ãƒ¼ãƒ«ãƒ‰è¡Œåˆ—
+        rootParam[2].InitAsConstantBufferView(1, 0, D3D12_SHADER_VISIBILITY_ALL); // ãƒœãƒ¼ãƒ³é…åˆ—
 
         CD3DX12_STATIC_SAMPLER_DESC staticSampler(
             0, D3D12_FILTER_MIN_MAG_MIP_LINEAR,
@@ -107,7 +107,7 @@ bool PipelineManager::Initialize(
 
         auto vsCode = LoadShaderFile(skinVSPath);
         auto psCode = LoadShaderFile(skinPSPath);
-        // ƒXƒLƒ“—pƒŒƒCƒAƒEƒgiƒ{[ƒ“î•ñŠÜ‚Şj
+        // ã‚¹ã‚­ãƒ³ç”¨ãƒ¬ã‚¤ã‚¢ã‚¦ãƒˆï¼ˆãƒœãƒ¼ãƒ³æƒ…å ±å«ã‚€ï¼‰
         D3D12_INPUT_ELEMENT_DESC layout[] = {
             { "POSITION",     0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0,  D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
             { "NORMAL",       0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
@@ -122,7 +122,7 @@ bool PipelineManager::Initialize(
         psoDesc.PS = { psCode.data(), psCode.size() };
         psoDesc.InputLayout = { layout, _countof(layout) };
         psoDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
-        // --- š— –ÊƒJƒŠƒ“ƒOOFF‚Éİ’è ---
+        // --- â˜…è£é¢ã‚«ãƒªãƒ³ã‚°OFFã«è¨­å®š ---
         psoDesc.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;
         psoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
         psoDesc.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
@@ -137,7 +137,7 @@ bool PipelineManager::Initialize(
         if (FAILED(hr)) { Cleanup(); return false; }
     }
 
-    // === UIê—pƒpƒCƒvƒ‰ƒCƒ“ ===
+    // === UIå°‚ç”¨ãƒ‘ã‚¤ãƒ—ãƒ©ã‚¤ãƒ³ ===
     {
         // SRV(t0), CBV(b0)
         CD3DX12_ROOT_PARAMETER rootParam[2] = {};
@@ -161,7 +161,6 @@ bool PipelineManager::Initialize(
         hr = device->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&m_rootSignatureUI));
         if (FAILED(hr)) return false;
 
-        // ƒVƒF[ƒ_“Ç‚İ‚İ
         auto vsCode = LoadShaderFile(uiVSPath);
         auto psCode = LoadShaderFile(uiPSPath);
         D3D12_INPUT_ELEMENT_DESC layout[] = {
@@ -176,15 +175,14 @@ bool PipelineManager::Initialize(
         psoDesc.PS = { psCode.data(), psCode.size() };
         psoDesc.InputLayout = { layout, _countof(layout) };
         psoDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
-        // --- š— –ÊƒJƒŠƒ“ƒOOFF‚Éİ’è ---
         psoDesc.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;
-        // --- šƒAƒ‹ƒtƒ@ƒuƒŒƒ“ƒh—LŒø ---
+
+        // --- ãƒ–ãƒ¬ãƒ³ãƒ‰æœ‰åŠ¹ ---
         D3D12_BLEND_DESC blendDesc = {};
         blendDesc.AlphaToCoverageEnable = FALSE;
         blendDesc.IndependentBlendEnable = FALSE;
         auto& rtBlend = blendDesc.RenderTarget[0];
         rtBlend.BlendEnable = TRUE;
-        rtBlend.LogicOpEnable = FALSE;
         rtBlend.SrcBlend = D3D12_BLEND_SRC_ALPHA;
         rtBlend.DestBlend = D3D12_BLEND_INV_SRC_ALPHA;
         rtBlend.BlendOp = D3D12_BLEND_OP_ADD;
@@ -193,20 +191,25 @@ bool PipelineManager::Initialize(
         rtBlend.BlendOpAlpha = D3D12_BLEND_OP_ADD;
         rtBlend.RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
         psoDesc.BlendState = blendDesc;
-        // ----------------------------
 
+        // --- æ·±åº¦ãƒ†ã‚¹ãƒˆç„¡åŠ¹åŒ– ---
         psoDesc.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
+        psoDesc.DepthStencilState.DepthEnable = FALSE;
+        psoDesc.DepthStencilState.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO;
+        psoDesc.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_ALWAYS;
+
         psoDesc.SampleMask = UINT_MAX;
         psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
         psoDesc.NumRenderTargets = 1;
         psoDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
         psoDesc.DSVFormat = DXGI_FORMAT_D32_FLOAT;
         psoDesc.SampleDesc.Count = 1;
+
         hr = device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&m_pipelineStateUI));
         if (FAILED(hr)) return false;
     }
 
-    // === ƒXƒJƒCƒh[ƒ€ê—pƒpƒCƒvƒ‰ƒCƒ“ ===
+    // === ã‚¹ã‚«ã‚¤ãƒ‰ãƒ¼ãƒ å°‚ç”¨ãƒ‘ã‚¤ãƒ—ãƒ©ã‚¤ãƒ³ ===
     {
         // SRV(t0), CBV(b0)
         CD3DX12_ROOT_PARAMETER rootParam[2] = {};
@@ -230,7 +233,7 @@ bool PipelineManager::Initialize(
         hr = device->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&m_rootSignatureSkyDome));
         if (FAILED(hr)) return false;
 
-        // ’Êí‚ÌVS/PS‚ğ—¬—p
+        // é€šå¸¸ã®VS/PSã‚’æµç”¨
         auto vsCode = LoadShaderFile(vsPath);
         auto psCode = LoadShaderFile(psPath);
         D3D12_INPUT_ELEMENT_DESC layout[] = {
@@ -247,7 +250,7 @@ bool PipelineManager::Initialize(
         psoDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
         psoDesc.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;
         psoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
-        // --- šZƒeƒXƒg–³Œø‰» ---
+        // --- â˜…Zãƒ†ã‚¹ãƒˆç„¡åŠ¹åŒ– ---
         psoDesc.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
         psoDesc.DepthStencilState.DepthEnable = FALSE;
         psoDesc.DepthStencilState.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO;

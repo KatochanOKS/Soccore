@@ -105,3 +105,49 @@ void MeshLibrary::GetSphereMesh(std::vector<Vertex>& vertices, std::vector<uint1
         }
     }
 }
+
+// MeshLibrary.cpp
+void MeshLibrary::GetSphereMesh(std::vector<Vertex>& outVertices, std::vector<uint16_t>& outIndices, float radius, int slice, int stack) {
+    using namespace DirectX;
+    outVertices.clear();
+    outIndices.clear();
+
+    for (int y = 0; y <= stack; ++y) {
+        float phi = XM_PI * y / stack;
+        for (int x = 0; x <= slice; ++x) {
+            float theta = XM_2PI * x / slice;
+            XMFLOAT3 pos = {
+                radius * sinf(phi) * cosf(theta),
+                radius * cosf(phi),
+                radius * sinf(phi) * sinf(theta)
+            };
+            XMFLOAT3 normal = pos;
+            XMVECTOR n = XMVector3Normalize(XMLoadFloat3(&normal));
+            XMStoreFloat3(&normal, n);
+
+            float u = (float)x / slice;
+            float v = 1.0f - (float)y / stack;
+
+            outVertices.push_back({
+                pos.x, pos.y, pos.z,
+                normal.x, normal.y, normal.z,
+                u, v
+                });
+        }
+    }
+
+    for (int y = 0; y < stack; ++y) {
+        for (int x = 0; x < slice; ++x) {
+            int i0 = y * (slice + 1) + x;
+            int i1 = i0 + 1;
+            int i2 = i0 + (slice + 1);
+            int i3 = i2 + 1;
+            outIndices.push_back(i0);
+            outIndices.push_back(i2);
+            outIndices.push_back(i1);
+            outIndices.push_back(i1);
+            outIndices.push_back(i2);
+            outIndices.push_back(i3);
+        }
+    }
+}

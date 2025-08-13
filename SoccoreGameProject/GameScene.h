@@ -14,4 +14,6 @@ public:
 private:
     EngineManager* engine = nullptr;
     std::vector<GameObject*> m_sceneObjects; // Å© Ç±Ç±ÇæÇØÇ≈ä«óù
+    XMFLOAT3 m_ballVelocity = { 0, 0, 0 };
+
 };

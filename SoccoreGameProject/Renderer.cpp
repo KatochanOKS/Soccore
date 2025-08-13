@@ -19,6 +19,8 @@ void Renderer::Initialize(
     BufferManager* quadBufMgr,
 	// ★追加：スカイドーム専用バッファ
 	BufferManager* skyBufMgr,
+	// ★追加：サッカーボール用の球体バッファ
+	BufferManager* sphereBufMgr,
     FbxModelLoader::VertexInfo* modelVertexInfo
 ) {
     m_deviceMgr = deviceMgr;
@@ -30,6 +32,7 @@ void Renderer::Initialize(
     m_modelBufMgr = modelBufMgr;
     m_quadBufferMgr = quadBufMgr;
 	m_skyBufferMgr = skyBufMgr; // スカイドーム専用バッファ
+	m_sphereBufferMgr = sphereBufMgr; // サッカーボール用の球体バッファ
     m_modelVertexInfo = modelVertexInfo;
     m_width = static_cast<float>(m_swapMgr->GetWidth());
     m_height = static_cast<float>(m_swapMgr->GetHeight());
@@ -128,15 +131,23 @@ void Renderer::DrawObject(GameObject* obj, size_t idx, const XMMATRIX& view, con
         return;
     }
 
-    // 2. 静的メッシュ（CubeやFBXモデル、スカイドーム）
+    // 2. 静的メッシュ（Cubeやモデル、スカイドーム、サッカーボール）
     if (auto* mr = obj->GetComponent<StaticMeshRenderer>()) {
+        // スカイドーム
         if (mr->isSkySphere) {
-            OutputDebugStringA("[DrawObject] スカイドームに分岐した！\n"); // ← 追加
+            OutputDebugStringA("[DrawObject] スカイドームに分岐した！\n");
             DrawSkySphere(obj, idx, view, proj);
             return;
         }
 
+        // サッカーボール
+        if (mr->isSphere) {
+            OutputDebugStringA("[DrawObject] サッカーボールに分岐した！\n");
+            DrawSoccerBall(obj, idx, view, proj);
+            return;
+        }
 
+        // 通常の静的メッシュ（Cube / FBXモデルなど）
         m_cmdList->SetPipelineState(m_pipeMgr->GetPipelineState(false));
         m_cmdList->SetGraphicsRootSignature(m_pipeMgr->GetRootSignature(false));
 
@@ -170,6 +181,7 @@ void Renderer::DrawObject(GameObject* obj, size_t idx, const XMMATRIX& view, con
         return;
     }
 }
+
 
 
 // フレーム終了
@@ -270,5 +282,34 @@ void Renderer::DrawSkySphere(GameObject* obj, size_t idx, const DirectX::XMMATRI
     m_cmdList->IASetIndexBuffer(&ibv);
 
     // 球体のインデックス数（MeshLibraryで使ってる値と合わせる）
+    m_cmdList->DrawIndexedInstanced(32 * 64 * 6, 1, 0, 0, 0);
+}
+
+void Renderer::DrawSoccerBall(GameObject* obj, size_t idx, const DirectX::XMMATRIX& view, const DirectX::XMMATRIX& proj)
+{
+    constexpr size_t CBV_SIZE = 256;
+
+    // パイプライン設定（通常のPSO/RootSigを使用）
+    m_cmdList->SetPipelineState(m_pipeMgr->GetPipelineState(false));
+    m_cmdList->SetGraphicsRootSignature(m_pipeMgr->GetRootSignature(false));
+
+    // 定数バッファアドレス（通常のCubeと共用でOK）
+    D3D12_GPU_VIRTUAL_ADDRESS cbvAddr = m_cubeBufMgr->GetConstantBufferGPUAddress() + CBV_SIZE * idx;
+    m_cmdList->SetGraphicsRootConstantBufferView(1, cbvAddr);
+
+    // テクスチャがあればSRVを設定
+    auto* mr = obj->GetComponent<StaticMeshRenderer>();
+    if (mr && mr->texIndex >= 0)
+        m_cmdList->SetGraphicsRootDescriptorTable(0, m_texMgr->GetSRV(mr->texIndex));
+
+    m_cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+    // 球体のVB/IB（m_sphereBufferMgrを使う）
+    auto vbv = m_sphereBufferMgr->GetVertexBufferView();
+    auto ibv = m_sphereBufferMgr->GetIndexBufferView();
+    m_cmdList->IASetVertexBuffers(0, 1, &vbv);
+    m_cmdList->IASetIndexBuffer(&ibv);
+
+    // インデックス数はスカイドームと同じ（32×64×6）
     m_cmdList->DrawIndexedInstanced(32 * 64 * 6, 1, 0, 0, 0);
 }

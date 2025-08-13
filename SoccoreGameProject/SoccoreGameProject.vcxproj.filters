@@ -187,6 +187,9 @@
     <ClInclude Include="UIImage.h">
       <Filter>F\UI</Filter>
     </ClInclude>
+    <ClInclude Include="Camera.h">
+      <Filter>F\Scene</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="VertexShader.hlsl">

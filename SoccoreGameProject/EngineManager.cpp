@@ -29,6 +29,16 @@ void EngineManager::Initialize() {
     m_quadBufferManager.CreateIndexBuffer(device, quadIndices);
     // ★ここを追加！！
     m_quadBufferManager.CreateConstantBuffer(device, CBV_SIZE * 100);
+
+    std::vector<Vertex> sphereVertices;
+    std::vector<uint16_t> sphereIndices;
+    MeshLibrary::GetSphereMesh(sphereVertices, sphereIndices, 1.0f, 32, 32); // 半径1, 32分割
+
+    m_sphereBufferManager.CreateVertexBuffer(device, sphereVertices);
+    m_sphereBufferManager.CreateIndexBuffer(device, sphereIndices);
+    m_sphereBufferManager.CreateConstantBuffer(device, CBV_SIZE * 100); // 必要数確保
+
+
     // Renderer初期化
     m_renderer.Initialize(
         &m_deviceManager,
@@ -40,6 +50,7 @@ void EngineManager::Initialize() {
         &m_modelBufferManager,     // FBXモデル用バッファ
         &m_quadBufferManager, // ★Quad用バッファを渡す
 		&m_skyBufferManager, // スカイドーム専用バッファ
+		&m_sphereBufferManager, // サッカーボール用の球体バッファ
         GetModelVertexInfo()
     );
 
