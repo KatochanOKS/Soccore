@@ -110,7 +110,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\ExLib\DirectXTex;$(ProjectDir)..\ExLib\FBXSDK\2020.3.7\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\ExLib\DirectXTex;$(ProjectDir)..\ExLib\FBXSDK\2020.3.7\include;$(ProjectDir)..\ExLib\imgui-master;$(ProjectDir)..\ExLib\imgui-master\backends;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -132,7 +132,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\ExLib\DirectXTex;$(ProjectDir)..\ExLib\FBXSDK\2020.3.7\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\ExLib\DirectXTex;$(ProjectDir)..\ExLib\FBXSDK\2020.3.7\include;$(ProjectDir)..\ExLib\imgui-master;$(ProjectDir)..\ExLib\imgui-master\backends;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -149,6 +149,13 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\ExLib\imgui-master\backends\imgui_impl_dx12.cpp" />
+    <ClCompile Include="..\ExLib\imgui-master\backends\imgui_impl_win32.cpp" />
+    <ClCompile Include="..\ExLib\imgui-master\imgui.cpp" />
+    <ClCompile Include="..\ExLib\imgui-master\imgui_demo.cpp" />
+    <ClCompile Include="..\ExLib\imgui-master\imgui_draw.cpp" />
+    <ClCompile Include="..\ExLib\imgui-master\imgui_tables.cpp" />
+    <ClCompile Include="..\ExLib\imgui-master\imgui_widgets.cpp" />
     <ClCompile Include="Animator.cpp" />
     <ClCompile Include="ApplicationManager.cpp" />
     <ClCompile Include="BufferManager.cpp" />
@@ -162,7 +169,6 @@
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="MeshLibrary.cpp" />
     <ClCompile Include="ObjectFactory.cpp" />
-    <ClCompile Include="ObjectFactory.h" />
     <ClCompile Include="PipelineManager.cpp" />
     <ClCompile Include="Renderer.cpp" />
     <ClCompile Include="SkinnedMeshRenderer.cpp" />
@@ -172,6 +178,9 @@
     <ClCompile Include="UIImage.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\ExLib\imgui-master\backends\imgui_impl_dx12.h" />
+    <ClInclude Include="..\ExLib\imgui-master\backends\imgui_impl_win32.h" />
+    <ClInclude Include="..\ExLib\imgui-master\imgui.h" />
     <ClInclude Include="Animator.h" />
     <ClInclude Include="ApplicationManager.h" />
     <ClInclude Include="BaseMeshRenderer.h" />
@@ -189,6 +198,7 @@
     <ClInclude Include="GameObject.h" />
     <ClInclude Include="GameScene.h" />
     <ClInclude Include="MeshLibrary.h" />
+    <ClInclude Include="ObjectFactory.h" />
     <ClInclude Include="PipelineManager.h" />
     <ClInclude Include="Renderer.h" />
     <ClInclude Include="Scene.h" />

@@ -39,12 +39,12 @@
     <Filter Include="F\UI">
       <UniqueIdentifier>{713db6fc-8c25-4417-820f-03c18371e77d}</UniqueIdentifier>
     </Filter>
+    <Filter Include="F\Resources\imgui">
+      <UniqueIdentifier>{08c7dc16-fdee-49f7-8868-02c27c15c948}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="GameObject.cpp">
-      <Filter>F\GameObject</Filter>
-    </ClCompile>
-    <ClCompile Include="ObjectFactory.h">
       <Filter>F\GameObject</Filter>
     </ClCompile>
     <ClCompile Include="MeshLibrary.cpp">
@@ -55,9 +55,6 @@
     </ClCompile>
     <ClCompile Include="Animator.cpp">
       <Filter>F\Animation</Filter>
-    </ClCompile>
-    <ClCompile Include="ObjectFactory.cpp">
-      <Filter>F\GameObject</Filter>
     </ClCompile>
     <ClCompile Include="BufferManager.cpp">
       <Filter>F\Buffe</Filter>
@@ -103,6 +100,30 @@
     </ClCompile>
     <ClCompile Include="UIImage.cpp">
       <Filter>F\UI</Filter>
+    </ClCompile>
+    <ClCompile Include="..\ExLib\imgui-master\imgui.cpp">
+      <Filter>F\Resources\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\ExLib\imgui-master\imgui_demo.cpp">
+      <Filter>F\Resources\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\ExLib\imgui-master\imgui_draw.cpp">
+      <Filter>F\Resources\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\ExLib\imgui-master\backends\imgui_impl_dx12.cpp">
+      <Filter>F\Resources\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\ExLib\imgui-master\backends\imgui_impl_win32.cpp">
+      <Filter>F\Resources\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\ExLib\imgui-master\imgui_tables.cpp">
+      <Filter>F\Resources\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\ExLib\imgui-master\imgui_widgets.cpp">
+      <Filter>F\Resources\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="ObjectFactory.cpp">
+      <Filter>F\GameObject</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -190,6 +211,18 @@
     <ClInclude Include="Camera.h">
       <Filter>F\Scene</Filter>
     </ClInclude>
+    <ClInclude Include="..\ExLib\imgui-master\backends\imgui_impl_dx12.h">
+      <Filter>F\Resources\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ExLib\imgui-master\backends\imgui_impl_win32.h">
+      <Filter>F\Resources\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ExLib\imgui-master\imgui.h">
+      <Filter>F\Resources\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="ObjectFactory.h">
+      <Filter>F\GameObject</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="VertexShader.hlsl">
@@ -204,7 +237,11 @@
     <FxCompile Include="SkinningPS.hlsl">
       <Filter>リソース ファイル</Filter>
     </FxCompile>
-    <FxCompile Include="UIPixelShader.hlsl" />
-    <FxCompile Include="UIVertexShader.hlsl" />
+    <FxCompile Include="UIPixelShader.hlsl">
+      <Filter>リソース ファイル</Filter>
+    </FxCompile>
+    <FxCompile Include="UIVertexShader.hlsl">
+      <Filter>リソース ファイル</Filter>
+    </FxCompile>
   </ItemGroup>
 </Project>
