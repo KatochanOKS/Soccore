@@ -12,6 +12,15 @@ using namespace DirectX;
 
 GameScene::GameScene(EngineManager* engine) : engine(engine) {}
 
+// AABB同士の重なり判定
+bool CheckAABBOverlap(const DirectX::XMFLOAT3& minA, const DirectX::XMFLOAT3& maxA,
+    const DirectX::XMFLOAT3& minB, const DirectX::XMFLOAT3& maxB) {
+    return (minA.x <= maxB.x && maxA.x >= minB.x) &&
+        (minA.y <= maxB.y && maxA.y >= minB.y) &&
+        (minA.z <= maxB.z && maxA.z >= minB.z);
+}
+
+
 void GameScene::Start() {
     m_sceneObjects.clear();
 
@@ -32,14 +41,14 @@ void GameScene::Start() {
     m_sceneObjects.push_back(uiObj); //1
 
     int groundTex = engine->GetTextureManager()->LoadTexture(L"assets/penguin2.png", engine->GetDeviceManager()->GetCommandList());
-    m_sceneObjects.push_back(ObjectFactory::CreateCube(engine, { 0, -5.0f, 0 }, { 50, 0.2f, 50 }, -1, Colors::Red));
+	m_sceneObjects.push_back(ObjectFactory::CreateCube(engine, { 0, -5.0f, 0 }, { 50, 0.2f, 50 }, -1, Colors::Red)); //2
 
     auto* oldBall = ObjectFactory::CreateBall(engine, { 0, 2, 10 }, { 5.0f, 5.0f, 5.0f }, -1, Colors::Blue);
-    m_sceneObjects.push_back(oldBall); //2
+    m_sceneObjects.push_back(oldBall); //3
 
     int bugEnemyTexIdx = engine->GetTextureManager()->LoadTexture(L"assets/Mutant.fbm/Mutant_diffuse.png", engine->GetDeviceManager()->GetCommandList());
     GameObject* player = ObjectFactory::CreateSkinningBaseModel(
-        engine, "assets/Mutant.fbx", { 0, 5, 0 }, { 0.05f, 0.05f, 0.05f }, bugEnemyTexIdx, Colors::White
+        engine, "assets/Mutant.fbx", { 0, 5, 0 }, { 0.01f, 0.01f, 0.01f }, bugEnemyTexIdx, Colors::White
     );
 
 	int ballTexIdx = engine->GetTextureManager()->LoadTexture(L"assets/soccer_ball/textures/football_ball_BaseColor.png", engine->GetDeviceManager()->GetCommandList());
@@ -47,25 +56,50 @@ void GameScene::Start() {
     GameObject* soccoreBall = ObjectFactory::CreateModel(
         engine,
         "assets/soccer_ball/football.fbx",
-        { 0, 5.0f, 0 },
-        { 0.3f, 0.3f, 0.3f },
+        { 0, 5.5f, 0 },
+        { 0.05f, 0.05f, 0.05f },
         ballTexIdx,
         Colors::White
     );
-    m_sceneObjects.push_back(soccoreBall); //3
+	m_sceneObjects.push_back(soccoreBall); //4
 
 	int studiumTexIdx = engine->GetTextureManager()->LoadTexture(L"assets/football/textures/Football_BaseColor.png", engine->GetDeviceManager()->GetCommandList());
 
     GameObject* soccoreStudium = ObjectFactory::CreateModel(
         engine,
-        "assets/soccer_ball/football.fbx",
+        "assets/Soccore/SccoreStudium.fbx",
         { 0, 5.0f, 0 },
-        { 0.3f, 0.3f, 0.3f },
-        ballTexIdx,
+        { 1.0f, 1.0f, 1.0f },
+        studiumTexIdx,
         Colors::White
     );
-    m_sceneObjects.push_back(soccoreBall); //4
+    soccoreStudium->GetComponent<Transform>()->rotation.y = DirectX::XMConvertToRadians(90.0f);  // ←Y軸90°
 
+    m_sceneObjects.push_back(soccoreStudium); //5
+
+	int goalTexIdx = engine->GetTextureManager()->LoadTexture(L"assets/football/textures/Goal_BaseColor.png", engine->GetDeviceManager()->GetCommandList());
+
+    GameObject* goal = ObjectFactory::CreateModel(
+        engine,
+        "assets/Soccore/Goal.fbx",
+        { -20.0f, 5.0f, 0 },
+        { 1.5f, 1.5f, 1.5f },
+        goalTexIdx,
+        Colors::White
+	);
+    goal->GetComponent<Transform>()->rotation.y = DirectX::XMConvertToRadians(90.0f);  // ←Y軸90°
+	m_sceneObjects.push_back(goal); //6
+
+    GameObject* goal2 = ObjectFactory::CreateModel(
+        engine,
+        "assets/Soccore/Goal.fbx",
+        { 20.0f, 5.0f, 0 },
+        { 1.5f, 1.5f, 1.5f },
+        goalTexIdx,
+        Colors::White
+    );
+    goal2->GetComponent<Transform>()->rotation.y = DirectX::XMConvertToRadians(-90.0f);  // ←Y軸90°
+    m_sceneObjects.push_back(goal2); //7
     auto* animator = player->GetComponent<Animator>();
     std::vector<Animator::Keyframe> idleKeys;
     double idleLen;
@@ -77,7 +111,7 @@ void GameScene::Start() {
     if (FbxModelLoader::LoadAnimationOnly("assets/Walking.fbx", walkKeys, walkLen)) {
         animator->AddAnimation("Walk", walkKeys);
     }
-    m_sceneObjects.push_back(player); //5
+    m_sceneObjects.push_back(player); //8
 
     if (skyTex < 0) {
         OutputDebugStringA("SkyDome texture load failed!\n");
@@ -88,8 +122,8 @@ void GameScene::Start() {
 }
 
 void GameScene::Update() {
-    if (m_sceneObjects.size() <= 4) return;
-    GameObject* player = m_sceneObjects[5];
+    if (m_sceneObjects.size() <= 7) return;
+    GameObject* player = m_sceneObjects[8];
     auto* tr = player->GetComponent<Transform>();
     auto* animator = player->GetComponent<Animator>();
     Camera* cam = engine->GetCamera();
@@ -122,7 +156,7 @@ void GameScene::Update() {
 
     // プレイヤーとボールの距離を測定
     XMFLOAT3 playerPos = tr->position;
-	GameObject* m_soccerBall = m_sceneObjects[3]; // サッカーボールのオブジェクト
+	GameObject* m_soccerBall = m_sceneObjects[4]; // サッカーボールのオブジェクト
     XMFLOAT3 ballPos = m_soccerBall->GetComponent<Transform>()->position;
 
     float dx = ballPos.x - playerPos.x;
@@ -175,26 +209,27 @@ void GameScene::Update() {
         if (auto* animator = obj->GetComponent<Animator>())
             animator->Update(1.0f / 120.0f);
     }
+
 }
 
 
 void GameScene::Draw() {
-    if (m_sceneObjects.size() <= 5) return;
-    GameObject* player = m_sceneObjects[5];
+    if (m_sceneObjects.size() <= 7) return;
+    GameObject* player = m_sceneObjects[8];
     auto* tr = player->GetComponent<Transform>();
     if (!tr) return;
     XMFLOAT3 playerPos = tr->position;
 
     Camera* cam = engine->GetCamera();
-    XMFLOAT3 offset = { 0.0f, 10.0f, -15.0f };
-    XMMATRIX rotY = XMMatrixRotationY(XMConvertToRadians(cam->cameraYaw));
-    XMVECTOR offsetVec = XMVector3Transform(XMLoadFloat3(&offset), rotY);
-    XMVECTOR cameraVec = XMLoadFloat3(&playerPos) + offsetVec;
-
-    XMFLOAT3 cameraPos;
-    XMStoreFloat3(&cameraPos, cameraVec);
+    // ↓カメラの位置をプレイヤーの「真後ろ＋真上」に直接固定
+    XMFLOAT3 offset = { 0.0f, 5.0f, -15.0f }; // 高め・後ろから
+    XMFLOAT3 cameraPos = {
+        playerPos.x + offset.x,
+        playerPos.y + offset.y,
+        playerPos.z + offset.z
+    };
     cam->SetPosition(cameraPos);
-    cam->SetTarget(playerPos);
+    cam->SetTarget(playerPos); // プレイヤーを見る
 
     XMMATRIX view = cam->GetViewMatrix();
     XMMATRIX proj = cam->GetProjectionMatrix(
