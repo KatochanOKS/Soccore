@@ -52,6 +52,7 @@ void Renderer::Initialize(
 
 // フレーム開始
 void Renderer::BeginFrame() {
+    OutputDebugStringA("BeginFrame\n");
     m_backBufferIndex = m_swapMgr->GetSwapChain()->GetCurrentBackBufferIndex();
     m_cmdList = m_deviceMgr->GetCommandList();
 
@@ -187,6 +188,7 @@ void Renderer::DrawObject(GameObject* obj, size_t idx, const XMMATRIX& view, con
 // フレーム終了
 void Renderer::EndFrame() {
     // バリア設定
+    OutputDebugStringA("EndFrame\n");
     D3D12_RESOURCE_BARRIER barrier = {};
     barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
     barrier.Transition.pResource = m_swapMgr->GetBackBuffer(m_backBufferIndex);

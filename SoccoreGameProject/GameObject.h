@@ -1,6 +1,7 @@
 #pragma once
 #include <vector>
 #include <type_traits>
+#include <string>
 #include "Component.h"
 
 // ------------------------------
@@ -9,6 +10,10 @@
 // ------------------------------
 class GameObject {
 public:
+
+    std::string tag;    // 種類判別用("Ball", "Goal", "Ground"など)
+    std::string name;   // 個別識別用("Goal1"など)
+
     // このGameObjectが持つすべてのComponent（ポインタ）のリスト
     std::vector<Component*> components;
 

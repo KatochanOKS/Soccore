@@ -2,6 +2,7 @@
 #include <Windows.h>
 #include <vector>
 #include <DirectXMath.h>
+#include <memory>
 #include "DeviceManager.h"
 #include "SwapChainManager.h"
 #include "DepthBufferManager.h"
@@ -15,7 +16,6 @@
 #include "Animator.h"
 #include "Scene.h"
 #include "Camera.h"
-#include <memory>
 
 struct ObjectCB {
     DirectX::XMMATRIX WorldViewProj;
@@ -23,7 +23,6 @@ struct ObjectCB {
     int UseTexture;
     float padding[3]; // 16バイトアライン
 };
-
 
 class EngineManager {
 public:
@@ -44,12 +43,11 @@ public:
     TextureManager* GetTextureManager() { return &m_textureManager; }
     FbxModelLoader::VertexInfo* GetModelVertexInfo() { return &m_modelVertexInfo; }
     BufferManager* GetModelBufferManager() { return &m_modelBufferManager; }
-	BufferManager* GetQuadBufferManager() { return &m_quadBufferManager; } // ★追加！
-	BufferManager* GetSkyBufferManager() { return &m_skyBufferManager; } // スカイドーム専用バッファ
-	BufferManager* GetSphereBufferManager() { return &m_sphereBufferManager; } // サッカーボール用の球体バッファ
-    Renderer* GetRenderer() { return &m_renderer; }  // ★追加
+    BufferManager* GetQuadBufferManager() { return &m_quadBufferManager; }
+    BufferManager* GetSkyBufferManager() { return &m_skyBufferManager; }
+    BufferManager* GetSphereBufferManager() { return &m_sphereBufferManager; }
+    Renderer* GetRenderer() { return &m_renderer; }
 
-    // public アクセス関数を追加
     Camera* GetCamera() { return &m_camera; }
     const DirectX::XMFLOAT3& GetCameraPosition() const { return m_camera.GetPosition(); }
 
@@ -62,19 +60,18 @@ private:
     SwapChainManager m_swapChainManager;
     DepthBufferManager m_depthBufferManager;
     PipelineManager m_pipelineManager;
-    BufferManager m_bufferManager;      // 共通バッファ（Cube, Ground等）
-    BufferManager m_modelBufferManager; // FBXモデル専用バッファ
-    BufferManager m_quadBufferManager;  // ←追加！
-    BufferManager m_skyBufferManager; // スカイドーム専用バッファ
-    BufferManager m_sphereBufferManager; // サッカーボール用の球体バッファ
+    BufferManager m_bufferManager;
+    BufferManager m_modelBufferManager;
+    BufferManager m_quadBufferManager;
+    BufferManager m_skyBufferManager;
+    BufferManager m_sphereBufferManager;
     TextureManager m_textureManager;
     FbxModelLoader::VertexInfo m_modelVertexInfo;
-    Renderer m_renderer; // ★描画管理クラス！
-
+    Renderer m_renderer;
     Camera m_camera;
 
-
     std::unique_ptr<Animator> m_animator;
-    std::unique_ptr<Scene> m_activeScene; // アクティブなシーン
-	bool isMoving = false; // 0:停止, 1:移動中
+    std::unique_ptr<Scene> m_activeScene;
+    bool isMoving = false;
+
 };
