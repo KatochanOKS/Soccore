@@ -18,7 +18,7 @@ public:
 
     DirectX::XMMATRIX GetProjectionMatrix(float screenWidth, float screenHeight) const {
         return DirectX::XMMatrixPerspectiveFovLH(
-            DirectX::XMConvertToRadians(90.0f),
+            DirectX::XMConvertToRadians(75.0f),
             screenWidth / screenHeight,
             0.1f, 1000.0f
         );
