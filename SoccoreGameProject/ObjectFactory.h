@@ -16,7 +16,9 @@ public:
         int texIdx = -1,
         const DirectX::XMFLOAT4& color = Colors::White,
         const DirectX::XMFLOAT3& colliderCenter = { 0,0,0 },
-        const DirectX::XMFLOAT3& colliderSize = { -1,-1,-1 }
+        const DirectX::XMFLOAT3& colliderSize = { -1,-1,-1 },
+        const std::string& tag = "Ground",
+        const std::string& name = "GroundCube"
     );
 
     // サッカーボール等の球体
@@ -27,7 +29,9 @@ public:
         int texIdx = -1,
         const DirectX::XMFLOAT4& color = Colors::White,
         const DirectX::XMFLOAT3& colliderCenter = { 0,0,0 },
-        const DirectX::XMFLOAT3& colliderSize = { -1,-1,-1 }
+        const DirectX::XMFLOAT3& colliderSize = { -1,-1,-1 },
+        const std::string& tag = "Ball",
+        const std::string& name = "SoccerBall"
     );
 
     // 静的FBXモデル
@@ -62,6 +66,8 @@ public:
     static GameObject* CreateSkyDome(
         EngineManager* engine,
         int texIdx,
-        float radius = 500.0f
+        float radius = 500.0f,
+        const std::string& tag = "Sky",
+        const std::string& name = "SkyDome"
     );
 };

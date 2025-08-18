@@ -27,11 +27,13 @@ GameObject* ObjectFactory::CreateCube(
     int texIdx,
     const XMFLOAT4& color,
     const XMFLOAT3& colliderCenter,
-    const XMFLOAT3& colliderSize
+    const XMFLOAT3& colliderSize,
+    const std::string& tag,
+    const std::string& name
 ) {
     auto* obj = new GameObject();
-    obj->tag = "Ground";
-    obj->name = "GroundCube";
+    obj->tag = tag;
+    obj->name = name;
 
     auto* tr = obj->AddComponent<Transform>();
     tr->position = pos;
@@ -74,11 +76,13 @@ GameObject* ObjectFactory::CreateBall(
     int texIdx,
     const XMFLOAT4& color,
     const XMFLOAT3& colliderCenter,
-    const XMFLOAT3& colliderSize
+    const XMFLOAT3& colliderSize,
+    const std::string& tag,
+    const std::string& name
 ) {
     auto* obj = new GameObject();
-    obj->tag = "Ball";
-    obj->name = "SoccerBall";
+    obj->tag = tag;
+    obj->name = name;
 
     auto* tr = obj->AddComponent<Transform>();
     tr->position = pos;
@@ -221,11 +225,13 @@ GameObject* ObjectFactory::CreateSkinningBaseModel(
 GameObject* ObjectFactory::CreateSkyDome(
     EngineManager* engine,
     int texIdx,
-    float radius
+    float radius,
+    const std::string& tag,
+    const std::string& name
 ) {
     auto* obj = new GameObject();
-    obj->tag = "Sky";
-    obj->name = "SkyDome";
+    obj->tag = tag;
+    obj->name = name;
 
     auto* tr = obj->AddComponent<Transform>();
     tr->position = { 0,0,0 };
