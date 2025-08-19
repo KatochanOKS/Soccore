@@ -42,6 +42,15 @@
     <Filter Include="F\Resources\imgui">
       <UniqueIdentifier>{08c7dc16-fdee-49f7-8868-02c27c15c948}</UniqueIdentifier>
     </Filter>
+    <Filter Include="F\GameObject\Player">
+      <UniqueIdentifier>{d26a724b-a990-47f8-8d1c-f27edf5d9561}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="F\GameObject\SoccoreBall">
+      <UniqueIdentifier>{4d50f292-e8a9-4ef8-a0d5-2475402573be}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="F\GameObject\Goal">
+      <UniqueIdentifier>{13271dc4-a5c7-45ca-afc0-d6ecdf8e8919}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="GameObject.cpp">
@@ -101,29 +110,17 @@
     <ClCompile Include="UIImage.cpp">
       <Filter>F\UI</Filter>
     </ClCompile>
-    <ClCompile Include="..\ExLib\imgui-master\imgui.cpp">
-      <Filter>F\Resources\imgui</Filter>
-    </ClCompile>
-    <ClCompile Include="..\ExLib\imgui-master\imgui_demo.cpp">
-      <Filter>F\Resources\imgui</Filter>
-    </ClCompile>
-    <ClCompile Include="..\ExLib\imgui-master\imgui_draw.cpp">
-      <Filter>F\Resources\imgui</Filter>
-    </ClCompile>
-    <ClCompile Include="..\ExLib\imgui-master\backends\imgui_impl_dx12.cpp">
-      <Filter>F\Resources\imgui</Filter>
-    </ClCompile>
-    <ClCompile Include="..\ExLib\imgui-master\backends\imgui_impl_win32.cpp">
-      <Filter>F\Resources\imgui</Filter>
-    </ClCompile>
-    <ClCompile Include="..\ExLib\imgui-master\imgui_tables.cpp">
-      <Filter>F\Resources\imgui</Filter>
-    </ClCompile>
-    <ClCompile Include="..\ExLib\imgui-master\imgui_widgets.cpp">
-      <Filter>F\Resources\imgui</Filter>
-    </ClCompile>
     <ClCompile Include="ObjectFactory.cpp">
       <Filter>F\GameObject</Filter>
+    </ClCompile>
+    <ClCompile Include="PlayerComponent.cpp">
+      <Filter>F\GameObject\Player</Filter>
+    </ClCompile>
+    <ClCompile Include="SoccerBallComponent.cpp">
+      <Filter>F\GameObject\SoccoreBall</Filter>
+    </ClCompile>
+    <ClCompile Include="GoalComponent.cpp">
+      <Filter>F\GameObject\Goal</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -211,17 +208,17 @@
     <ClInclude Include="Camera.h">
       <Filter>F\Scene</Filter>
     </ClInclude>
-    <ClInclude Include="..\ExLib\imgui-master\backends\imgui_impl_dx12.h">
-      <Filter>F\Resources\imgui</Filter>
-    </ClInclude>
-    <ClInclude Include="..\ExLib\imgui-master\backends\imgui_impl_win32.h">
-      <Filter>F\Resources\imgui</Filter>
-    </ClInclude>
-    <ClInclude Include="..\ExLib\imgui-master\imgui.h">
-      <Filter>F\Resources\imgui</Filter>
-    </ClInclude>
     <ClInclude Include="ObjectFactory.h">
       <Filter>F\GameObject</Filter>
+    </ClInclude>
+    <ClInclude Include="PlayerComponent.h">
+      <Filter>F\GameObject\Player</Filter>
+    </ClInclude>
+    <ClInclude Include="SoccerBallComponent.h">
+      <Filter>F\GameObject\SoccoreBall</Filter>
+    </ClInclude>
+    <ClInclude Include="GoalComponent.h">
+      <Filter>F\GameObject\Goal</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
