@@ -52,7 +52,6 @@ void Renderer::Initialize(
 
 // フレーム開始
 void Renderer::BeginFrame() {
-    OutputDebugStringA("BeginFrame\n");
     m_backBufferIndex = m_swapMgr->GetSwapChain()->GetCurrentBackBufferIndex();
     m_cmdList = m_deviceMgr->GetCommandList();
 
@@ -136,14 +135,12 @@ void Renderer::DrawObject(GameObject* obj, size_t idx, const XMMATRIX& view, con
     if (auto* mr = obj->GetComponent<StaticMeshRenderer>()) {
         // スカイドーム
         if (mr->isSkySphere) {
-            OutputDebugStringA("[DrawObject] スカイドームに分岐した！\n");
             DrawSkySphere(obj, idx, view, proj);
             return;
         }
 
         // サッカーボール
         if (mr->isSphere) {
-            OutputDebugStringA("[DrawObject] サッカーボールに分岐した！\n");
             DrawSoccerBall(obj, idx, view, proj);
             return;
         }
@@ -188,7 +185,6 @@ void Renderer::DrawObject(GameObject* obj, size_t idx, const XMMATRIX& view, con
 // フレーム終了
 void Renderer::EndFrame() {
     // バリア設定
-    OutputDebugStringA("EndFrame\n");
     D3D12_RESOURCE_BARRIER barrier = {};
     barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
     barrier.Transition.pResource = m_swapMgr->GetBackBuffer(m_backBufferIndex);
@@ -260,7 +256,6 @@ void Renderer::DrawUIImage(UIImage* image, size_t idx) {
 void Renderer::DrawSkySphere(GameObject* obj, size_t idx, const DirectX::XMMATRIX& view, const DirectX::XMMATRIX& proj)
 {
     constexpr size_t CBV_SIZE = 256;
-    OutputDebugStringA("[DrawSkySphere] 関数に入った！\n"); // ← ここ
     // スカイドーム専用PSO/RootSignatureに切り替え（必要に応じて用意）
     // 例: m_pipeMgr->GetPipelineStateSkyDome(), m_pipeMgr->GetRootSignatureSkyDome()
     m_cmdList->SetPipelineState(m_pipeMgr->GetPipelineStateSkyDome());

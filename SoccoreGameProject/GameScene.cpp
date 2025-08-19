@@ -7,7 +7,11 @@
 #include "StaticMeshRenderer.h"
 #include "UIImage.h"
 #include "Collider.h"
+#include "PlayerComponent.h"
+#include "SoccerBallComponent.h"
+#include "GoalComponent.h"
 #include <DirectXMath.h>
+#include <cmath>
 using namespace DirectX;
 
 // タグ検索
@@ -59,33 +63,29 @@ void GameScene::Start() {
 
     // 地面
     m_sceneObjects.push_back(ObjectFactory::CreateCube(
-        engine, { 0, -5.0f, 0 }, { 50, 0.2f, 50 }, -1, Colors::Red, { 0,0,0 }, { -1,-1,-1 }, "Ground", "GroundFloor"
+        engine, { -19.5f, 1.0f, 0 }, { 1, 2, 3.0f }, -1, Colors::Red, { 0,0,0 }, { -1,-1,-1 }, "Ground", "GroundFloor"
     ));
-
-    // 旧テスト用ボール
-    auto* oldBall = ObjectFactory::CreateBall(
-        engine, { 0, 2, 10 }, { 5.0f, 5.0f, 5.0f }, -1, Colors::Blue, { 0,0,0 }, { -1,-1,-1 }, "Ball", "OldTestBall"
-    );
-    m_sceneObjects.push_back(oldBall);
 
     // プレイヤー
     int bugEnemyTexIdx = engine->GetTextureManager()->LoadTexture(L"assets/Mutant.fbm/Mutant_diffuse.png", engine->GetDeviceManager()->GetCommandList());
     GameObject* player = ObjectFactory::CreateSkinningBaseModel(
-        engine, "assets/Mutant.fbx", { 0, 5, 0 }, { 0.01f, 0.01f, 0.01f }, bugEnemyTexIdx, Colors::White,
-        { 0,1.0f,0 }, { 0.5f,2.0f,0.5f }, "Player", "Player1"
+        engine, "assets/Mutant.fbx", { 0, 0, 0 }, { 0.01f, 0.01f, 0.01f }, bugEnemyTexIdx, Colors::White,
+        { 0,0.0f,0 }, { 0.5f,2.0f,0.5f }, "Player", "Player1"
     );
+    player->AddComponent<PlayerComponent>();
 
-    // サッカーボール（FBXモデルで本物）
+    // サッカーボール
     int ballTexIdx = engine->GetTextureManager()->LoadTexture(L"assets/soccer_ball/textures/football_ball_BaseColor.png", engine->GetDeviceManager()->GetCommandList());
     GameObject* soccerBall = ObjectFactory::CreateModel(
         engine,
         "assets/soccer_ball/football.fbx",
-        { 0, 5.5f, 0 },
+        { -19.5f, 0.5f, -1.0 },
         { 0.05f, 0.05f, 0.05f },
         ballTexIdx,
         Colors::White,
         { 0,0,0 }, { -1,-1,-1 }, "Ball", "SoccerBall1"
     );
+    soccerBall->AddComponent<SoccerBallComponent>();
     m_sceneObjects.push_back(soccerBall);
 
     // スタジアム
@@ -93,7 +93,7 @@ void GameScene::Start() {
     GameObject* stadium = ObjectFactory::CreateModel(
         engine,
         "assets/Soccore/SccoreStudium.fbx",
-        { 0, 5.0f, 0 },
+        { 0, 0.0f, 0 },
         { 1.0f, 1.0f, 1.0f },
         studiumTexIdx,
         Colors::White,
@@ -107,26 +107,38 @@ void GameScene::Start() {
     GameObject* goal1 = ObjectFactory::CreateModel(
         engine,
         "assets/Soccore/Goal.fbx",
-        { -20.0f, 5.0f, 0 },
-        { 1.5f, 1.5f, 1.5f },
+        { -20.0f, 0.0f, 0 },
+        { 1.0f, 1.0f, 1.0f },
         goalTexIdx,
         Colors::White,
         { 0,0,0 }, { -1,-1,-1 }, "Goal", "Goal1"
     );
     goal1->GetComponent<Transform>()->rotation.y = XMConvertToRadians(90.0f);
+    auto* goal1collider = goal1->GetComponent<Collider>();
+    if (goal1collider) {
+        goal1collider->center = { 0, 0.0f, 0 }; // 例: ゴールの真ん中が中心
+        goal1collider->size = { 2.0f, 2.0f, 3.0f }; // 例: 横幅3m, 高さ2.5m, 奥行き4m（Blenderなどで調べた値）
+    }
+    goal1->AddComponent<GoalComponent>();
     m_sceneObjects.push_back(goal1);
 
     // ゴール2
     GameObject* goal2 = ObjectFactory::CreateModel(
         engine,
         "assets/Soccore/Goal.fbx",
-        { 20.0f, 5.0f, 0 },
-        { 1.5f, 1.5f, 1.5f },
+        { 20.0f, 0.0f, 0 },
+        { 1.0f, 1.0f, 1.0f },
         goalTexIdx,
         Colors::White,
         { 0,0,0 }, { -1,-1,-1 }, "Goal", "Goal2"
     );
     goal2->GetComponent<Transform>()->rotation.y = XMConvertToRadians(-90.0f);
+    auto* goal2collider = goal2->GetComponent<Collider>();
+    if (goal2collider) {
+        goal2collider->center = { 0, 0.0f, 0 }; // 例: ゴールの真ん中が中心
+        goal2collider->size = { 2.0f, 2.0f, 3.0f }; // 例: 横幅3m, 高さ2.5m, 奥行き4m（Blenderなどで調べた値）
+    }
+    goal2->AddComponent<GoalComponent>();
     m_sceneObjects.push_back(goal2);
 
     // アニメーション
@@ -152,85 +164,90 @@ void GameScene::Start() {
 }
 
 void GameScene::Update() {
-    // --- 各主要オブジェクトを「タグ・名前」で取得 ---
+    // --- 全ComponentのUpdate ---
+    for (auto* obj : m_sceneObjects) {
+        for (auto* comp : obj->components) comp->Update();
+    }
+
+
+
+    // --- プレイヤー＆ボール取得 ---
     auto* player = FindByTag("Player");
     auto* soccerBall = FindByName("SoccerBall1");
     if (!player || !soccerBall) return;
 
+
+
     auto* tr = player->GetComponent<Transform>();
-    auto* animator = player->GetComponent<Animator>();
-    Camera* cam = engine->GetCamera();
+    if (!tr) return;
+    auto* ballComp = soccerBall->GetComponent<SoccerBallComponent>();
+    if (!ballComp) return;
+    auto* ballTr = soccerBall->GetComponent<Transform>();
+    XMFLOAT3 ballPos = ballTr->position;
 
-    float moveSpeed = 0.1f;
-    bool isMoving = false;
+    ballTr->position.x = tr->position.x;
+    ballTr->position.y = tr->position.y +0.3f; // 足元なので、体の高さから少し下げる（必要なら値調整）
+    ballTr->position.z = tr->position.z;
 
-    // プレイヤー操作
-    if (GetAsyncKeyState('W') & 0x8000) {
-        tr->position.z += moveSpeed;
-        tr->rotation.y = XMConvertToRadians(0.0f);
-        isMoving = true;
-    }
-    if (GetAsyncKeyState('S') & 0x8000) {
-        tr->position.z -= moveSpeed;
-        tr->rotation.y = XMConvertToRadians(180.0f);
-        isMoving = true;
-    }
-    if (GetAsyncKeyState('A') & 0x8000) {
-        tr->position.x -= moveSpeed;
-        tr->rotation.y = XMConvertToRadians(-90.0f);
-        isMoving = true;
-    }
-    if (GetAsyncKeyState('D') & 0x8000) {
-        tr->position.x += moveSpeed;
-        tr->rotation.y = XMConvertToRadians(90.0f);
-        isMoving = true;
-    }
-
-    // プレイヤーとボールの距離で蹴る判定
+    // --- プレイヤーとボールの距離でキック判定 ---
     XMFLOAT3 playerPos = tr->position;
-    XMFLOAT3 ballPos = soccerBall->GetComponent<Transform>()->position;
     float dx = ballPos.x - playerPos.x;
     float dz = ballPos.z - playerPos.z;
     float distSq = dx * dx + dz * dz;
+
     if ((GetAsyncKeyState(VK_SPACE) & 0x8000) && distSq < 25.0f) {
         float angleRad = tr->rotation.y;
-        float kickSpeed = 0.5f;
-        m_ballVelocity.x = sinf(angleRad) * kickSpeed;
-        m_ballVelocity.z = cosf(angleRad) * kickSpeed;
+        float kickSpeed = 0.01f;
+        ballComp->Kick(angleRad, kickSpeed);
         OutputDebugStringA("Kick!\n");
     }
 
-    // ボール移動処理
-    auto* ballTr = soccerBall->GetComponent<Transform>();
-    ballTr->position.x += m_ballVelocity.x;
-    ballTr->position.z += m_ballVelocity.z;
-
-    // 摩擦
-    m_ballVelocity.x *= 0.95f;
-    m_ballVelocity.z *= 0.95f;
-    if (fabs(m_ballVelocity.x) < 0.001f) m_ballVelocity.x = 0;
-    if (fabs(m_ballVelocity.z) < 0.001f) m_ballVelocity.z = 0;
-
-    // カメラ角度制限
-    if (cam->cameraYaw > 90.0f) cam->cameraYaw = 90.0f;
-    if (cam->cameraYaw < -90.0f) cam->cameraYaw = -90.0f;
-
-    // アニメーション切替
-    if (animator) {
-        if (isMoving && animator->currentAnim != "Walk") {
-            animator->SetAnimation("Walk");
-        }
-        else if (!isMoving && animator->currentAnim != "Idle") {
-            animator->SetAnimation("Idle");
-        }
-    }
-
-    // アニメ更新
+    // --- 全アニメーターUpdate ---
     for (auto* obj : m_sceneObjects) {
         if (auto* animator = obj->GetComponent<Animator>())
             animator->Update(1.0f / 120.0f);
     }
+
+    // --- ゴール判定 ---
+    auto* goal1 = FindByName("Goal1");
+    auto* goal2 = FindByName("Goal2");
+    bool scored = false;
+    std::string scoredGoalName = "";
+
+    if (goal1 && goal1->GetComponent<GoalComponent>()->CheckGoal(ballPos)) {
+        scored = true;
+        scoredGoalName = "Goal1";
+    }
+    if (goal2 && goal2->GetComponent<GoalComponent>()->CheckGoal(ballPos)) {
+        scored = true;
+        scoredGoalName = "Goal2";
+    }
+
+    if (scored) {
+        OutputDebugStringA((scoredGoalName + " GOAL!!!------------------------------------------------------------------------------------------------------------------------------------------------------------\n").c_str());
+        // --- ボールを真ん中にリセット ---
+        auto* ballTr = soccerBall->GetComponent<Transform>();
+        ballTr->position = { 0.0f, 0.5f, 0.0f };  // 高さは地面より少し浮かすなど調整
+        auto* ballComp = soccerBall->GetComponent<SoccerBallComponent>();
+        if (ballComp) ballComp->velocity = { 0,0,0 }; // ボール速度もゼロに
+        // 得点加算や演出もここで追加可能
+    }
+
+
+    // ボール座標
+    char buf[256];
+    sprintf_s(buf, "BallPos: %.2f, %.2f, %.2f\n", ballPos.x, ballPos.y, ballPos.z);
+    OutputDebugStringA(buf);
+
+    // ゴール1の位置とスケール
+    auto* goal1Tr = goal1->GetComponent<Transform>();
+    sprintf_s(buf, "Goal1Pos: %.2f, %.2f, %.2f  Scale: %.2f, %.2f, %.2f\n",
+        goal1Tr->position.x, goal1Tr->position.y, goal1Tr->position.z,
+        goal1Tr->scale.x, goal1Tr->scale.y, goal1Tr->scale.z);
+    OutputDebugStringA(buf);
+
 }
+
 
 void GameScene::Draw() {
     auto* player = FindByTag("Player");
