@@ -62,10 +62,21 @@ void GameScene::Start() {
     m_sceneObjects.push_back(uiObj);
 
     // 地面
-    m_sceneObjects.push_back(ObjectFactory::CreateCube(
+   /* m_sceneObjects.push_back(ObjectFactory::CreateCube(
         engine, { -19.5f, 1.0f, 0 }, { 1, 2, 3.0f }, -1, Colors::Red, { 0,0,0 }, { -1,-1,-1 }, "Ground", "GroundFloor"
+    ));*/
+    m_sceneObjects.push_back(ObjectFactory::CreateCube(
+        engine, { 0.0f, 0.0f, 10.5f }, { 40, 3, 1.0f }, -1, Colors::Red, { 0,0,0 }, { -1,-1,-1 }, "Ground", "GroundFloor"
     ));
-
+    m_sceneObjects.push_back(ObjectFactory::CreateCube(
+        engine, { 0.0f, 0.0f, -10.5f }, { 40, 3, 1.0f }, -1, Colors::Red, { 0,0,0 }, { -1,-1,-1 }, "Ground", "GroundFloor"
+    ));
+    m_sceneObjects.push_back(ObjectFactory::CreateCube(
+        engine, { -20.5f, 0.0f, 0.0f }, { 1, 3, 20.0f }, -1, Colors::Red, { 0,0,0 }, { -1,-1,-1 }, "Ground", "GroundFloor"
+    ));
+    m_sceneObjects.push_back(ObjectFactory::CreateCube(
+        engine, { 20.5f, 0.0f, 0.0f }, { 1, 3, 20.0f }, -1, Colors::Red, { 0,0,0 }, { -1,-1,-1 }, "Ground", "GroundFloor"
+    ));
     // プレイヤー
     int bugEnemyTexIdx = engine->GetTextureManager()->LoadTexture(L"assets/Mutant.fbm/Mutant_diffuse.png", engine->GetDeviceManager()->GetCommandList());
     GameObject* player = ObjectFactory::CreateSkinningBaseModel(
@@ -265,7 +276,7 @@ void GameScene::Draw() {
     XMFLOAT3 playerPos = tr->position;
 
     Camera* cam = engine->GetCamera();
-    XMFLOAT3 offset = { 0.0f, 5.0f, -15.0f };
+    XMFLOAT3 offset = { 0.0f, 5.0f, -5.0f };
     XMFLOAT3 cameraPos = {
         playerPos.x + offset.x,
         playerPos.y + offset.y,
