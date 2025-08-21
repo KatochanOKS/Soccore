@@ -153,6 +153,12 @@ void GameScene::Start() {
     if (FbxModelLoader::LoadAnimationOnly("assets/Walking.fbx", walkKeys, walkLen)) {
         animator->AddAnimation("Walk", walkKeys);
     }
+	std::vector<Animator::Keyframe> kickKeys;
+	double kickLen;
+	if (FbxModelLoader::LoadAnimationOnly("assets/KickSoccerball.fbx", kickKeys, kickLen)) {
+		animator->AddAnimation("Kick", kickKeys);
+	}
+
     m_sceneObjects.push_back(player);
 
     if (skyTex < 0) {
@@ -185,9 +191,9 @@ void GameScene::Update() {
     auto* ballTr = soccerBall->GetComponent<Transform>();
     XMFLOAT3 ballPos = ballTr->position;
 
-    ballTr->position.x = tr->position.x;
-    ballTr->position.y = tr->position.y +0.3f; // 足元なので、体の高さから少し下げる（必要なら値調整）
-    ballTr->position.z = tr->position.z;
+    //ballTr->position.x = tr->position.x;
+    //ballTr->position.y = tr->position.y +0.3f; // 足元なので、体の高さから少し下げる（必要なら値調整）
+    //ballTr->position.z = tr->position.z;
 
     // --- プレイヤーとボールの距離でキック判定 ---
     XMFLOAT3 playerPos = tr->position;
@@ -198,6 +204,8 @@ void GameScene::Update() {
     if ((GetAsyncKeyState(VK_SPACE) & 0x8000) && distSq < 25.0f) {
         float angleRad = tr->rotation.y;
         float kickSpeed = 0.01f;
+		// ボールをキック
+		player->GetComponent<Animator>()->SetAnimation("Kick");
         ballComp->Kick(angleRad, kickSpeed);
         OutputDebugStringA("Kick!\n");
     }
