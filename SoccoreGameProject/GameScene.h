@@ -3,6 +3,7 @@
 #include "EngineManager.h"
 #include <vector>
 #include <string>
+#include <DirectXMath.h>
 
 class GameScene : public Scene {
 public:
@@ -12,12 +13,10 @@ public:
     void Update() override;
     void Draw() override;
 
-    // 追加: タグ・名前で検索する関数
     GameObject* FindByTag(const std::string& tag);
     GameObject* FindByName(const std::string& name);
 
+    std::vector<GameObject*> m_sceneObjects;
 private:
     EngineManager* engine = nullptr;
-    std::vector<GameObject*> m_sceneObjects;
-    DirectX::XMFLOAT3 m_ballVelocity = { 0, 0, 0 };
 };

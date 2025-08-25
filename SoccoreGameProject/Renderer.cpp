@@ -110,14 +110,14 @@ void Renderer::DrawObject(GameObject* obj, size_t idx, const XMMATRIX& view, con
         }
 
         void* mapped = nullptr;
-        if (SUCCEEDED(m_skinningConstantBuffer->Map(0, nullptr, &mapped))) {
+        if (SUCCEEDED(smr->boneCB->GetConstantBuffer()->Map(0, nullptr, &mapped))) {
             memcpy((char*)mapped, &wvp, sizeof(XMMATRIX));
             if (!skinnedMats.empty())
                 memcpy((char*)mapped + 256, skinnedMats.data(), sizeof(XMMATRIX) * skinnedMats.size());
-            m_skinningConstantBuffer->Unmap(0, nullptr);
+            smr->boneCB->GetConstantBuffer()->Unmap(0, nullptr);
 
-            m_cmdList->SetGraphicsRootConstantBufferView(1, m_skinCBGpuAddr);
-            m_cmdList->SetGraphicsRootConstantBufferView(2, m_skinCBGpuAddr + 256);
+            m_cmdList->SetGraphicsRootConstantBufferView(1, smr->boneCB->GetConstantBufferGPUAddress());
+            m_cmdList->SetGraphicsRootConstantBufferView(2, smr->boneCB->GetConstantBufferGPUAddress() + 256);
         }
 
         if (smr->modelBuffer && smr->skinVertexInfo) {
@@ -136,12 +136,6 @@ void Renderer::DrawObject(GameObject* obj, size_t idx, const XMMATRIX& view, con
         // スカイドーム
         if (mr->isSkySphere) {
             DrawSkySphere(obj, idx, view, proj);
-            return;
-        }
-
-        // サッカーボール
-        if (mr->isSphere) {
-            DrawSoccerBall(obj, idx, view, proj);
             return;
         }
 
@@ -217,15 +211,31 @@ void Renderer::DrawUIImage(UIImage* image, size_t idx) {
     if (image->texIndex >= 0)
         m_cmdList->SetGraphicsRootDescriptorTable(0, m_texMgr->GetSRV(image->texIndex));
 
-    // NDC変換
-    float ndcX = (image->position.x / m_width) * 2.0f - 1.0f;
-    float ndcY = 1.0f - (image->position.y / m_height) * 2.0f;
-    float ndcW = image->size.x / m_width;
-    float ndcH = image->size.y / m_height;
+    // --- 左上基準・ピクセル指定のNDC変換 ---
+    // 画面解像度
+    float screenW = m_width;
+    float screenH = m_height;
 
+    // ピクセル座標（左上）
+    float px = image->position.x;
+    float py = image->position.y;
+    float sx = image->size.x;
+    float sy = image->size.y;
+
+    // 左上と右下をNDCに変換
+    float ndcL = (px / screenW) * 2.0f - 1.0f;
+    float ndcT = 1.0f - (py / screenH) * 2.0f;
+    float ndcR = ((px + sx) / screenW) * 2.0f - 1.0f;
+    float ndcB = 1.0f - ((py + sy) / screenH) * 2.0f;
+
+    // スケール・平行移動計算
+    float ndcW = ndcR - ndcL;
+    float ndcH = ndcB - ndcT;
+
+    // 左上(NDC)へ平行移動 → 幅・高さでスケール
     DirectX::XMMATRIX world =
         DirectX::XMMatrixScaling(ndcW, ndcH, 1.0f) *
-        DirectX::XMMatrixTranslation(ndcX, ndcY, 0);
+        DirectX::XMMatrixTranslation(ndcL, ndcT, 0);
 
     // 定数バッファ
     ObjectCB cbData{};
@@ -242,7 +252,7 @@ void Renderer::DrawUIImage(UIImage* image, size_t idx) {
     D3D12_GPU_VIRTUAL_ADDRESS cbvAddr = m_quadBufferMgr->GetConstantBufferGPUAddress() + CBV_SIZE * idx;
     m_cmdList->SetGraphicsRootConstantBufferView(1, cbvAddr);
 
-    // 頂点・インデックスバッファ
+    // 頂点・インデックスバッファ（左上基準1x1のQuadを使うこと！）
     auto vbv = m_quadBufferMgr->GetVertexBufferView();
     auto ibv = m_quadBufferMgr->GetIndexBufferView();
     m_cmdList->IASetVertexBuffers(0, 1, &vbv);
@@ -252,6 +262,7 @@ void Renderer::DrawUIImage(UIImage* image, size_t idx) {
     // 描画
     m_cmdList->DrawIndexedInstanced(6, 1, 0, 0, 0);
 }
+
 
 void Renderer::DrawSkySphere(GameObject* obj, size_t idx, const DirectX::XMMATRIX& view, const DirectX::XMMATRIX& proj)
 {

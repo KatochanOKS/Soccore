@@ -27,7 +27,9 @@ public:
 
     std::string currentAnim;  // 現在のアニメ名
     double currentTime = 0.0; // アニメ再生位置
-    bool isPlaying = true;    // 再生中フラグ
+
+    bool loop = true;  // デフォルトはループ再生
+    bool isPlaying = true;  // 今再生中か
 
     Animator();
 
@@ -39,7 +41,7 @@ public:
 
 
     // 再生アニメーションを切り替える（Walk, Jump等）
-    void SetAnimation(const std::string& animName);
+    void SetAnimation(const std::string& animName, bool loop = true);
 
     // 毎フレーム、現在のボーン行列を更新する（※基底のUpdateとは独立）
     void Update(float deltaTime);

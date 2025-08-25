@@ -113,7 +113,7 @@
     <ClCompile Include="ObjectFactory.cpp">
       <Filter>F\GameObject</Filter>
     </ClCompile>
-    <ClCompile Include="PlayerComponent.cpp">
+    <ClCompile Include="Player1Component.cpp">
       <Filter>F\GameObject\Player</Filter>
     </ClCompile>
     <ClCompile Include="SoccerBallComponent.cpp">
@@ -121,6 +121,9 @@
     </ClCompile>
     <ClCompile Include="GoalComponent.cpp">
       <Filter>F\GameObject\Goal</Filter>
+    </ClCompile>
+    <ClCompile Include="Player2Component.cpp">
+      <Filter>F\GameObject\Player</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -211,7 +214,7 @@
     <ClInclude Include="ObjectFactory.h">
       <Filter>F\GameObject</Filter>
     </ClInclude>
-    <ClInclude Include="PlayerComponent.h">
+    <ClInclude Include="Player1Component.h">
       <Filter>F\GameObject\Player</Filter>
     </ClInclude>
     <ClInclude Include="SoccerBallComponent.h">
@@ -219,6 +222,9 @@
     </ClInclude>
     <ClInclude Include="GoalComponent.h">
       <Filter>F\GameObject\Goal</Filter>
+    </ClInclude>
+    <ClInclude Include="Player2Component.h">
+      <Filter>F\GameObject\Player</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -7,7 +7,8 @@
 #include "StaticMeshRenderer.h"
 #include "UIImage.h"
 #include "Collider.h"
-#include "PlayerComponent.h"
+#include "Player1Component.h"
+#include "Player2Component.h"
 #include "SoccerBallComponent.h"
 #include "GoalComponent.h"
 #include <DirectXMath.h>
@@ -43,6 +44,7 @@ GameScene::GameScene(EngineManager* engine) : engine(engine) {}
 void GameScene::Start() {
     m_sceneObjects.clear();
 
+    // スカイドーム
     int skyTex = engine->GetTextureManager()->LoadTexture(
         L"assets/SkyDome.png",
         engine->GetDeviceManager()->GetCommandList()
@@ -50,134 +52,128 @@ void GameScene::Start() {
     auto* sky = ObjectFactory::CreateSkyDome(engine, skyTex, 600.0f, "Sky", "SkyDome");
     m_sceneObjects.push_back(sky);
 
-    int logoTex = engine->GetTextureManager()->LoadTexture(L"assets/UI.png", engine->GetDeviceManager()->GetCommandList());
-    GameObject* uiObj = new GameObject();
-    auto* logo = uiObj->AddComponent<UIImage>();
+    // UI（ロゴサンプル）
+    int logoTex = engine->GetTextureManager()->LoadTexture(L"assets/Green3.png", engine->GetDeviceManager()->GetCommandList());
+    GameObject* uiObj1 = new GameObject();
+    auto* logo = uiObj1->AddComponent<UIImage>();
     logo->texIndex = logoTex;
-    logo->position = { 300, 100 };
-    logo->size = { 400, 400 };
+    logo->size = { 500, 50 }; // 1280→1278
+    logo->position = { 0, 100 };
+
     logo->color = { 1, 1, 1, 1 };
-    uiObj->tag = "UI";
-    uiObj->name = "LogoUI";
-    m_sceneObjects.push_back(uiObj);
+    uiObj1->tag = "UI";
+    uiObj1->name = "HP1";
+    m_sceneObjects.push_back(uiObj1);
 
-    // 地面
-   /* m_sceneObjects.push_back(ObjectFactory::CreateCube(
-        engine, { -19.5f, 1.0f, 0 }, { 1, 2, 3.0f }, -1, Colors::Red, { 0,0,0 }, { -1,-1,-1 }, "Ground", "GroundFloor"
-    ));*/
+    GameObject* uiObj2 = new GameObject();
+    auto* logo2 = uiObj2->AddComponent<UIImage>();
+    logo2->texIndex = logoTex;
+     logo2->size = { 500, 50 }; // 1280→1278
+    logo2->position = { 780, 50 };
+    logo2->color = { 1, 1, 1, 1 };
+    uiObj2->tag = "UI";
+    uiObj2->name = "HP2";
+    m_sceneObjects.push_back(uiObj2);
+    // 格闘ステージの床（横長で薄いCube）
     m_sceneObjects.push_back(ObjectFactory::CreateCube(
-        engine, { 0.0f, 0.0f, 10.5f }, { 40, 3, 1.0f }, -1, Colors::Red, { 0,0,0 }, { -1,-1,-1 }, "Ground", "GroundFloor"
+        engine, { 0.0f, -0.5f, 0.0f }, { 10.0f, 1.0f, 3.0f }, -1, Colors::Gray, { 0,0,0 }, { -1,-1,-1 }, "Ground", "GroundFloor"
     ));
-    m_sceneObjects.push_back(ObjectFactory::CreateCube(
-        engine, { 0.0f, 0.0f, -10.5f }, { 40, 3, 1.0f }, -1, Colors::Red, { 0,0,0 }, { -1,-1,-1 }, "Ground", "GroundFloor"
-    ));
-    m_sceneObjects.push_back(ObjectFactory::CreateCube(
-        engine, { -20.5f, 0.0f, 0.0f }, { 1, 3, 20.0f }, -1, Colors::Red, { 0,0,0 }, { -1,-1,-1 }, "Ground", "GroundFloor"
-    ));
-    m_sceneObjects.push_back(ObjectFactory::CreateCube(
-        engine, { 20.5f, 0.0f, 0.0f }, { 1, 3, 20.0f }, -1, Colors::Red, { 0,0,0 }, { -1,-1,-1 }, "Ground", "GroundFloor"
-    ));
-    // プレイヤー
-    int bugEnemyTexIdx = engine->GetTextureManager()->LoadTexture(L"assets/Mutant.fbm/Mutant_diffuse.png", engine->GetDeviceManager()->GetCommandList());
-    GameObject* player = ObjectFactory::CreateSkinningBaseModel(
-        engine, "assets/Mutant.fbx", { 0, 0, 0 }, { 0.01f, 0.01f, 0.01f }, bugEnemyTexIdx, Colors::White,
-        { 0,0.0f,0 }, { 0.5f,2.0f,0.5f }, "Player", "Player1"
+
+    //m_sceneObjects.push_back(ObjectFactory::CreateCube(
+    //    engine, { -2.5f, 0.85f, 0.0f }, { 1.0f, 1.7f, 1.0f }, -1, Colors::Red, { 0,0.85f,0 }, { 1.0,1.7f,1 }, "Ground", "Block"
+    //));
+
+    // プレイヤー1（左側）--------------------------------------------------------
+    int p1TexIdx = engine->GetTextureManager()->LoadTexture(L"assets/Mutant.fbm/Mutant_diffuse.png", engine->GetDeviceManager()->GetCommandList());
+    GameObject* player1 = ObjectFactory::CreateSkinningBaseModel(
+        engine, "assets/Mutant.fbx",
+        { -2.5f, 0.0f, 0.0f },    // 左に配置
+        { 0.01f, 0.01f, 0.01f },
+        p1TexIdx, Colors::White,
+        { 0,0.85f,0 }, { 1.5f,1.7f,1.5f }, "Player", "Player1"
     );
-    player->AddComponent<PlayerComponent>();
+    player1->AddComponent<Player1Component>();
+    player1->GetComponent<Transform>()->rotation.y = XMConvertToRadians(90.0f); // 右向き
 
-    // サッカーボール
-    int ballTexIdx = engine->GetTextureManager()->LoadTexture(L"assets/soccer_ball/textures/football_ball_BaseColor.png", engine->GetDeviceManager()->GetCommandList());
-    GameObject* soccerBall = ObjectFactory::CreateModel(
-        engine,
-        "assets/soccer_ball/football.fbx",
-        { -19.5f, 0.5f, -1.0 },
-        { 0.05f, 0.05f, 0.05f },
-        ballTexIdx,
-        Colors::White,
-        { 0,0,0 }, { -1,-1,-1 }, "Ball", "SoccerBall1"
+    // プレイヤー2（右側）--------------------------------------------------------
+	int p2TexIdx = engine->GetTextureManager()->LoadTexture(L"assets/MMA2/SkeletonzombieTAvelange.fbm/skeletonZombie_diffuse.png", engine->GetDeviceManager()->GetCommandList());
+    GameObject* player2 = ObjectFactory::CreateSkinningBaseModel(
+        engine, "assets/MMA2/SkeletonzombieTAvelange.fbx",
+        { 2.5f, 0.0f, 0.0f },     // 右に配置
+        { 0.01f, 0.01f, 0.01f },
+        p2TexIdx, Colors::White,
+        { 0,0.9f,0 }, { 1.5f,1.8f,1.5f }, "Enemy", "Player2"
     );
-    soccerBall->AddComponent<SoccerBallComponent>();
-    m_sceneObjects.push_back(soccerBall);
+    player2->AddComponent<Player2Component>(); // 仮に両方PlayerComponent（2P操作やAIに切替OK）
+    player2->GetComponent<Transform>()->rotation.y = XMConvertToRadians(-90.0f); // 左向き
 
-    // スタジアム
-    int studiumTexIdx = engine->GetTextureManager()->LoadTexture(L"assets/football/textures/Football_BaseColor.png", engine->GetDeviceManager()->GetCommandList());
-    GameObject* stadium = ObjectFactory::CreateModel(
-        engine,
-        "assets/Soccore/SccoreStudium.fbx",
-        { 0, 0.0f, 0 },
-        { 1.0f, 1.0f, 1.0f },
-        studiumTexIdx,
-        Colors::White,
-        { 0,0,0 }, { -1,-1,-1 }, "Stadium", "MainStadium"
-    );
-    stadium->GetComponent<Transform>()->rotation.y = XMConvertToRadians(90.0f);
-    m_sceneObjects.push_back(stadium);
+    m_sceneObjects.push_back(player1);
+    m_sceneObjects.push_back(player2);
 
-    // ゴール1
-    int goalTexIdx = engine->GetTextureManager()->LoadTexture(L"assets/football/textures/Goal_BaseColor.png", engine->GetDeviceManager()->GetCommandList());
-    GameObject* goal1 = ObjectFactory::CreateModel(
-        engine,
-        "assets/Soccore/Goal.fbx",
-        { -20.0f, 0.0f, 0 },
-        { 1.0f, 1.0f, 1.0f },
-        goalTexIdx,
-        Colors::White,
-        { 0,0,0 }, { -1,-1,-1 }, "Goal", "Goal1"
-    );
-    goal1->GetComponent<Transform>()->rotation.y = XMConvertToRadians(90.0f);
-    auto* goal1collider = goal1->GetComponent<Collider>();
-    if (goal1collider) {
-        goal1collider->center = { 0, 0.0f, 0 }; // 例: ゴールの真ん中が中心
-        goal1collider->size = { 2.0f, 2.0f, 3.0f }; // 例: 横幅3m, 高さ2.5m, 奥行き4m（Blenderなどで調べた値）
-    }
-    goal1->AddComponent<GoalComponent>();
-    m_sceneObjects.push_back(goal1);
+    auto* smr1 = player1->GetComponent<SkinnedMeshRenderer>();
+    auto* smr2 = player2->GetComponent<SkinnedMeshRenderer>();
+    char buf[256];
 
-    // ゴール2
-    GameObject* goal2 = ObjectFactory::CreateModel(
-        engine,
-        "assets/Soccore/Goal.fbx",
-        { 20.0f, 0.0f, 0 },
-        { 1.0f, 1.0f, 1.0f },
-        goalTexIdx,
-        Colors::White,
-        { 0,0,0 }, { -1,-1,-1 }, "Goal", "Goal2"
-    );
-    goal2->GetComponent<Transform>()->rotation.y = XMConvertToRadians(-90.0f);
-    auto* goal2collider = goal2->GetComponent<Collider>();
-    if (goal2collider) {
-        goal2collider->center = { 0, 0.0f, 0 }; // 例: ゴールの真ん中が中心
-        goal2collider->size = { 2.0f, 2.0f, 3.0f }; // 例: 横幅3m, 高さ2.5m, 奥行き4m（Blenderなどで調べた値）
+    OutputDebugStringA("--- PLAYER1 boneNames ---\n");
+    for (size_t i = 0; i < smr1->skinVertexInfo->boneNames.size(); ++i) {
+        sprintf_s(buf, "[%02zu] %s\n", i, smr1->skinVertexInfo->boneNames[i].c_str());
+        OutputDebugStringA(buf);
     }
-    goal2->AddComponent<GoalComponent>();
-    m_sceneObjects.push_back(goal2);
 
-    // アニメーション
-    auto* animator = player->GetComponent<Animator>();
-    std::vector<Animator::Keyframe> idleKeys;
-    double idleLen;
-    if (FbxModelLoader::LoadAnimationOnly("assets/Idle.fbx", idleKeys, idleLen)) {
-        animator->AddAnimation("Idle", idleKeys);
+    OutputDebugStringA("--- PLAYER2 boneNames ---\n");
+    for (size_t i = 0; i < smr2->skinVertexInfo->boneNames.size(); ++i) {
+        sprintf_s(buf, "[%02zu] %s\n", i, smr2->skinVertexInfo->boneNames[i].c_str());
+        OutputDebugStringA(buf);
     }
-    std::vector<Animator::Keyframe> walkKeys;
-    double walkLen;
-    if (FbxModelLoader::LoadAnimationOnly("assets/Walking.fbx", walkKeys, walkLen)) {
-        animator->AddAnimation("Walk", walkKeys);
-    }
-	std::vector<Animator::Keyframe> kickKeys;
-	double kickLen;
-	if (FbxModelLoader::LoadAnimationOnly("assets/KickSoccerball.fbx", kickKeys, kickLen)) {
-		animator->AddAnimation("Kick", kickKeys);
-	}
 
-    m_sceneObjects.push_back(player);
+    // ----- アニメーション登録 -----
+    // assets/MMA/*.fbx
+    struct AnimEntry { const char* file; const char* name; };
+    AnimEntry anims1[] = {
+         { "assets/MMA/BodyBlock.fbx",    "BodyBlock"   },
+         { "assets/MMA/MmaKick.fbx",      "Kick"        },
+         { "assets/MMA/MutantDying.fbx",  "Dying"       },
+         { "assets/MMA/Punching.fbx",   "Punch"       },
+         { "assets/MMA/BouncingFightIdle.fbx",             "Idle"        },
+         { "assets/MMA/Walking.fbx",          "Walk"        },
+    };
 
-    if (skyTex < 0) {
-        OutputDebugStringA("SkyDome texture load failed!\n");
+    AnimEntry anims2[] = {
+        { "assets/MMA2/OutwardBlock.fbx",    "BodyBlock"   },
+        { "assets/MMA2/MmaKick.fbx",         "Kick"        },
+        { "assets/MMA2/DyingBackwards.fbx",  "Dying"       },
+        { "assets/MMA2/CrossPunch.fbx",        "Punch"       },
+        { "assets/MMA2/BouncingFightIdle2.fbx",     "Idle"        },
+        { "assets/MMA2/WalkingPlayer2.fbx",  "Walk"        },
+        { "assets/MMA2/Kicking.fbx",  "Kick2"        },
+    };
+
+    // プレイヤー1のアニメ登録
+    auto* animator1 = player1->GetComponent<Animator>();
+    for (auto& anim1 : anims1) {
+        std::vector<Animator::Keyframe> keys;
+        double animLen;
+        if (FbxModelLoader::LoadAnimationOnly(anim1.file, keys, animLen)) {
+            animator1->AddAnimation(anim1.name, keys);
+        }
     }
-    else {
-        OutputDebugStringA("SkyDome created!\n");
+
+    // プレイヤー2のアニメ登録
+    auto* animator2 = player2->GetComponent<Animator>();
+    for (auto& anim2 : anims2) {
+        std::vector<Animator::Keyframe> keys;
+        double animLen;
+        if (FbxModelLoader::LoadAnimationOnly(anim2.file, keys, animLen)) {
+            animator2->AddAnimation(anim2.name, keys);
+        }
     }
+
+    // シーン参照
+    player1->scene = this;
+    player2->scene = this;
+
+    if (skyTex < 0) { OutputDebugStringA("SkyDome texture load failed!\n"); }
+    else { OutputDebugStringA("SkyDome created!\n"); }
 }
 
 void GameScene::Update() {
@@ -186,104 +182,90 @@ void GameScene::Update() {
         for (auto* comp : obj->components) comp->Update();
     }
 
-
-
-    // --- プレイヤー＆ボール取得 ---
-    auto* player = FindByTag("Player");
-    auto* soccerBall = FindByName("SoccerBall1");
-    if (!player || !soccerBall) return;
-
-
-
-    auto* tr = player->GetComponent<Transform>();
-    if (!tr) return;
-    auto* ballComp = soccerBall->GetComponent<SoccerBallComponent>();
-    if (!ballComp) return;
-    auto* ballTr = soccerBall->GetComponent<Transform>();
-    XMFLOAT3 ballPos = ballTr->position;
-
-    //ballTr->position.x = tr->position.x;
-    //ballTr->position.y = tr->position.y +0.3f; // 足元なので、体の高さから少し下げる（必要なら値調整）
-    //ballTr->position.z = tr->position.z;
-
-    // --- プレイヤーとボールの距離でキック判定 ---
-    XMFLOAT3 playerPos = tr->position;
-    float dx = ballPos.x - playerPos.x;
-    float dz = ballPos.z - playerPos.z;
-    float distSq = dx * dx + dz * dz;
-
-    if ((GetAsyncKeyState(VK_SPACE) & 0x8000) && distSq < 25.0f) {
-        float angleRad = tr->rotation.y;
-        float kickSpeed = 0.01f;
-		// ボールをキック
-		player->GetComponent<Animator>()->SetAnimation("Kick");
-        ballComp->Kick(angleRad, kickSpeed);
-        OutputDebugStringA("Kick!\n");
-    }
-
     // --- 全アニメーターUpdate ---
     for (auto* obj : m_sceneObjects) {
         if (auto* animator = obj->GetComponent<Animator>())
             animator->Update(1.0f / 120.0f);
     }
 
-    // --- ゴール判定 ---
-    auto* goal1 = FindByName("Goal1");
-    auto* goal2 = FindByName("Goal2");
-    bool scored = false;
-    std::string scoredGoalName = "";
 
-    if (goal1 && goal1->GetComponent<GoalComponent>()->CheckGoal(ballPos)) {
-        scored = true;
-        scoredGoalName = "Goal1";
+
+    // --- コライダーAABB同士で攻撃判定 ---
+    GameObject* player1 = FindByName("Player1");
+    GameObject* player2 = FindByName("Player2");
+    if (player1 && player2) {
+        auto* tr1 = player1->GetComponent<Transform>();
+        auto* tr2 = player2->GetComponent<Transform>();
+        auto* col1 = player1->GetComponent<Collider>();
+        auto* col2 = player2->GetComponent<Collider>();
+        if (!tr1 || !tr2 || !col1 || !col2) {
+            OutputDebugStringA("[DEBUG] Transform/Collider取得失敗\n");
+            return;
+        }
+
+        XMFLOAT3 minA, maxA, minB, maxB;
+        col1->GetAABBWorld(tr1, minA, maxA);
+        col2->GetAABBWorld(tr2, minB, maxB);
+
+        // --- プレイヤー1の攻撃 ---
+        auto* anim1 = player1->GetComponent<Animator>();
+        char buf[256];
+        sprintf_s(buf, "[DEBUG] Player1 currentAnim = %s, playing = %d\n", anim1->currentAnim.c_str(), anim1->isPlaying ? 1 : 0);
+        OutputDebugStringA(buf);
+
+        if (anim1 && (anim1->currentAnim == "Punch" || anim1->currentAnim == "Kick")) {
+            OutputDebugStringA("[DEBUG] Player1攻撃アニメ中! コライダー判定を実施\n");
+            if (CheckAABBOverlap(minA, maxA, minB, maxB)) {
+                OutputDebugStringA("Player1の攻撃がPlayer2にAABBでHIT!\n");
+            }
+            else {
+                OutputDebugStringA("[DEBUG] Player1攻撃アニメ中だがAABBヒットせず\n");
+            }
+        }
+
+        auto* comp1 = player1->GetComponent<Player1Component>();
+        auto* comp2 = player2->GetComponent<Player2Component>();
+        // 攻撃判定内で
+        if (CheckAABBOverlap(minA, maxA, minB, maxB)) {
+            if (!comp2->isGuarding) { // ガード中以外でだけHP減少
+                comp2->hp -= 0.0005f;
+                if (comp2->hp < 0.0f) comp2->hp = 0.0f;
+            }
+        }
+
+
+        sprintf_s(buf, "[DEBUG] minA=(%.2f,%.2f,%.2f) maxA=(%.2f,%.2f,%.2f)\n", minA.x, minA.y, minA.z, maxA.x, maxA.y, maxA.z);
+        OutputDebugStringA(buf);
+        sprintf_s(buf, "[DEBUG] minB=(%.2f,%.2f,%.2f) maxB=(%.2f,%.2f,%.2f)\n", minB.x, minB.y, minB.z, maxB.x, maxB.y, maxB.z);
+        OutputDebugStringA(buf);
+
+
+        // --- プレイヤー2も同様 ---
+        auto* anim2 = player2->GetComponent<Animator>();
+        sprintf_s(buf, "[DEBUG] Player2 currentAnim = %s, playing = %d\n", anim2->currentAnim.c_str(), anim2->isPlaying ? 1 : 0);
+        OutputDebugStringA(buf);
+
+        if (anim2 && (anim2->currentAnim == "Punch" || anim2->currentAnim == "Kick")) {
+            OutputDebugStringA("[DEBUG] Player2攻撃アニメ中! コライダー判定を実施\n");
+            if (CheckAABBOverlap(minB, maxB, minA, maxA)) {
+                OutputDebugStringA("Player2の攻撃がPlayer1にAABBでHIT!\n");
+            }
+            else {
+                OutputDebugStringA("[DEBUG] Player2攻撃アニメ中だがAABBヒットせず\n");
+            }
+        }
     }
-    if (goal2 && goal2->GetComponent<GoalComponent>()->CheckGoal(ballPos)) {
-        scored = true;
-        scoredGoalName = "Goal2";
-    }
-
-    if (scored) {
-        OutputDebugStringA((scoredGoalName + " GOAL!!!------------------------------------------------------------------------------------------------------------------------------------------------------------\n").c_str());
-        // --- ボールを真ん中にリセット ---
-        auto* ballTr = soccerBall->GetComponent<Transform>();
-        ballTr->position = { 0.0f, 0.5f, 0.0f };  // 高さは地面より少し浮かすなど調整
-        auto* ballComp = soccerBall->GetComponent<SoccerBallComponent>();
-        if (ballComp) ballComp->velocity = { 0,0,0 }; // ボール速度もゼロに
-        // 得点加算や演出もここで追加可能
-    }
-
-
-    // ボール座標
-    char buf[256];
-    sprintf_s(buf, "BallPos: %.2f, %.2f, %.2f\n", ballPos.x, ballPos.y, ballPos.z);
-    OutputDebugStringA(buf);
-
-    // ゴール1の位置とスケール
-    auto* goal1Tr = goal1->GetComponent<Transform>();
-    sprintf_s(buf, "Goal1Pos: %.2f, %.2f, %.2f  Scale: %.2f, %.2f, %.2f\n",
-        goal1Tr->position.x, goal1Tr->position.y, goal1Tr->position.z,
-        goal1Tr->scale.x, goal1Tr->scale.y, goal1Tr->scale.z);
-    OutputDebugStringA(buf);
-
 }
 
 
-void GameScene::Draw() {
-    auto* player = FindByTag("Player");
-    if (!player) return;
-    auto* tr = player->GetComponent<Transform>();
-    if (!tr) return;
-    XMFLOAT3 playerPos = tr->position;
 
+void GameScene::Draw() {
     Camera* cam = engine->GetCamera();
-    XMFLOAT3 offset = { 0.0f, 5.0f, -5.0f };
-    XMFLOAT3 cameraPos = {
-        playerPos.x + offset.x,
-        playerPos.y + offset.y,
-        playerPos.z + offset.z
-    };
-    cam->SetPosition(cameraPos);
-    cam->SetTarget(playerPos);
+
+    // サイドビュー：やや上から横方向（X軸）を見る
+    // 例：{X=0, Y=3, Z=10} から {X=0, Y=1, Z=0} を注視
+    cam->SetPosition({ 0.0f, 3.0f, -5.0f });   // Z=10は画面奥（手前でもOK）
+    cam->SetTarget({ 0.0f, 1.0f, 0.0f });      // ステージ中央少し上
 
     XMMATRIX view = cam->GetViewMatrix();
     XMMATRIX proj = cam->GetProjectionMatrix(

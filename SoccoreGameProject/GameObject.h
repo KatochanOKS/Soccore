@@ -3,7 +3,7 @@
 #include <type_traits>
 #include <string>
 #include "Component.h"
-
+class GameScene;
 // ------------------------------
 // ゲーム内の「オブジェクト」を表すクラス
 // 各種Component（Transform, Renderer, Collider, etc）を複数持つことができる！
@@ -16,7 +16,7 @@ public:
 
     // このGameObjectが持つすべてのComponent（ポインタ）のリスト
     std::vector<Component*> components;
-
+    GameScene* scene = nullptr; // ★親シーンへのポインタ（最初はnullptr）
     // ------------------------------
     // 任意のComponent（Transform, MeshRenderer, など）を追加する汎用関数
     // 例: AddComponent<Transform>();

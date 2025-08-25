@@ -164,7 +164,8 @@
     <ClCompile Include="MeshLibrary.cpp" />
     <ClCompile Include="ObjectFactory.cpp" />
     <ClCompile Include="PipelineManager.cpp" />
-    <ClCompile Include="PlayerComponent.cpp" />
+    <ClCompile Include="Player1Component.cpp" />
+    <ClCompile Include="Player2Component.cpp" />
     <ClCompile Include="Renderer.cpp" />
     <ClCompile Include="SkinnedMeshRenderer.cpp" />
     <ClCompile Include="SoccerBallComponent.cpp" />
@@ -194,7 +195,8 @@
     <ClInclude Include="MeshLibrary.h" />
     <ClInclude Include="ObjectFactory.h" />
     <ClInclude Include="PipelineManager.h" />
-    <ClInclude Include="PlayerComponent.h" />
+    <ClInclude Include="Player1Component.h" />
+    <ClInclude Include="Player2Component.h" />
     <ClInclude Include="Renderer.h" />
     <ClInclude Include="Scene.h" />
     <ClInclude Include="SkinnedMeshRenderer.h" />

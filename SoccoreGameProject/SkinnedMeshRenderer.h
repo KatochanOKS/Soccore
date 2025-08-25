@@ -10,7 +10,7 @@ public:
     BufferManager* modelBuffer = nullptr; // スキンメッシュ用バッファ
     FbxModelLoader::SkinningVertexInfo* skinVertexInfo = nullptr; // スキニング頂点情報
     Animator* animator = nullptr;         // アニメーション管理クラス
-
+    BufferManager* boneCB = nullptr;  // ← 各キャラごとのCBV
     ~SkinnedMeshRenderer() override;   // ← ; で終わるだけ！（本体は無し）
     void Draw() override;              // ← ; で終わるだけ！（本体は無し）
 };
