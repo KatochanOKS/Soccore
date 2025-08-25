@@ -39,11 +39,12 @@ void Animator::SetAnimations(
 // アニメーションを切り替える
 //（例：Walk→Idle, Idle→Jumpなど）
 //--------------------------------------
-void Animator::SetAnimation(const std::string& animName) {
-    // その名前のアニメが存在すれば切り替え
+void Animator::SetAnimation(const std::string& animName, bool loop_) {
     if (animations.find(animName) != animations.end()) {
         currentAnim = animName;
         currentTime = 0.0; // 頭から再生
+        loop = loop_;
+        isPlaying = true;
     }
 }
 
@@ -51,16 +52,21 @@ void Animator::SetAnimation(const std::string& animName) {
 // 毎フレーム「現在の時刻」に合わせて各ボーン行列を計算する
 //--------------------------------------
 void Animator::Update(float deltaTime) {
-    // 再生中フラグがOFF or アニメ無しなら何もしない
     if (!isPlaying || animations.count(currentAnim) == 0) return;
-    const auto& frames = animations[currentAnim];  // 今再生してるアニメの全キーフレーム
+    const auto& frames = animations[currentAnim];
     if (frames.empty()) return;
 
-    // 再生時刻を進める（ループ再生：アニメ長を超えたら巻き戻す）
     currentTime += deltaTime;
     double animLength = frames.back().time;
-    if (currentTime > animLength)
-        currentTime = fmod(currentTime, animLength);
+    if (currentTime > animLength) {
+        if (loop) {
+            currentTime = fmod(currentTime, animLength);
+        }
+        else {
+            currentTime = animLength;
+            isPlaying = false;  // 再生完了
+        }
+    }
 
     // 今の再生時刻に一番近いキーフレーム番号を探す（リニアサーチでOK：アニメは数十フレーム程度）
     size_t frameIdx = 0;

@@ -210,6 +210,14 @@ GameObject* ObjectFactory::CreateSkinningBaseModel(
     smr->modelBuffer->CreateSkinningVertexBuffer(engine->GetDeviceManager()->GetDevice(), skinInfo->vertices);
     smr->modelBuffer->CreateIndexBuffer(engine->GetDeviceManager()->GetDevice(), skinInfo->indices);
 
+    // ==== ここから追加！ ====
+// ワールド＋ボーン行列80個ぶんのサイズ（256+80*64=5376バイト）でOK
+    smr->boneCB = new BufferManager();
+    smr->boneCB->CreateConstantBuffer(
+        engine->GetDeviceManager()->GetDevice(),
+        256 + sizeof(DirectX::XMMATRIX) * 80
+    );
+
     auto* animator = obj->AddComponent<Animator>();
     animator->boneNames = skinInfo->boneNames;
     animator->bindPoses = skinInfo->bindPoses;
