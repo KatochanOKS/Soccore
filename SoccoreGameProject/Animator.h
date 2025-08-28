@@ -24,36 +24,38 @@ public:
 
     std::vector<DirectX::XMMATRIX> bindPoses; // ★バインドポーズを保存しておく
 
-
     std::string currentAnim;  // 現在のアニメ名
     double currentTime = 0.0; // アニメ再生位置
 
     bool loop = true;  // デフォルトはループ再生
     bool isPlaying = true;  // 今再生中か
 
+    // --- コンストラクタ ---
     Animator();
 
+    // --- アニメ/ボーン/バインドポーズのセット（moveセマンティクス対応） ---
     void SetAnimations(
-        const std::unordered_map<std::string, std::vector<Keyframe>>& anims,
-        const std::vector<std::string>& bones,
-        const std::vector<DirectX::XMMATRIX>& bindPoseMatrices
+        std::unordered_map<std::string, std::vector<Keyframe>>&& anims,
+        std::vector<std::string>&& bones,
+        std::vector<DirectX::XMMATRIX>&& bindPoseMatrices
     );
 
-
-    // 再生アニメーションを切り替える（Walk, Jump等）
+    // --- アニメーションの切り替え ---
     void SetAnimation(const std::string& animName, bool loop = true);
 
-    // 毎フレーム、現在のボーン行列を更新する（※基底のUpdateとは独立）
+    // --- フレームごとにアニメを進める ---
     void Update(float deltaTime);
 
-    // 現在のボーン行列（描画用）
+    // --- 現在のボーン行列（描画用） ---
     const std::vector<DirectX::XMMATRIX>& GetCurrentPose() const;
 
-    // アニメーション姿勢 × BindPose補正を行ったスキニング行列を返す
+    // --- スキニング用（バインドポーズ補正つき） ---
     std::vector<DirectX::XMMATRIX> GetSkinnedPose(const std::vector<DirectX::XMMATRIX>& bindPoses) const;
 
-    // アニメーション追加関数
+    // --- アニメーション追加（単体でも追加可能） ---
     void AddAnimation(const std::string& name, const std::vector<Keyframe>& keyframes);
 
-
+private:
+    // 内部的な「再生中フレーム番号」計算
+    size_t FindKeyframeIndex(const std::vector<Keyframe>& frames, double time) const;
 };

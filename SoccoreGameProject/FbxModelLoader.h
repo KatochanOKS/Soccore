@@ -10,71 +10,55 @@
 #include "BufferManager.h"
 #include "Animator.h" // Animator::Keyframeを使うため
 
-//--------------------------------------
-// FBXの一時インスタンス構造体
-//--------------------------------------
-struct FbxModelInstance {
-    FbxManager* manager = nullptr;
-    FbxScene* scene = nullptr;
-    std::vector<std::string> boneNames;
-    std::vector<DirectX::XMMATRIX> bindPoses;
-    double animationLength = 0.0;
-    ~FbxModelInstance() {
-        if (scene) scene->Destroy();
-        if (manager) manager->Destroy();
-    }
-};
-
-//--------------------------------------
-// FBXモデルローダークラス
-//--------------------------------------
+//----------------------------------------------------
+// FBXファイルからモデル・アニメ・スキニング情報を抽出するクラス
+//----------------------------------------------------
 class FbxModelLoader
 {
 public:
     FbxModelLoader();
 
-    // -------------------------------
-    // 静的モデル（非スキン）用 頂点・インデックス配列
-    // -------------------------------
+    //----------------------------------------
+    // 1. 静的モデル（ボーンなし・アニメなし）の頂点＆インデックス格納用
+    //----------------------------------------
     struct VertexInfo {
         std::vector<Vertex> vertices;
         std::vector<unsigned short> indices;
     };
 
-    // -------------------------------
-    // スキニング用データ構造体
-    // -------------------------------
+    //----------------------------------------
+    // 2. スキニング対応モデルの情報格納用
+    //----------------------------------------
     struct SkinningVertexInfo {
-        std::vector<SkinningVertex> vertices;           // スキニング頂点配列
-        std::vector<unsigned short> indices;            // インデックス配列
-        std::vector<std::string> boneNames;             // ボーン名リスト
-        std::vector<DirectX::XMMATRIX> bindPoses;       // バインドポーズ行列
-        // --- アニメーション情報 ---
+        std::vector<SkinningVertex> vertices;        // スキニング対応頂点リスト
+        std::vector<unsigned short> indices;         // インデックス配列
+        std::vector<std::string> boneNames;          // ボーン名リスト
+        std::vector<DirectX::XMMATRIX> bindPoses;    // ボーンごとのバインドポーズ行列
         struct Animation {
-            std::string name;
-            double length; // アニメ長（秒）
+            std::string name;                        // アニメ名
+            double length;                           // アニメ長（秒）
             std::vector<Animator::Keyframe> keyframes;
         };
-        std::vector<Animation> animations;              // アニメーション配列
+        std::vector<Animation> animations;           // 複数アニメを格納
     };
 
-    // -------------------------------
-    // 静的モデル読み込み（既存）
-    // -------------------------------
+    //----------------------------------------
+    // 3. 静的モデル読込
+    //----------------------------------------
+    // FBXからボーンなし頂点/インデックスを抽出
     static bool Load(const std::string& filePath, VertexInfo* vertexInfo);
 
-    // -------------------------------
-    // スキニング対応モデルのFBX読み込み（新規）
-    // -------------------------------
-    // @filePath : FBXファイルパス
-    // @outInfo  : SkinningVertexInfo格納先
-    // return    : 成功でtrue
-    // -------------------------------
+    //----------------------------------------
+    // 4. スキニングモデル読込
+    //----------------------------------------
+    // FBXからボーン名/バインドポーズ/スキン頂点/アニメをすべて抽出
     static bool LoadSkinningModel(const std::string& filePath, SkinningVertexInfo* outInfo);
-    // Animationだけ読み込む関数（モデルや頂点は不要）
-    static bool LoadAnimationOnly(const std::string& fbxPath,std::vector<Animator::Keyframe>& outKeyframes,double& outLength);
+
+    // アニメーションだけを抽出したい場合
+    static bool LoadAnimationOnly(const std::string& fbxPath, std::vector<Animator::Keyframe>& outKeyframes, double& outLength);
+
 private:
-    // 既存のユーティリティ関数群
+    // 以降は内部ユーティリティ関数
     static bool IsExistNormalUVInfo(const std::vector<float>& vertexInfo);
     static std::vector<float> CreateVertexInfo(const std::vector<float>& vertex, const FbxVector4& normalVec4, const FbxVector2& uvVec2);
     static int CreateNewVertexIndex(const std::vector<float>& vertexInfo, const FbxVector4& normalVec4, const FbxVector2& uvVec2,

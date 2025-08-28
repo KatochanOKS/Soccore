@@ -4,15 +4,22 @@
 #include <algorithm>
 #include <map>
 #include <tuple>
-#include <iostream>   // std::cout, もしくはOutputDebugStringA
-#include <functional>  // ★ここを必ず追加！
+#include <iostream>
+#include <functional>
 using namespace DirectX;
-FbxModelLoader::FbxModelLoader()
-{
-}
 
+//------------------------------------------------------------
+// コンストラクタ
+//------------------------------------------------------------
+FbxModelLoader::FbxModelLoader() {}
+
+
+//------------------------------------------------------------
+// 静的メッシュの読み込み
+//------------------------------------------------------------
 bool FbxModelLoader::Load(const std::string& filePath, VertexInfo* vertexInfo)
 {
+    // FBXマネージャ・インポータ作成
     auto manager = FbxManager::Create();
     auto importer = FbxImporter::Create(manager, "");
     if (!importer->Initialize(filePath.c_str(), -1, manager->GetIOSettings()))
@@ -20,11 +27,13 @@ bool FbxModelLoader::Load(const std::string& filePath, VertexInfo* vertexInfo)
     auto scene = FbxScene::Create(manager, "");
     importer->Import(scene);
     importer->Destroy();
+
+    // メッシュの三角形化
     FbxGeometryConverter geometryConverter(manager);
     if (!geometryConverter.Triangulate(scene, true))
         return false;
 
-    // ======= 全メッシュ取得 =======
+    // 全メッシュ走査
     int meshCount = scene->GetSrcObjectCount<FbxMesh>();
     std::vector<Vertex> allVertices;
     std::vector<unsigned short> allIndices;
@@ -34,23 +43,25 @@ bool FbxModelLoader::Load(const std::string& filePath, VertexInfo* vertexInfo)
         auto mesh = scene->GetSrcObject<FbxMesh>(m);
         if (!mesh) continue;
 
-        // UVセット名の取得
+        // UVセット名取得
         FbxStringList uvSetNameList;
         mesh->GetUVSetNames(uvSetNameList);
         if (uvSetNameList.GetCount() == 0) continue;
         const char* uvSetName = uvSetNameList.GetStringAt(0);
 
-        // 頂点座標
+        // 頂点座標リスト
         std::vector<std::vector<float>> vertexInfoList;
         for (int i = 0; i < mesh->GetControlPointsCount(); i++) {
             auto point = mesh->GetControlPointAt(i);
-            std::vector<float> vertex;
-            vertex.push_back(point[0]);
-            vertex.push_back(point[1]);
-            vertex.push_back(point[2]);
+            std::vector<float> vertex = {
+                static_cast<float>(point[0]),
+                static_cast<float>(point[1]),
+                static_cast<float>(point[2])
+            };
             vertexInfoList.push_back(vertex);
         }
-        // 頂点毎の情報
+
+        // 頂点ごとに法線・UV情報付与
         std::vector<unsigned short> indices;
         std::vector<std::array<int, 2>> oldNewIndexPairList;
         for (int polIndex = 0; polIndex < mesh->GetPolygonCount(); polIndex++) {
@@ -71,45 +82,46 @@ bool FbxModelLoader::Load(const std::string& filePath, VertexInfo* vertexInfo)
                 indices.push_back(vertexIndex);
             }
         }
-        // 頂点データを構築してオフセット加算
+
+        // 頂点データ構築
         std::vector<Vertex> vertices;
         for (int i = 0; i < vertexInfoList.size(); i++) {
             std::vector<float>& vi = vertexInfoList[i];
             vertices.push_back(Vertex{
                 vi[0], vi[1], vi[2],
                 vi[3], vi[4], vi[5],
-                vi[6], 1.0f - vi[7] // ← ここを変更 FBX/Blender/Maya等 → vは下から上が0→1 FBX/Blender/Maya等 → vは下から上が0→1
+                vi[6], 1.0f - vi[7] // vは上下反転
                 });
-
-
         }
-        // インデックスはオフセットを付けてallIndicesへ
+        // インデックス・頂点配列格納
         for (auto idx : indices) {
             allIndices.push_back(idx + indexOffset);
         }
-        // 頂点もallVerticesへ
         allVertices.insert(allVertices.end(), vertices.begin(), vertices.end());
         indexOffset += static_cast<unsigned short>(vertices.size());
     }
 
-    // マネージャー、シーンの破棄
+    // メモリ解放
     scene->Destroy();
     manager->Destroy();
     *vertexInfo = { allVertices, allIndices };
     return true;
 }
 
-// --- 残りはそのまま ---
+//------------------------------------------------------------
+// 頂点が法線・UVを持っているか
+//------------------------------------------------------------
 bool FbxModelLoader::IsExistNormalUVInfo(const std::vector<float>& vertexInfo)
 {
     return vertexInfo.size() == 8;
 }
+
+//------------------------------------------------------------
+// 頂点情報に法線・UV追加
+//------------------------------------------------------------
 std::vector<float> FbxModelLoader::CreateVertexInfo(const std::vector<float>& vertexInfo, const FbxVector4& normalVec4, const FbxVector2& uvVec2)
 {
-    std::vector<float> newVertexInfo;
-    newVertexInfo.push_back(vertexInfo[0]);
-    newVertexInfo.push_back(vertexInfo[1]);
-    newVertexInfo.push_back(vertexInfo[2]);
+    std::vector<float> newVertexInfo = vertexInfo;
     newVertexInfo.push_back(normalVec4[0]);
     newVertexInfo.push_back(normalVec4[1]);
     newVertexInfo.push_back(normalVec4[2]);
@@ -117,6 +129,10 @@ std::vector<float> FbxModelLoader::CreateVertexInfo(const std::vector<float>& ve
     newVertexInfo.push_back(uvVec2[1]);
     return newVertexInfo;
 }
+
+//------------------------------------------------------------
+// 新たな法線・UVを持つ頂点を新規追加
+//------------------------------------------------------------
 int FbxModelLoader::CreateNewVertexIndex(const std::vector<float>& vertexInfo, const FbxVector4& normalVec4, const FbxVector2& uvVec2,
     std::vector<std::vector<float>>& vertexInfoList, int oldIndex, std::vector<std::array<int, 2>>& oldNewIndexPairList)
 {
@@ -134,6 +150,10 @@ int FbxModelLoader::CreateNewVertexIndex(const std::vector<float>& vertexInfo, c
     oldNewIndexPairList.push_back(oldNewIndexPair);
     return newIndex;
 }
+
+//------------------------------------------------------------
+// 既存頂点が指定法線・UVと一致するか
+//------------------------------------------------------------
 bool FbxModelLoader::IsSetNormalUV(const std::vector<float> vertexInfo, const FbxVector4& normalVec4, const FbxVector2& uvVec2)
 {
     return fabs(vertexInfo[3] - normalVec4[0]) < FLT_EPSILON
@@ -143,263 +163,109 @@ bool FbxModelLoader::IsSetNormalUV(const std::vector<float> vertexInfo, const Fb
         && fabs(vertexInfo[7] - uvVec2[1]) < FLT_EPSILON;
 }
 
-#include "FbxModelLoader.h"
-// ...（他のインクルードも必要に応じて）...
-
-//----------------------------
-// スキニング＆アニメ付きFBXの読み込み
-//----------------------------
-//bool FbxModelLoader::LoadSkinningModel(const std::string& filePath, SkinningVertexInfo* outInfo)
-//{
-//    //----------------------------------------
-//    // 1. FBX SDKマネージャ、インポータ、シーンの生成
-//    //----------------------------------------
-//    // FbxManager* manager = FbxManager::Create();
-//    // FbxImporter* importer = FbxImporter::Create(manager, "");
-//    // importer->Initialize(filePath.c_str(), -1, manager->GetIOSettings());
-//    // FbxScene* scene = FbxScene::Create(manager, "");
-//    // importer->Import(scene);
-//    // importer->Destroy();
-//
-//    //----------------------------------------
-//    // 2. メッシュの三角形化
-//    //----------------------------------------
-//    // FbxGeometryConverter geometryConverter(manager);
-//    // geometryConverter.Triangulate(scene, true);
-//
-//    //----------------------------------------
-//    // 3. ボーン階層/名前/バインドポーズ行列の抽出
-//    //----------------------------------------
-//    // - シーン内の全骨ノードを走査し、boneNames, bindPosesをoutInfoに格納
-//
-//    //----------------------------------------
-//    // 4. 各頂点ごとに
-//    //    ・座標, 法線, UV
-//    //    ・ボーンインデックス, ボーンウェイト
-//    // を抽出し、SkinningVertex配列を生成
-//    //----------------------------------------
-//    // - 各FbxMeshのコントロールポイントから必要情報を取得
-//
-//    //----------------------------------------
-//    // 5. インデックス配列も生成
-//    //----------------------------------------
-//    // - ポリゴン情報から
-//
-//    //----------------------------------------
-//    // 6. 各アニメーション（Take/Clip）ごとに
-//    //    ・全キーフレームごとに全ボーンの変換行列配列
-//    //    ・Animator::Keyframe配列としてoutInfo->animationsに格納
-//    //----------------------------------------
-//    // - アニメーションスタックやレイヤを走査
-//
-//    //----------------------------------------
-//    // 7. すべてoutInfoにセット完了後、FBXオブジェクト開放
-//    //----------------------------------------
-//    // scene->Destroy();
-//    // manager->Destroy();
-//
-//    //----------------------------------------
-//    // 8. 成功でtrue、失敗時はfalse
-//    //----------------------------------------
-//    return false; // ※まだ仮実装。細かい実装は後で段階的に
-//}
-
-//----------------------------
-// スキニング＆アニメ付きFBXの読み込み
-//----------------------------
+//------------------------------------------------------------
+// スキニング対応モデルの読み込み
+//------------------------------------------------------------
 bool FbxModelLoader::LoadSkinningModel(const std::string& filePath, SkinningVertexInfo* outInfo)
 {
-    // --- 1. FBX SDKマネージャ作成 ---
+    // --- FBXマネージャ ---
     OutputDebugStringA("[FBX] 1. FbxManager作成\n");
     FbxManager* manager = FbxManager::Create();
-    if (!manager) {
-        OutputDebugStringA("[FBX] FbxManager作成失敗\n");
-        return false;
-    }
+    if (!manager) { OutputDebugStringA("[FBX] FbxManager作成失敗\n"); return false; }
 
-    // --- 2. インポータ作成＆初期化 ---
+    // --- インポータ ---
     OutputDebugStringA("[FBX] 2. FbxImporter作成＆初期化\n");
     FbxImporter* importer = FbxImporter::Create(manager, "");
     if (!importer->Initialize(filePath.c_str(), -1, manager->GetIOSettings())) {
-        OutputDebugStringA("[FBX] FbxImporter初期化失敗\n");
-        return false;
+        OutputDebugStringA("[FBX] FbxImporter初期化失敗\n"); return false;
     }
 
-    // --- 3. シーン生成＆インポート ---
+    // --- シーン ---
     OutputDebugStringA("[FBX] 3. シーン生成＆インポート\n");
     FbxScene* scene = FbxScene::Create(manager, "");
     if (!importer->Import(scene)) {
         OutputDebugStringA("[FBX] インポート失敗\n");
-        importer->Destroy();
-        manager->Destroy();
-        return false;
+        importer->Destroy(); manager->Destroy(); return false;
     }
     importer->Destroy();
 
-    // --- 4. 三角形化 ---
+    // --- 三角形化 ---
     OutputDebugStringA("[FBX] 4. メッシュの三角形化\n");
     FbxGeometryConverter geometryConverter(manager);
     if (!geometryConverter.Triangulate(scene, true)) {
-        OutputDebugStringA("[FBX] 三角形化失敗\n");
-        scene->Destroy();
-        manager->Destroy();
-        return false;
+        OutputDebugStringA("[FBX] 三角形化失敗\n"); scene->Destroy(); manager->Destroy(); return false;
     }
 
-    // --- 5. 読み込んだシーンのサマリを出力（ノード数など） ---
+    // --- ルートノード ---
     FbxNode* rootNode = scene->GetRootNode();
     if (!rootNode) {
         OutputDebugStringA("[FBX] ルートノードがありません\n");
-        scene->Destroy();
-        manager->Destroy();
-        return false;
+        scene->Destroy(); manager->Destroy(); return false;
     }
 
-    char msg[256];
-    sprintf_s(msg, "[FBX] RootNode名: %s, 子ノード数: %d\n",
-        rootNode->GetName(), rootNode->GetChildCount());
-    OutputDebugStringA(msg);
-
-    // --- 6. とりあえず全ノード名を再帰で出してみる ---
- // 先に宣言だけ
-    std::function<void(FbxNode*, int)> PrintNodeNames;
-
-    // その後、初期化
-    PrintNodeNames = [&](FbxNode* node, int depth) {
-        std::string indent(depth * 2, ' ');
-        char nodeMsg[256];
-        sprintf_s(nodeMsg, "%s- %s\n", indent.c_str(), node->GetName());
-        OutputDebugStringA(nodeMsg);
-        for (int i = 0; i < node->GetChildCount(); ++i)
-            PrintNodeNames(node->GetChild(i), depth + 1);
-        };
-
-    // --- 7. ボーンノードの抽出・リストアップ ---
-    OutputDebugStringA("[FBX] --- ボーンノード一覧 ---\n");
-
-    // ボーン判定のための関数（たとえばMixamoならノード名に"mixamorig:"が含まれるものがボーン）
-    auto IsBoneNode = [](FbxNode* node) -> bool {
-        std::string name = node->GetName();
-        // Mixamoのボーン名は "mixamorig:" から始まる
-        return name.find("mixamorig:") != std::string::npos;
-        };
-
-    // 再帰的にボーンノード名を出力＆boneNamesに追加
+    // --- ボーン名抽出 ---
+    outInfo->boneNames.clear();
     std::function<void(FbxNode*, int)> ListBoneNodes;
     ListBoneNodes = [&](FbxNode* node, int depth) {
-        if (IsBoneNode(node)) {
-            std::string indent(depth * 2, ' ');
-            char msg[256];
-            sprintf_s(msg, "%s- %s\n", indent.c_str(), node->GetName());
-            OutputDebugStringA(msg);
-            outInfo->boneNames.push_back(node->GetName());
-        }
+        std::string name = node->GetName();
+        if (name.find("mixamorig:") != std::string::npos)
+            outInfo->boneNames.push_back(name);
         for (int i = 0; i < node->GetChildCount(); ++i)
             ListBoneNodes(node->GetChild(i), depth + 1);
         };
     ListBoneNodes(rootNode, 0);
 
-    char msg2[128];
-    sprintf_s(msg2, "[FBX] ボーン数 = %zu\n", outInfo->boneNames.size());
-    OutputDebugStringA(msg2);
-
-
-    // --- 8. 各ボーンのバインドポーズ行列取得 ---
-    OutputDebugStringA("[FBX] --- バインドポーズ行列（初期姿勢）取得 ---\n");
-
+    // --- バインドポーズ取得 ---
     outInfo->bindPoses.clear();
     auto* pose = scene->GetPose(0);
     if (pose && pose->IsBindPose()) {
-        // --- 1. 通常のBindPose取得処理 ---
         for (const std::string& boneName : outInfo->boneNames) {
             FbxNode* boneNode = scene->FindNodeByName(boneName.c_str());
-            if (!boneNode) {
-                OutputDebugStringA(("[FBX] Bone not found: " + boneName + "\n").c_str());
-                outInfo->bindPoses.push_back(DirectX::XMMatrixIdentity());
-                continue;
-            }
-
             FbxMatrix mat;
             bool found = false;
             for (int i = 0; i < pose->GetCount(); ++i) {
                 if (pose->GetNode(i) == boneNode) {
-                    mat = pose->GetMatrix(i);
-                    found = true;
-                    break;
+                    mat = pose->GetMatrix(i); found = true; break;
                 }
             }
-
-            if (!found) {
-                OutputDebugStringA(("[FBX] BindPose missing for bone: " + boneName + "\n").c_str());
-                outInfo->bindPoses.push_back(DirectX::XMMatrixIdentity());
-                continue;
+            DirectX::XMMATRIX dxMat = DirectX::XMMatrixIdentity();
+            if (found) {
+                for (int r = 0; r < 4; ++r)
+                    for (int c = 0; c < 4; ++c)
+                        dxMat.r[r].m128_f32[c] = (float)mat.Get(r, c);
             }
-
-            DirectX::XMMATRIX dxMat;
-            for (int r = 0; r < 4; ++r)
-                for (int c = 0; c < 4; ++c)
-                    dxMat.r[r].m128_f32[c] = (float)mat.Get(r, c);
-
             outInfo->bindPoses.push_back(dxMat);
         }
     }
     else {
-        // --- 2. Fallback: EvaluateGlobalTransform() で取得 ---
-        OutputDebugStringA("[FBX] BindPoseが無効！EvaluateGlobalTransformで代用\n");
-
         for (const std::string& boneName : outInfo->boneNames) {
-            FbxNode* boneNode = rootNode->FindChild(boneName.c_str(), true); // 再帰で検索
-            if (!boneNode) {
-                std::string err = "[FBX][ERROR] Bone node not found: " + boneName + "\n";
-                OutputDebugStringA(err.c_str());
-                outInfo->bindPoses.push_back(DirectX::XMMatrixIdentity());
-                continue;
-            }
-
-
-
+            FbxNode* boneNode = rootNode->FindChild(boneName.c_str(), true);
+            if (!boneNode) { outInfo->bindPoses.push_back(DirectX::XMMatrixIdentity()); continue; }
             FbxAMatrix bindPoseMatrix = boneNode->EvaluateGlobalTransform();
-            DirectX::XMMATRIX dxMat;
+            DirectX::XMMATRIX dxMat = DirectX::XMMatrixIdentity();
             for (int r = 0; r < 4; ++r)
                 for (int c = 0; c < 4; ++c)
                     dxMat.r[r].m128_f32[c] = (float)bindPoseMatrix.Get(r, c);
-
             outInfo->bindPoses.push_back(dxMat);
-
-            char msg[256];
-            sprintf_s(msg, "[FBX] Bone: %s, FallbackBindPose: (%.2f, %.2f, %.2f)\n",
-                boneName.c_str(),
-                (float)bindPoseMatrix.Get(0, 3), (float)bindPoseMatrix.Get(1, 3), (float)bindPoseMatrix.Get(2, 3));
-            OutputDebugStringA(msg);
         }
     }
 
-
-    // --- 9. 各頂点ごとにボーンインデックス＆ウェイトを格納 ---
-    OutputDebugStringA("[FBX] --- スキニング頂点情報抽出 ---\n");
-
+    // --- スキニング頂点・インデックス抽出 ---
     outInfo->vertices.clear();
     outInfo->indices.clear();
-
-    // 全メッシュ走査
     int meshCount = scene->GetSrcObjectCount<FbxMesh>();
     unsigned short indexOffset = 0;
     for (int m = 0; m < meshCount; ++m) {
         auto mesh = scene->GetSrcObject<FbxMesh>(m);
         if (!mesh) continue;
-
-        // --- コントロールポイント（頂点）ごとにボーンインデックスとウェイトを配列化 ---
-        // ボーンインデックス: boneNames配列の中で一致したらそのインデックス
         int controlPointCount = mesh->GetControlPointsCount();
 
-        // 各コントロールポイントに対して最大4つのインデックス・ウェイトを割り当て
         struct BoneWeight {
             int indices[4] = { 0,0,0,0 };
             float weights[4] = { 0,0,0,0 };
         };
         std::vector<BoneWeight> boneWeights(controlPointCount);
 
-        // デフォーム情報（スキン）を抽出
         int skinCount = mesh->GetDeformerCount(FbxDeformer::eSkin);
         for (int s = 0; s < skinCount; ++s) {
             FbxSkin* skin = (FbxSkin*)mesh->GetDeformer(s, FbxDeformer::eSkin);
@@ -407,7 +273,6 @@ bool FbxModelLoader::LoadSkinningModel(const std::string& filePath, SkinningVert
             for (int c = 0; c < clusterCount; ++c) {
                 FbxCluster* cluster = skin->GetCluster(c);
                 std::string boneName = cluster->GetLink()->GetName();
-                // boneNames内インデックス取得
                 auto it = std::find(outInfo->boneNames.begin(), outInfo->boneNames.end(), boneName);
                 int boneIdx = (it != outInfo->boneNames.end()) ? std::distance(outInfo->boneNames.begin(), it) : -1;
                 if (boneIdx < 0) continue;
@@ -418,7 +283,6 @@ bool FbxModelLoader::LoadSkinningModel(const std::string& filePath, SkinningVert
                 for (int i = 0; i < indexCount; ++i) {
                     int ctrlIdx = indices[i];
                     double weight = weights[i];
-                    // 最大4つまで詰める（既に4つ埋まっていたら無視）
                     for (int j = 0; j < 4; ++j) {
                         if (boneWeights[ctrlIdx].weights[j] == 0.0f) {
                             boneWeights[ctrlIdx].indices[j] = boneIdx;
@@ -429,21 +293,14 @@ bool FbxModelLoader::LoadSkinningModel(const std::string& filePath, SkinningVert
                 }
             }
         }
-
-        // 頂点配列を生成
-        // FBXの頂点は「コントロールポイント＋法線・UVごとに複製」されるため、ポリゴン単位で処理
         for (int polIndex = 0; polIndex < mesh->GetPolygonCount(); polIndex++) {
             for (int polVertexIndex = 0; polVertexIndex < mesh->GetPolygonSize(polIndex); polVertexIndex++) {
                 int ctrlIdx = mesh->GetPolygonVertex(polIndex, polVertexIndex);
 
-                // --- 位置 ---
                 auto point = mesh->GetControlPointAt(ctrlIdx);
-
-                // --- 法線 ---
                 FbxVector4 normalVec4;
                 mesh->GetPolygonVertexNormal(polIndex, polVertexIndex, normalVec4);
 
-                // --- UV ---
                 FbxStringList uvSetNameList;
                 mesh->GetUVSetNames(uvSetNameList);
                 const char* uvSetName = (uvSetNameList.GetCount() > 0) ? uvSetNameList.GetStringAt(0) : "";
@@ -451,10 +308,7 @@ bool FbxModelLoader::LoadSkinningModel(const std::string& filePath, SkinningVert
                 bool isUnMapped = false;
                 mesh->GetPolygonVertexUV(polIndex, polVertexIndex, uvSetName, uvVec2, isUnMapped);
 
-                // --- スキニング情報 ---
                 BoneWeight& bw = boneWeights[ctrlIdx];
-
-                // --- 頂点データをSkinningVertex型で構築 ---
                 SkinningVertex v;
                 v.x = (float)point[0];
                 v.y = (float)point[1];
@@ -463,67 +317,40 @@ bool FbxModelLoader::LoadSkinningModel(const std::string& filePath, SkinningVert
                 v.ny = (float)normalVec4[1];
                 v.nz = (float)normalVec4[2];
                 v.u = (float)uvVec2[0];
-                v.v = 1.0f - (float)uvVec2[1]; // v座標は上下反転
+                v.v = 1.0f - (float)uvVec2[1];
                 for (int i = 0; i < 4; ++i) {
                     v.boneIndices[i] = bw.indices[i];
                     v.boneWeights[i] = bw.weights[i];
                 }
                 outInfo->vertices.push_back(v);
                 outInfo->indices.push_back((unsigned short)outInfo->vertices.size() - 1);
-
-                    /*char uvmsg[256];
-                sprintf_s(uvmsg, "[FBX][UV] Vtx[%d] Pos=(%.2f, %.2f, %.2f) UV=(%.3f, %.3f)\n",
-                    (int)outInfo->vertices.size() - 1, v.x, v.y, v.z, v.u, v.v);
-                OutputDebugStringA(uvmsg);*/
-
-                /*char msg[128];
-                sprintf_s(msg, "[FBX] Vtx[%d]: BoneIdx=(%d,%d,%d,%d) Weight=(%.2f,%.2f,%.2f,%.2f)\n",
-                    (int)outInfo->vertices.size() - 1,
-                    v.boneIndices[0], v.boneIndices[1], v.boneIndices[2], v.boneIndices[3],
-                    v.boneWeights[0], v.boneWeights[1], v.boneWeights[2], v.boneWeights[3]);
-                OutputDebugStringA(msg);*/
             }
         }
     }
 
-
-    // --- 10. アニメーション情報（キーフレーム）の取得 ---
-    OutputDebugStringA("[FBX] --- アニメーション情報抽出 ---\n");
-
+    // --- アニメーション情報（キーフレーム）抽出 ---
     outInfo->animations.clear();
-
     int animStackCount = scene->GetSrcObjectCount<FbxAnimStack>();
     for (int stackIdx = 0; stackIdx < animStackCount; ++stackIdx) {
         FbxAnimStack* animStack = scene->GetSrcObject<FbxAnimStack>(stackIdx);
         std::string animName = animStack->GetName();
-        OutputDebugStringA(("[FBX] アニメ名: " + animName + "\n").c_str());
-
-        // アニメーションレイヤを取得（通常1つでOK）
         FbxAnimLayer* animLayer = animStack->GetMember<FbxAnimLayer>(0);
         if (!animLayer) continue;
 
-        // 開始～終了時間を取得
         FbxTimeSpan timeSpan = animStack->GetLocalTimeSpan();
         FbxTime start = timeSpan.GetStart();
         FbxTime end = timeSpan.GetStop();
 
         double startSec = start.GetSecondDouble();
         double endSec = end.GetSecondDouble();
-        double frameRate = 30.0; // 仮に30FPS（Mixamoはほぼこの値）
+        double frameRate = 30.0;
         int numFrames = int((endSec - startSec) * frameRate) + 1;
 
-        OutputDebugStringA(("[FBX] フレーム数: " + std::to_string(numFrames) + "\n").c_str());
-
-        // キーフレーム配列
         std::vector<Animator::Keyframe> keyframes;
-
-        // 全フレーム分
         for (int f = 0; f < numFrames; ++f) {
             double sec = startSec + f / frameRate;
             FbxTime t;
             t.SetSecondDouble(sec);
-
-            // 各ボーンの行列
             std::vector<DirectX::XMMATRIX> framePoses;
             for (const std::string& boneName : outInfo->boneNames) {
                 FbxNode* boneNode = scene->FindNodeByName(boneName.c_str());
@@ -531,7 +358,6 @@ bool FbxModelLoader::LoadSkinningModel(const std::string& filePath, SkinningVert
                     framePoses.push_back(DirectX::XMMatrixIdentity());
                     continue;
                 }
-                // アニメ時刻でのグローバル変換を取得
                 FbxAMatrix mat = boneNode->EvaluateGlobalTransform(t);
                 DirectX::XMMATRIX dxMat = DirectX::XMMatrixIdentity();
                 for (int r = 0; r < 4; ++r)
@@ -539,14 +365,11 @@ bool FbxModelLoader::LoadSkinningModel(const std::string& filePath, SkinningVert
                         dxMat.r[r].m128_f32[c] = static_cast<float>(mat.Get(r, c));
                 framePoses.push_back(dxMat);
             }
-            // キーフレーム登録
             Animator::Keyframe kf;
             kf.time = sec;
             kf.pose = framePoses;
             keyframes.push_back(kf);
         }
-
-        // Animation構造体にまとめて登録
         FbxModelLoader::SkinningVertexInfo::Animation anim;
         anim.name = animName;
         anim.length = endSec - startSec;
@@ -554,18 +377,16 @@ bool FbxModelLoader::LoadSkinningModel(const std::string& filePath, SkinningVert
         outInfo->animations.push_back(anim);
     }
 
-
-
-    // --- 今回はここまで ---
     OutputDebugStringA("[FBX] === FBXロード初期段階完了 ===\n");
 
-    // 解放
     scene->Destroy();
     manager->Destroy();
-
-    return true; // まずは「ファイル読めてノード一覧がprintできる」ことを目標に！
+    return true;
 }
 
+//------------------------------------------------------------
+// アニメーションだけ抽出
+//------------------------------------------------------------
 bool FbxModelLoader::LoadAnimationOnly(
     const std::string& fbxPath,
     std::vector<Animator::Keyframe>& outKeyframes,
@@ -577,17 +398,14 @@ bool FbxModelLoader::LoadAnimationOnly(
         OutputDebugStringA("[FBX] LoadAnimationOnly: 初期化失敗\n");
         return false;
     }
-
     FbxScene* scene = FbxScene::Create(manager, "");
     if (!importer->Import(scene)) {
         OutputDebugStringA("[FBX] LoadAnimationOnly: インポート失敗\n");
-        importer->Destroy();
-        manager->Destroy();
-        return false;
+        importer->Destroy(); manager->Destroy(); return false;
     }
     importer->Destroy();
 
-    // --- ボーンノード取得（mixamorig系）
+    // ボーン名抽出
     std::vector<std::string> boneNames;
     std::function<void(FbxNode*)> FindBoneNodes = [&](FbxNode* node) {
         std::string name = node->GetName();
@@ -598,24 +416,17 @@ bool FbxModelLoader::LoadAnimationOnly(
         };
     FindBoneNodes(scene->GetRootNode());
 
-    // --- アニメーション抽出
     int animStackCount = scene->GetSrcObjectCount<FbxAnimStack>();
     if (animStackCount == 0) {
         OutputDebugStringA("[FBX] アニメーションなし\n");
-        scene->Destroy();
-        manager->Destroy();
-        return false;
+        scene->Destroy(); manager->Destroy(); return false;
     }
-
     FbxAnimStack* animStack = scene->GetSrcObject<FbxAnimStack>(0);
     FbxAnimLayer* animLayer = animStack->GetMember<FbxAnimLayer>(0);
     if (!animLayer) {
         OutputDebugStringA("[FBX] アニメーションレイヤ取得失敗\n");
-        scene->Destroy();
-        manager->Destroy();
-        return false;
+        scene->Destroy(); manager->Destroy(); return false;
     }
-
     FbxTimeSpan timeSpan = animStack->GetLocalTimeSpan();
     FbxTime start = timeSpan.GetStart();
     FbxTime end = timeSpan.GetStop();
@@ -630,7 +441,6 @@ bool FbxModelLoader::LoadAnimationOnly(
         double sec = startSec + f / frameRate;
         FbxTime t;
         t.SetSecondDouble(sec);
-
         std::vector<DirectX::XMMATRIX> pose;
         for (const std::string& boneName : boneNames) {
             FbxNode* boneNode = scene->FindNodeByName(boneName.c_str());
@@ -645,7 +455,6 @@ bool FbxModelLoader::LoadAnimationOnly(
                     dxMat.r[r].m128_f32[c] = static_cast<float>(mat.Get(r, c));
             pose.push_back(dxMat);
         }
-
         Animator::Keyframe kf;
         kf.time = sec;
         kf.pose = pose;
@@ -657,3 +466,139 @@ bool FbxModelLoader::LoadAnimationOnly(
     return true;
 }
 
+
+//【全体の流れ】
+//
+//このファイルは
+//** 「FBXファイルからモデル・スキニング・アニメ情報をDirectX用データに変換するローダの実装」** です。
+//
+//1. コンストラクタ
+//FbxModelLoader::FbxModelLoader() {}
+//
+//
+//クラス初期化用。特に初期化処理はありません。
+//
+//2. Load（静的メッシュ読み込み）
+//目的
+//
+//FBXファイルから「動かない（スキニングしない）静的メッシュ」を読み込む
+//
+//頂点座標、法線、UVなどを抽出してDirectX用Vertex配列とIndex配列を作成
+//
+//やっていること
+//
+//FBXマネージャ・インポータを作成してFBXファイルを読み込む
+//
+//全てのメッシュを「三角形化」する
+//
+//どんな多角形モデルも必ず三角形ポリゴンへ変換（DirectXで扱いやすくするため）
+//
+//各メッシュ内の全頂点（コントロールポイント）の座標(x, y, z)をfloat型でvectorに格納
+//
+//各ポリゴン（面）ごとに、法線・UV座標情報を付与
+//
+//頂点が持つ法線・UVが違う場合は複製して新しい頂点として扱う
+//
+//DirectX用の「Vertex型配列」と「Index配列」を構築
+//
+//バッファに詰めて返す
+//
+//ポイント
+//
+//double型 → float型への型変換が頻出（FBX→DirectXで重要）
+//
+//DirectXで効率よく描画できる「三角形＋頂点配列＋インデックス配列」形式に変換している
+//
+//3. IsExistNormalUVInfo
+//bool FbxModelLoader::IsExistNormalUVInfo(const std::vector<float>&vertexInfo)
+//
+//
+//頂点情報に法線とUV情報が既に含まれているかどうかを判定する
+//
+//8要素（x, y, z, nx, ny, nz, u, v）があればtrue
+//
+//4. CreateVertexInfo
+//std::vector<float> FbxModelLoader::CreateVertexInfo(...)
+//
+//
+//頂点の元座標データに法線・UV情報を合成して返す
+//
+//FBXメッシュの頂点を「x, y, z, nx, ny, nz, u, v」の形にする
+//
+//5. CreateNewVertexIndex
+//int FbxModelLoader::CreateNewVertexIndex(...)
+//
+//
+//同じコントロールポイントでも、法線・UVの組み合わせが違う場合は新しい頂点として追加
+//
+//これにより、モデルの各三角形の各頂点ごとに「最適な頂点情報」を確保
+//
+//6. IsSetNormalUV
+//bool FbxModelLoader::IsSetNormalUV(...)
+//
+//
+//既存頂点が、指定した法線・UVと同じかどうか（float同士の差が非常に小さければ同じと判定）
+//
+//7. LoadSkinningModel（スキニング対応モデル読み込み）
+//目的
+//
+//「FBXファイルからスキニングモデル（ボーンで動くキャラ）」＋「アニメーション」まで一気に抽出する
+//
+//やっていること
+//
+//FBXマネージャ・インポータ作成＆FBX読み込み
+//
+//三角形化
+//
+//ボーン（Mixamoなら"mixamorig:"）の名前を全てリストアップ
+//
+//バインドポーズ行列（初期姿勢のボーン行列）を抽出
+//
+//全頂点（コントロールポイント）について、どのボーンに何 % 支配されているか（ボーンインデックス＋ウェイト）を抽出
+//
+//各面ごとに「位置」「法線」「UV」「ボーン4つ＋ウェイト4つ」情報を持ったSkinningVertex配列を作る
+//
+//Index配列も構築
+//
+//アニメーション情報をすべてキーフレームとして抜き出す
+//
+//すべてのアニメクリップごとに、各フレーム・各ボーンの「グローバル変換行列」を保存
+//
+//すべてSkinningVertexInfo構造体にまとめて返却
+//
+//ポイント
+//
+//スキニング情報やアニメ情報の抽出にはボーン名リストの順番が重要
+//
+//「ボーンごとの4つまでのインデックス・ウェイト」「各キーフレーム時のボーン姿勢行列」が完全に取得できる
+//
+//8. LoadAnimationOnly（アニメーションのみ抽出）
+//目的
+//
+//FBXファイルから * *「モデル情報は不要、アニメーションだけを抽出したい」場合に使う * *
+//
+//やっていること
+//
+//FBXファイルを読み込む（マネージャ / インポータ / シーン）
+//
+//ボーン名リストを全て抽出（"mixamorig:"で判定）
+//
+//最初のアニメーションスタック（クリップ）を走査
+//
+//全フレーム（frameRate = 30として割り算）について：
+//
+//各ボーンのグローバル行列を取得してKeyframeに詰める
+//
+//全フレーム分をKeyframe配列として返す
+//
+//【全体まとめ】
+//
+//このクラスは「FBX形式で保存された3Dモデルデータ（メッシュ・ボーン・アニメ）」を「DirectXや独自エンジンで使える形式（頂点配列、ボーン行列、アニメフレーム配列など）」に変換してくれるローダである
+//
+//静的メッシュ用、スキニング付きキャラ用、アニメーションのみの3通りの抽出が可能
+//
+//DirectXやゲームエンジンで3Dキャラや背景を正しく表示・動かすために必須の「頂点・ボーン・アニメ」情報を安全かつ正確に変換・格納している
+//
+//MixamoやBlenderなどで作成・書き出したFBX資産をプログラムで自前で扱えるようにする基盤の役割
+//
+//面接で聞かれたら「FBXモデル・アニメ・ボーン情報を正しく抽出してDirectXで扱える頂点・アニメ・ボーンデータに変換するためのローダです」と一言で説明すればOKです。

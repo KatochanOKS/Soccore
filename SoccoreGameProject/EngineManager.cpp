@@ -7,6 +7,7 @@
 #include "imgui_impl_win32.h"
 
 void EngineManager::Initialize() {
+
     m_deviceManager.Initialize();
     auto* device = m_deviceManager.GetDevice();
     auto* cmdQueue = m_deviceManager.GetCommandQueue();

@@ -226,6 +226,9 @@
     <ClInclude Include="Player2Component.h">
       <Filter>F\GameObject\Player</Filter>
     </ClInclude>
+    <ClInclude Include="PlayerState.h">
+      <Filter>F\GameObject\Player</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="VertexShader.hlsl">
