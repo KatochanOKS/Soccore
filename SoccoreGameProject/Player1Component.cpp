@@ -2,71 +2,168 @@
 #include "Transform.h"
 #include "Animator.h"
 #include "GameObject.h"
+#include "UIImage.h"
+#include "GameScene.h"
 #include <windows.h>
 
 void Player1Component::Update() {
-    Transform* tr = gameObject->GetComponent<Transform>();
-    Animator* animator = gameObject->GetComponent<Animator>();
+    auto* tr = gameObject->GetComponent<Transform>();
+    auto* animator = gameObject->GetComponent<Animator>();
     if (!tr || !animator) return;
 
-    static bool prevKickKey = false;
-    static bool prevPunchKey = false;
-    static bool prevGuardKey = false;
-    bool isMoving = false;
-
-    // 現在の入力取得
+    // キー入力
     bool kickKey = (GetAsyncKeyState('K') & 0x8000);
     bool punchKey = (GetAsyncKeyState('J') & 0x8000);
     bool guardKey = (GetAsyncKeyState('G') & 0x8000);
+    bool moveL = (GetAsyncKeyState('A') & 0x8000);
+    bool moveR = (GetAsyncKeyState('D') & 0x8000);
+    bool moveU = (GetAsyncKeyState('W') & 0x8000);
+    bool moveD = (GetAsyncKeyState('S') & 0x8000);
+    bool isMoving = moveL || moveR || moveU || moveD;
 
-    // 攻撃アニメ中かどうか
-    bool isAttackAnim = (animator->currentAnim == "Kick" || animator->currentAnim == "Punch");
+    static bool prevKickKey = false, prevPunchKey = false, prevGuardKey = false;
 
-    isGuarding = guardKey; // これだけでOK！
-
-    // ★★★ 1. ガード優先判定（押しっぱなしで再生・途中割込禁止）★★★
-    if (guardKey) {
-        // すでにGuardアニメ中以外のときだけ切替
-        if (animator->currentAnim != "BodyBlock" || !animator->isPlaying) {
-            animator->SetAnimation("BodyBlock", true); // ループ再生
+    // 状態遷移とアニメ制御
+    switch (state) {
+    case PlayerState::Idle:
+        isGuarding = false;
+        if (guardKey) {
+            state = PlayerState::Guard;
+            animator->SetAnimation("BodyBlock", true);
+            isGuarding = true;
         }
-        // ガード中は他の操作（移動・攻撃）を一切受け付けない
-    }
-    // ★★★ 2. 攻撃アニメ優先（ガード中以外で攻撃アニメ中）★★★
-    else if (isAttackAnim && animator->isPlaying) {
-        // 攻撃アニメ中は何もしない（割込禁止）
-    }
-    else if (isAttackAnim && !animator->isPlaying) {
-        // 攻撃アニメ終了後はIdleに戻す
-        animator->SetAnimation("Idle", true);
-    }
-    // ★★★ 3. 通常操作 ★★★
-    else {
-        // 攻撃入力（押した瞬間だけ受付。ループなし！）
-        if (kickKey && !prevKickKey) {
-            animator->SetAnimation("Kick", false);  // 1回だけ再生
+        else if (kickKey && !prevKickKey) {
+            state = PlayerState::Attack;
+            animator->SetAnimation("Kick", false);
         }
         else if (punchKey && !prevPunchKey) {
-            animator->SetAnimation("Punch", false); // 1回だけ再生
+            state = PlayerState::Attack;
+            animator->SetAnimation("Punch", false);
+        }
+        else if (isMoving) {
+            state = PlayerState::Move;
+            animator->SetAnimation("Walk", true);
         }
         else {
-            // 通常移動（攻撃・ガードアニメ中以外）
-            if (GetAsyncKeyState('A') & 0x8000) { tr->position.x -= moveSpeed; isMoving = true; }
-            if (GetAsyncKeyState('D') & 0x8000) { tr->position.x += moveSpeed; isMoving = true; }
-            if (GetAsyncKeyState('W') & 0x8000) { tr->position.z -= moveSpeed; isMoving = true; }
-            if (GetAsyncKeyState('S') & 0x8000) { tr->position.z += moveSpeed; isMoving = true; }
-
-            if (isMoving) {
-                if (animator->currentAnim != "Walk") animator->SetAnimation("Walk", true);
-            }
-            else {
-                if (animator->currentAnim != "Idle") animator->SetAnimation("Idle", true);
-            }
+            if (animator->currentAnim != "Idle")
+                animator->SetAnimation("Idle", true);
         }
+        break;
+
+    case PlayerState::Move:
+        isGuarding = false;
+        if (guardKey) {
+            state = PlayerState::Guard;
+            animator->SetAnimation("BodyBlock", true);
+            isGuarding = true;
+        }
+        else if (kickKey && !prevKickKey) {
+            state = PlayerState::Attack;
+            animator->SetAnimation("Kick", false);
+        }
+        else if (punchKey && !prevPunchKey) {
+            state = PlayerState::Attack;
+            animator->SetAnimation("Punch", false);
+        }
+        else if (!isMoving) {
+            state = PlayerState::Idle;
+            animator->SetAnimation("Idle", true);
+        }
+        else {
+            // 移動
+            if (moveL) tr->position.x -= moveSpeed;
+            if (moveR) tr->position.x += moveSpeed;
+            if (moveU) tr->position.z -= moveSpeed;
+            if (moveD) tr->position.z += moveSpeed;
+        }
+        break;
+
+    case PlayerState::Attack:
+        // 攻撃アニメ終了後Idle
+        if (!animator->isPlaying) {
+            state = PlayerState::Idle;
+            animator->SetAnimation("Idle", true);
+        }
+        break;
+
+    case PlayerState::Guard:
+        isGuarding = true;
+        if (!guardKey) {
+            state = PlayerState::Idle;
+            animator->SetAnimation("Idle", true);
+            isGuarding = false;
+        }
+        break;
+
+    case PlayerState::Reaction:
+        // ダメージ演出（一定時間でIdleに戻る）
+        reactionTimer -= 1.0f / 60.0f;
+        if (reactionTimer <= 0.0f) {
+            state = PlayerState::Idle;
+            animator->SetAnimation("Idle", true);
+        }
+        break;
+
+    case PlayerState::Dying:
+        // 死亡時は何もしない
+        break;
+
+    case PlayerState::Win:
+        // 勝利状態
+        break;
     }
 
-    // 入力状態を更新
+    // HPバーUIの更新（既存のまま）
+    const float delaySpeed = 0.001f;
+    if (delayedHp > hp) {
+        delayedHp -= delaySpeed;
+        if (delayedHp < hp) delayedHp = hp;
+    }
+    else {
+        delayedHp = hp;
+    }
+
+    const float HPBAR_MAX_WIDTH = 500.0f;
+    const float HPBAR_LEFT_EDGE = 0.0f;
+
+    GameObject* hpRedBarObj = gameObject->scene->FindByName("HP1Red");
+    if (hpRedBarObj) {
+        auto* redBar = hpRedBarObj->GetComponent<UIImage>();
+        float redWidth = HPBAR_MAX_WIDTH * delayedHp;
+        if (redWidth < 0) redWidth = 0;
+        redBar->size.x = redWidth;
+        redBar->position.x = HPBAR_LEFT_EDGE;
+    }
+
+    GameObject* hpBarObj = gameObject->scene->FindByName("HP1");
+    if (hpBarObj) {
+        auto* bar = hpBarObj->GetComponent<UIImage>();
+        float barWidth = HPBAR_MAX_WIDTH * hp;
+        if (barWidth < 0) barWidth = 0;
+        bar->size.x = barWidth;
+        bar->position.x = HPBAR_LEFT_EDGE;
+    }
+
+    // 入力状態保存
     prevKickKey = kickKey;
     prevPunchKey = punchKey;
     prevGuardKey = guardKey;
+}
+
+// 被ダメージ受けるときGameScene等から呼び出す
+void Player1Component::TakeDamage(float amount) {
+    if (state == PlayerState::Dying) return;
+    hp -= amount;
+    if (hp <= 0.0f) {
+        hp = 0.0f;
+        state = PlayerState::Dying;
+        auto* animator = gameObject->GetComponent<Animator>();
+        if (animator) animator->SetAnimation("Dying", false);
+    }
+    else {
+        state = PlayerState::Reaction;
+        reactionTimer = 2.0f; // リアクション時間
+        auto* animator = gameObject->GetComponent<Animator>();
+        if (animator) animator->SetAnimation("Reaction", false);
+    }
 }

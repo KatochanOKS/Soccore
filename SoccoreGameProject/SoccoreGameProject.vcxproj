@@ -197,6 +197,7 @@
     <ClInclude Include="PipelineManager.h" />
     <ClInclude Include="Player1Component.h" />
     <ClInclude Include="Player2Component.h" />
+    <ClInclude Include="PlayerState.h" />
     <ClInclude Include="Renderer.h" />
     <ClInclude Include="Scene.h" />
     <ClInclude Include="SkinnedMeshRenderer.h" />

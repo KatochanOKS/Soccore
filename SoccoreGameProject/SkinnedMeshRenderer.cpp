@@ -3,6 +3,7 @@
 SkinnedMeshRenderer::~SkinnedMeshRenderer() {
     if (modelBuffer) delete modelBuffer;
     if (skinVertexInfo) delete skinVertexInfo;
+	if (boneCB) delete boneCB;
     // animator‚ÍGameObject‚Ìcomponents‚ÅˆêŠ‡delete‚³‚ê‚é‚Ì‚Å‚±‚±‚Å‚Ídelete‚µ‚È‚¢I
 }
 

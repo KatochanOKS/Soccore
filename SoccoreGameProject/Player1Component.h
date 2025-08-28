@@ -1,10 +1,17 @@
-#pragma once
+ï»¿#pragma once
 #include "Component.h"
+#include "PlayerState.h" // â†è¿½åŠ 
 
 class Player1Component : public Component {
 public:
+    PlayerState state = PlayerState::Idle;  // çŠ¶æ…‹å¤‰æ•°
     void Update() override;
+
     float moveSpeed = 0.01f;
-    float hp = 1.0f;         // HPi0.0`1.0j
-    bool isGuarding = false; // ƒK[ƒhó‘Ô
+    float hp = 1.0f;
+    float delayedHp = 1.0f;
+    bool isGuarding = false;
+    float reactionTimer = 0.0f; // Reactionä¸­ã®ã‚¿ã‚¤ãƒãƒ¼
+
+    void TakeDamage(float amount);
 };
