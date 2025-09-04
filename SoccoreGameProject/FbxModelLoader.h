@@ -57,6 +57,11 @@ public:
     // アニメーションだけを抽出したい場合
     static bool LoadAnimationOnly(const std::string& fbxPath, std::vector<Animator::Keyframe>& outKeyframes, double& outLength);
 
+    // --- バイナリキャッシュ保存/読込 ---
+    static bool SaveSkinningBin(const std::string& path, const SkinningVertexInfo* info);
+    static bool LoadSkinningBin(const std::string& path, SkinningVertexInfo* info);
+    static bool SaveAnimationBin(const std::string& path, const std::vector<Animator::Keyframe>& keyframes, double length);
+    static bool LoadAnimationBin(const std::string& path, std::vector<Animator::Keyframe>& keyframes, double& length);
 private:
     // 以降は内部ユーティリティ関数
     static bool IsExistNormalUVInfo(const std::vector<float>& vertexInfo);
