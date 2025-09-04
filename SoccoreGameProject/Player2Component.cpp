@@ -158,7 +158,7 @@ void Player2Component::TakeDamage(float amount) {
     }
     else {
         state = PlayerState::Reaction;
-        reactionTimer = 2.0f;
+        reactionTimer = 1.5f;
         auto* animator = gameObject->GetComponent<Animator>();
         if (animator) animator->SetAnimation("Reaction", false);
     }

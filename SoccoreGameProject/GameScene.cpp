@@ -11,9 +11,13 @@
 #include "Player2Component.h"
 #include "SoccerBallComponent.h"
 #include "GoalComponent.h"
+#include "EngineManager.h"
+#include"GameOverScene.h"
 #include <DirectXMath.h>
 #include <cmath>
 using namespace DirectX;
+
+static bool sceneChanged = false;
 
 // タグ検索
 GameObject* GameScene::FindByTag(const std::string& tag) {
@@ -43,7 +47,7 @@ GameScene::GameScene(EngineManager* engine) : engine(engine) {}
 
 void GameScene::Start() {
     m_sceneObjects.clear();
-
+    sceneChanged = false;  // ★これが大事！
     // スカイドーム
     int skyTex = engine->GetTextureManager()->LoadTexture(
         L"assets/SkyDome.png",
@@ -264,6 +268,38 @@ void GameScene::Update() {
 
         prevHitP2toP1 = hitP2toP1;
     }
+
+    
+
+    if (player1) {
+        if (auto* comp1 = player1->GetComponent<Player1Component>()) {
+            // Dyingアニメが終わった瞬間を検出
+            if (comp1->state == PlayerState::Dying) {
+                auto* animator = player1->GetComponent<Animator>();
+                if (animator && !animator->isPlaying) { // ←アニメ終了検出
+                    p1DyingEnded = true;
+                }
+            }
+        }
+    }
+    if (player2) {
+        if (auto* comp2 = player2->GetComponent<Player2Component>()) {
+            if (comp2->state == PlayerState::Dying) {
+                auto* animator = player2->GetComponent<Animator>();
+                if (animator && !animator->isPlaying) {
+                    p2DyingEnded = true;
+                }
+            }
+        }
+    }
+
+    
+    if (!sceneChanged && (p1DyingEnded || p2DyingEnded)) {
+        sceneChanged = true;
+        engine->ChangeScene(std::make_unique<GameOverScene>(engine));
+        return;
+    }
+
 }
 
 void GameScene::Draw() {

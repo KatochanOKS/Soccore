@@ -62,7 +62,6 @@ GameObject* ObjectFactory::CreateCube(
         initialized = true;
     }
 
-    engine->m_gameObjects.push_back(obj);
     return obj;
 }
 
@@ -110,7 +109,6 @@ GameObject* ObjectFactory::CreateBall(
         engine->GetBufferManager()->CreateIndexBuffer(engine->GetDeviceManager()->GetDevice(), indices);
         initialized = true;
     }
-    engine->m_gameObjects.push_back(obj);
     return obj;
 }
 
@@ -158,8 +156,6 @@ GameObject* ObjectFactory::CreateModel(
         col->center = colliderCenter;
         col->size = colliderSize;
     }
-
-    engine->m_gameObjects.push_back(obj);
     return obj;
 }
 
@@ -222,8 +218,6 @@ GameObject* ObjectFactory::CreateSkinningBaseModel(
     animator->boneNames = skinInfo->boneNames;
     animator->bindPoses = skinInfo->bindPoses;
     smr->animator = animator;
-
-    engine->m_gameObjects.push_back(obj);
     return obj;
 }
 
@@ -260,6 +254,5 @@ GameObject* ObjectFactory::CreateSkyDome(
         inited = true;
     }
 
-    engine->m_gameObjects.push_back(obj);
     return obj;
 }

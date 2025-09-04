@@ -19,4 +19,7 @@ public:
     std::vector<GameObject*> m_sceneObjects;
 private:
     EngineManager* engine = nullptr;
+
+    bool p1DyingEnded = false;
+    bool p2DyingEnded = false;
 };

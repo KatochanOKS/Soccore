@@ -105,7 +105,7 @@ void Player1Component::Update() {
         break;
 
     case PlayerState::Dying:
-        // 死亡時は何もしない
+        
         break;
 
     case PlayerState::Win:
@@ -162,7 +162,7 @@ void Player1Component::TakeDamage(float amount) {
     }
     else {
         state = PlayerState::Reaction;
-        reactionTimer = 2.0f; // リアクション時間
+        reactionTimer = 1.5f; // リアクション時間
         auto* animator = gameObject->GetComponent<Animator>();
         if (animator) animator->SetAnimation("Reaction", false);
     }
