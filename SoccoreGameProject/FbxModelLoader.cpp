@@ -6,6 +6,7 @@
 #include <tuple>
 #include <iostream>
 #include <functional>
+#include <fstream>
 using namespace DirectX;
 
 //------------------------------------------------------------
@@ -163,107 +164,74 @@ bool FbxModelLoader::IsSetNormalUV(const std::vector<float> vertexInfo, const Fb
         && fabs(vertexInfo[7] - uvVec2[1]) < FLT_EPSILON;
 }
 
-//------------------------------------------------------------
-// スキニング対応モデルの読み込み
-//------------------------------------------------------------
+//----------------------------------------
+// スキニングモデル読み込み（バイナリキャッシュ対応）
+//----------------------------------------
 bool FbxModelLoader::LoadSkinningModel(const std::string& filePath, SkinningVertexInfo* outInfo)
 {
-    // --- FBXマネージャ ---
-    OutputDebugStringA("[FBX] 1. FbxManager作成\n");
+    std::string binPath = filePath + ".sknbin";
+    if (LoadSkinningBin(binPath, outInfo)) {
+        OutputDebugStringA("[FBX] バイナリキャッシュから即ロード\n");
+        return true;
+    }
+
+    // --- FBXパース開始 ---
     FbxManager* manager = FbxManager::Create();
-    if (!manager) { OutputDebugStringA("[FBX] FbxManager作成失敗\n"); return false; }
-
-    // --- インポータ ---
-    OutputDebugStringA("[FBX] 2. FbxImporter作成＆初期化\n");
     FbxImporter* importer = FbxImporter::Create(manager, "");
-    if (!importer->Initialize(filePath.c_str(), -1, manager->GetIOSettings())) {
-        OutputDebugStringA("[FBX] FbxImporter初期化失敗\n"); return false;
-    }
-
-    // --- シーン ---
-    OutputDebugStringA("[FBX] 3. シーン生成＆インポート\n");
+    if (!importer->Initialize(filePath.c_str(), -1, manager->GetIOSettings())) return false;
     FbxScene* scene = FbxScene::Create(manager, "");
-    if (!importer->Import(scene)) {
-        OutputDebugStringA("[FBX] インポート失敗\n");
-        importer->Destroy(); manager->Destroy(); return false;
-    }
+    if (!importer->Import(scene)) { importer->Destroy(); manager->Destroy(); return false; }
     importer->Destroy();
 
-    // --- 三角形化 ---
-    OutputDebugStringA("[FBX] 4. メッシュの三角形化\n");
-    FbxGeometryConverter geometryConverter(manager);
-    if (!geometryConverter.Triangulate(scene, true)) {
-        OutputDebugStringA("[FBX] 三角形化失敗\n"); scene->Destroy(); manager->Destroy(); return false;
-    }
-
-    // --- ルートノード ---
+    // ルートノード取得
     FbxNode* rootNode = scene->GetRootNode();
-    if (!rootNode) {
-        OutputDebugStringA("[FBX] ルートノードがありません\n");
-        scene->Destroy(); manager->Destroy(); return false;
-    }
+    if (!rootNode) { scene->Destroy(); manager->Destroy(); return false; }
 
     // --- ボーン名抽出 ---
     outInfo->boneNames.clear();
-    std::function<void(FbxNode*, int)> ListBoneNodes;
-    ListBoneNodes = [&](FbxNode* node, int depth) {
+    std::function<void(FbxNode*)> ListBones = [&](FbxNode* node) {
         std::string name = node->GetName();
         if (name.find("mixamorig:") != std::string::npos)
             outInfo->boneNames.push_back(name);
         for (int i = 0; i < node->GetChildCount(); ++i)
-            ListBoneNodes(node->GetChild(i), depth + 1);
+            ListBones(node->GetChild(i));
         };
-    ListBoneNodes(rootNode, 0);
+    ListBones(rootNode);
 
     // --- バインドポーズ取得 ---
     outInfo->bindPoses.clear();
     auto* pose = scene->GetPose(0);
-    if (pose && pose->IsBindPose()) {
-        for (const std::string& boneName : outInfo->boneNames) {
-            FbxNode* boneNode = scene->FindNodeByName(boneName.c_str());
-            FbxMatrix mat;
-            bool found = false;
+    for (const std::string& boneName : outInfo->boneNames) {
+        FbxNode* boneNode = scene->FindNodeByName(boneName.c_str());
+        DirectX::XMMATRIX dxMat = DirectX::XMMatrixIdentity();
+        if (pose && pose->IsBindPose()) {
             for (int i = 0; i < pose->GetCount(); ++i) {
                 if (pose->GetNode(i) == boneNode) {
-                    mat = pose->GetMatrix(i); found = true; break;
+                    FbxMatrix mat = pose->GetMatrix(i);
+                    for (int r = 0; r < 4; ++r)
+                        for (int c = 0; c < 4; ++c)
+                            dxMat.r[r].m128_f32[c] = (float)mat.Get(r, c);
                 }
             }
-            DirectX::XMMATRIX dxMat = DirectX::XMMatrixIdentity();
-            if (found) {
-                for (int r = 0; r < 4; ++r)
-                    for (int c = 0; c < 4; ++c)
-                        dxMat.r[r].m128_f32[c] = (float)mat.Get(r, c);
-            }
-            outInfo->bindPoses.push_back(dxMat);
         }
-    }
-    else {
-        for (const std::string& boneName : outInfo->boneNames) {
-            FbxNode* boneNode = rootNode->FindChild(boneName.c_str(), true);
-            if (!boneNode) { outInfo->bindPoses.push_back(DirectX::XMMatrixIdentity()); continue; }
+        else if (boneNode) {
             FbxAMatrix bindPoseMatrix = boneNode->EvaluateGlobalTransform();
-            DirectX::XMMATRIX dxMat = DirectX::XMMatrixIdentity();
             for (int r = 0; r < 4; ++r)
                 for (int c = 0; c < 4; ++c)
                     dxMat.r[r].m128_f32[c] = (float)bindPoseMatrix.Get(r, c);
-            outInfo->bindPoses.push_back(dxMat);
         }
+        outInfo->bindPoses.push_back(dxMat);
     }
 
-    // --- スキニング頂点・インデックス抽出 ---
+    // --- 頂点/インデックス/スキン情報抽出 ---
     outInfo->vertices.clear();
     outInfo->indices.clear();
     int meshCount = scene->GetSrcObjectCount<FbxMesh>();
-    unsigned short indexOffset = 0;
     for (int m = 0; m < meshCount; ++m) {
         auto mesh = scene->GetSrcObject<FbxMesh>(m);
         if (!mesh) continue;
         int controlPointCount = mesh->GetControlPointsCount();
-
-        struct BoneWeight {
-            int indices[4] = { 0,0,0,0 };
-            float weights[4] = { 0,0,0,0 };
-        };
+        struct BoneWeight { int indices[4] = {}; float weights[4] = {}; };
         std::vector<BoneWeight> boneWeights(controlPointCount);
 
         int skinCount = mesh->GetDeformerCount(FbxDeformer::eSkin);
@@ -276,7 +244,6 @@ bool FbxModelLoader::LoadSkinningModel(const std::string& filePath, SkinningVert
                 auto it = std::find(outInfo->boneNames.begin(), outInfo->boneNames.end(), boneName);
                 int boneIdx = (it != outInfo->boneNames.end()) ? std::distance(outInfo->boneNames.begin(), it) : -1;
                 if (boneIdx < 0) continue;
-
                 int* indices = cluster->GetControlPointIndices();
                 double* weights = cluster->GetControlPointWeights();
                 int indexCount = cluster->GetControlPointIndicesCount();
@@ -296,7 +263,6 @@ bool FbxModelLoader::LoadSkinningModel(const std::string& filePath, SkinningVert
         for (int polIndex = 0; polIndex < mesh->GetPolygonCount(); polIndex++) {
             for (int polVertexIndex = 0; polVertexIndex < mesh->GetPolygonSize(polIndex); polVertexIndex++) {
                 int ctrlIdx = mesh->GetPolygonVertex(polIndex, polVertexIndex);
-
                 auto point = mesh->GetControlPointAt(ctrlIdx);
                 FbxVector4 normalVec4;
                 mesh->GetPolygonVertexNormal(polIndex, polVertexIndex, normalVec4);
@@ -310,14 +276,9 @@ bool FbxModelLoader::LoadSkinningModel(const std::string& filePath, SkinningVert
 
                 BoneWeight& bw = boneWeights[ctrlIdx];
                 SkinningVertex v;
-                v.x = (float)point[0];
-                v.y = (float)point[1];
-                v.z = (float)point[2];
-                v.nx = (float)normalVec4[0];
-                v.ny = (float)normalVec4[1];
-                v.nz = (float)normalVec4[2];
-                v.u = (float)uvVec2[0];
-                v.v = 1.0f - (float)uvVec2[1];
+                v.x = (float)point[0]; v.y = (float)point[1]; v.z = (float)point[2];
+                v.nx = (float)normalVec4[0]; v.ny = (float)normalVec4[1]; v.nz = (float)normalVec4[2];
+                v.u = (float)uvVec2[0]; v.v = 1.0f - (float)uvVec2[1];
                 for (int i = 0; i < 4; ++i) {
                     v.boneIndices[i] = bw.indices[i];
                     v.boneWeights[i] = bw.weights[i];
@@ -328,105 +289,49 @@ bool FbxModelLoader::LoadSkinningModel(const std::string& filePath, SkinningVert
         }
     }
 
-    // --- アニメーション情報（キーフレーム）抽出 ---
-    outInfo->animations.clear();
-    int animStackCount = scene->GetSrcObjectCount<FbxAnimStack>();
-    for (int stackIdx = 0; stackIdx < animStackCount; ++stackIdx) {
-        FbxAnimStack* animStack = scene->GetSrcObject<FbxAnimStack>(stackIdx);
-        std::string animName = animStack->GetName();
-        FbxAnimLayer* animLayer = animStack->GetMember<FbxAnimLayer>(0);
-        if (!animLayer) continue;
-
-        FbxTimeSpan timeSpan = animStack->GetLocalTimeSpan();
-        FbxTime start = timeSpan.GetStart();
-        FbxTime end = timeSpan.GetStop();
-
-        double startSec = start.GetSecondDouble();
-        double endSec = end.GetSecondDouble();
-        double frameRate = 30.0;
-        int numFrames = int((endSec - startSec) * frameRate) + 1;
-
-        std::vector<Animator::Keyframe> keyframes;
-        for (int f = 0; f < numFrames; ++f) {
-            double sec = startSec + f / frameRate;
-            FbxTime t;
-            t.SetSecondDouble(sec);
-            std::vector<DirectX::XMMATRIX> framePoses;
-            for (const std::string& boneName : outInfo->boneNames) {
-                FbxNode* boneNode = scene->FindNodeByName(boneName.c_str());
-                if (!boneNode) {
-                    framePoses.push_back(DirectX::XMMatrixIdentity());
-                    continue;
-                }
-                FbxAMatrix mat = boneNode->EvaluateGlobalTransform(t);
-                DirectX::XMMATRIX dxMat = DirectX::XMMatrixIdentity();
-                for (int r = 0; r < 4; ++r)
-                    for (int c = 0; c < 4; ++c)
-                        dxMat.r[r].m128_f32[c] = static_cast<float>(mat.Get(r, c));
-                framePoses.push_back(dxMat);
-            }
-            Animator::Keyframe kf;
-            kf.time = sec;
-            kf.pose = framePoses;
-            keyframes.push_back(kf);
-        }
-        FbxModelLoader::SkinningVertexInfo::Animation anim;
-        anim.name = animName;
-        anim.length = endSec - startSec;
-        anim.keyframes = keyframes;
-        outInfo->animations.push_back(anim);
-    }
-
-    OutputDebugStringA("[FBX] === FBXロード初期段階完了 ===\n");
+    // --- バイナリキャッシュ書き出し ---
+    SaveSkinningBin(binPath, outInfo);
 
     scene->Destroy();
     manager->Destroy();
     return true;
 }
 
-//------------------------------------------------------------
-// アニメーションだけ抽出
-//------------------------------------------------------------
+//----------------------------------------
+// アニメーションのみ読み込み（バイナリキャッシュ対応）
+//----------------------------------------
 bool FbxModelLoader::LoadAnimationOnly(
     const std::string& fbxPath,
     std::vector<Animator::Keyframe>& outKeyframes,
     double& outLength
 ) {
+    std::string binPath = fbxPath + ".anmbin";
+    if (LoadAnimationBin(binPath, outKeyframes, outLength)) {
+        OutputDebugStringA("[FBX] アニメバイナリ即ロード\n");
+        return true;
+    }
+
     FbxManager* manager = FbxManager::Create();
     FbxImporter* importer = FbxImporter::Create(manager, "");
-    if (!importer->Initialize(fbxPath.c_str(), -1, manager->GetIOSettings())) {
-        OutputDebugStringA("[FBX] LoadAnimationOnly: 初期化失敗\n");
-        return false;
-    }
+    if (!importer->Initialize(fbxPath.c_str(), -1, manager->GetIOSettings())) return false;
     FbxScene* scene = FbxScene::Create(manager, "");
-    if (!importer->Import(scene)) {
-        OutputDebugStringA("[FBX] LoadAnimationOnly: インポート失敗\n");
-        importer->Destroy(); manager->Destroy(); return false;
-    }
+    if (!importer->Import(scene)) { importer->Destroy(); manager->Destroy(); return false; }
     importer->Destroy();
 
     // ボーン名抽出
     std::vector<std::string> boneNames;
-    std::function<void(FbxNode*)> FindBoneNodes = [&](FbxNode* node) {
+    std::function<void(FbxNode*)> FindBones = [&](FbxNode* node) {
         std::string name = node->GetName();
         if (name.find("mixamorig:") != std::string::npos)
             boneNames.push_back(name);
         for (int i = 0; i < node->GetChildCount(); ++i)
-            FindBoneNodes(node->GetChild(i));
+            FindBones(node->GetChild(i));
         };
-    FindBoneNodes(scene->GetRootNode());
+    FindBones(scene->GetRootNode());
 
     int animStackCount = scene->GetSrcObjectCount<FbxAnimStack>();
-    if (animStackCount == 0) {
-        OutputDebugStringA("[FBX] アニメーションなし\n");
-        scene->Destroy(); manager->Destroy(); return false;
-    }
+    if (animStackCount == 0) { scene->Destroy(); manager->Destroy(); return false; }
     FbxAnimStack* animStack = scene->GetSrcObject<FbxAnimStack>(0);
-    FbxAnimLayer* animLayer = animStack->GetMember<FbxAnimLayer>(0);
-    if (!animLayer) {
-        OutputDebugStringA("[FBX] アニメーションレイヤ取得失敗\n");
-        scene->Destroy(); manager->Destroy(); return false;
-    }
     FbxTimeSpan timeSpan = animStack->GetLocalTimeSpan();
     FbxTime start = timeSpan.GetStart();
     FbxTime end = timeSpan.GetStop();
@@ -439,15 +344,11 @@ bool FbxModelLoader::LoadAnimationOnly(
     outKeyframes.clear();
     for (int f = 0; f < numFrames; ++f) {
         double sec = startSec + f / frameRate;
-        FbxTime t;
-        t.SetSecondDouble(sec);
+        FbxTime t; t.SetSecondDouble(sec);
         std::vector<DirectX::XMMATRIX> pose;
         for (const std::string& boneName : boneNames) {
             FbxNode* boneNode = scene->FindNodeByName(boneName.c_str());
-            if (!boneNode) {
-                pose.push_back(DirectX::XMMatrixIdentity());
-                continue;
-            }
+            if (!boneNode) { pose.push_back(DirectX::XMMatrixIdentity()); continue; }
             FbxAMatrix mat = boneNode->EvaluateGlobalTransform(t);
             DirectX::XMMATRIX dxMat = DirectX::XMMatrixIdentity();
             for (int r = 0; r < 4; ++r)
@@ -455,17 +356,142 @@ bool FbxModelLoader::LoadAnimationOnly(
                     dxMat.r[r].m128_f32[c] = static_cast<float>(mat.Get(r, c));
             pose.push_back(dxMat);
         }
-        Animator::Keyframe kf;
-        kf.time = sec;
-        kf.pose = pose;
-        outKeyframes.push_back(kf);
+        outKeyframes.push_back({ sec, pose });
     }
+    // キャッシュ書き出し
+    SaveAnimationBin(binPath, outKeyframes, outLength);
 
     scene->Destroy();
     manager->Destroy();
     return true;
 }
 
+//----------------------------------------
+// バイナリ保存・読込（実装はそのまま利用）
+//----------------------------------------
+bool FbxModelLoader::SaveSkinningBin(const std::string& path, const SkinningVertexInfo* info)
+{
+    std::ofstream ofs(path, std::ios::binary);
+    if (!ofs) return false;
+    size_t vtxCount = info->vertices.size();
+    ofs.write((char*)&vtxCount, sizeof(vtxCount));
+    ofs.write((char*)info->vertices.data(), sizeof(SkinningVertex) * vtxCount);
+    size_t idxCount = info->indices.size();
+    ofs.write((char*)&idxCount, sizeof(idxCount));
+    ofs.write((char*)info->indices.data(), sizeof(uint16_t) * idxCount);
+    size_t boneCount = info->boneNames.size();
+    ofs.write((char*)&boneCount, sizeof(boneCount));
+    for (const auto& name : info->boneNames) {
+        size_t len = name.size();
+        ofs.write((char*)&len, sizeof(len));
+        ofs.write(name.c_str(), len);
+    }
+    ofs.write((char*)info->bindPoses.data(), sizeof(DirectX::XMMATRIX) * boneCount);
+    size_t animCount = info->animations.size();
+    ofs.write((char*)&animCount, sizeof(animCount));
+    for (const auto& anim : info->animations) {
+        size_t nameLen = anim.name.size();
+        ofs.write((char*)&nameLen, sizeof(nameLen));
+        ofs.write(anim.name.c_str(), nameLen);
+        ofs.write((char*)&anim.length, sizeof(anim.length));
+        size_t kfCount = anim.keyframes.size();
+        ofs.write((char*)&kfCount, sizeof(kfCount));
+        for (const auto& kf : anim.keyframes) {
+            ofs.write((char*)&kf.time, sizeof(kf.time));
+            size_t poseCount = kf.pose.size();
+            ofs.write((char*)&poseCount, sizeof(poseCount));
+            ofs.write((char*)kf.pose.data(), sizeof(DirectX::XMMATRIX) * poseCount);
+        }
+    }
+    ofs.close();
+    return true;
+}
+
+bool FbxModelLoader::LoadSkinningBin(const std::string& path, SkinningVertexInfo* info)
+{
+    std::ifstream ifs(path, std::ios::binary);
+    if (!ifs) return false;
+    size_t vtxCount = 0;
+    ifs.read((char*)&vtxCount, sizeof(vtxCount));
+    info->vertices.resize(vtxCount);
+    ifs.read((char*)info->vertices.data(), sizeof(SkinningVertex) * vtxCount);
+    size_t idxCount = 0;
+    ifs.read((char*)&idxCount, sizeof(idxCount));
+    info->indices.resize(idxCount);
+    ifs.read((char*)info->indices.data(), sizeof(uint16_t) * idxCount);
+    size_t boneCount = 0;
+    ifs.read((char*)&boneCount, sizeof(boneCount));
+    info->boneNames.clear();
+    for (size_t i = 0; i < boneCount; ++i) {
+        size_t len = 0;
+        ifs.read((char*)&len, sizeof(len));
+        std::string name(len, '\0');
+        ifs.read(&name[0], len);
+        info->boneNames.push_back(name);
+    }
+    info->bindPoses.resize(boneCount);
+    ifs.read((char*)info->bindPoses.data(), sizeof(DirectX::XMMATRIX) * boneCount);
+    size_t animCount = 0;
+    ifs.read((char*)&animCount, sizeof(animCount));
+    info->animations.clear();
+    for (size_t i = 0; i < animCount; ++i) {
+        SkinningVertexInfo::Animation anim;
+        size_t nameLen = 0;
+        ifs.read((char*)&nameLen, sizeof(nameLen));
+        anim.name.resize(nameLen);
+        ifs.read(&anim.name[0], nameLen);
+        ifs.read((char*)&anim.length, sizeof(anim.length));
+        size_t kfCount = 0;
+        ifs.read((char*)&kfCount, sizeof(kfCount));
+        anim.keyframes.resize(kfCount);
+        for (size_t k = 0; k < kfCount; ++k) {
+            ifs.read((char*)&anim.keyframes[k].time, sizeof(anim.keyframes[k].time));
+            size_t poseCount = 0;
+            ifs.read((char*)&poseCount, sizeof(poseCount));
+            anim.keyframes[k].pose.resize(poseCount);
+            ifs.read((char*)anim.keyframes[k].pose.data(), sizeof(DirectX::XMMATRIX) * poseCount);
+        }
+        info->animations.push_back(std::move(anim));
+    }
+    ifs.close();
+    return true;
+}
+
+bool FbxModelLoader::SaveAnimationBin(const std::string& path, const std::vector<Animator::Keyframe>& keyframes, double length)
+{
+    std::ofstream ofs(path, std::ios::binary);
+    if (!ofs) return false;
+    ofs.write((char*)&length, sizeof(length));
+    size_t kfCount = keyframes.size();
+    ofs.write((char*)&kfCount, sizeof(kfCount));
+    for (const auto& kf : keyframes) {
+        ofs.write((char*)&kf.time, sizeof(kf.time));
+        size_t poseCount = kf.pose.size();
+        ofs.write((char*)&poseCount, sizeof(poseCount));
+        ofs.write((char*)kf.pose.data(), sizeof(DirectX::XMMATRIX) * poseCount);
+    }
+    ofs.close();
+    return true;
+}
+
+bool FbxModelLoader::LoadAnimationBin(const std::string& path, std::vector<Animator::Keyframe>& keyframes, double& length)
+{
+    std::ifstream ifs(path, std::ios::binary);
+    if (!ifs) return false;
+    ifs.read((char*)&length, sizeof(length));
+    size_t kfCount = 0;
+    ifs.read((char*)&kfCount, sizeof(kfCount));
+    keyframes.resize(kfCount);
+    for (size_t i = 0; i < kfCount; ++i) {
+        ifs.read((char*)&keyframes[i].time, sizeof(keyframes[i].time));
+        size_t poseCount = 0;
+        ifs.read((char*)&poseCount, sizeof(poseCount));
+        keyframes[i].pose.resize(poseCount);
+        ifs.read((char*)keyframes[i].pose.data(), sizeof(DirectX::XMMATRIX) * poseCount);
+    }
+    ifs.close();
+    return true;
+}
 
 //【全体の流れ】
 //
