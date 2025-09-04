@@ -51,6 +51,12 @@
     <Filter Include="F\GameObject\Goal">
       <UniqueIdentifier>{13271dc4-a5c7-45ca-afc0-d6ecdf8e8919}</UniqueIdentifier>
     </Filter>
+    <Filter Include="F\Scene\GameOverScene">
+      <UniqueIdentifier>{55acda99-d0e3-40cc-9a39-bcccce202449}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="F\Scene\StartScene">
+      <UniqueIdentifier>{596ce200-02e8-4b04-a8b6-31ec7a5ad998}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="GameObject.cpp">
@@ -124,6 +130,12 @@
     </ClCompile>
     <ClCompile Include="Player2Component.cpp">
       <Filter>F\GameObject\Player</Filter>
+    </ClCompile>
+    <ClCompile Include="GameOverScene.cpp">
+      <Filter>F\Scene\GameOverScene</Filter>
+    </ClCompile>
+    <ClCompile Include="StartScene.cpp">
+      <Filter>F\Scene\StartScene</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -228,6 +240,12 @@
     </ClInclude>
     <ClInclude Include="PlayerState.h">
       <Filter>F\GameObject\Player</Filter>
+    </ClInclude>
+    <ClInclude Include="GameOverScene.h">
+      <Filter>F\Scene\GameOverScene</Filter>
+    </ClInclude>
+    <ClInclude Include="StartScene.h">
+      <Filter>F\Scene\StartScene</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

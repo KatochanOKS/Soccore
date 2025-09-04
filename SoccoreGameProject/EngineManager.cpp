@@ -1,6 +1,7 @@
 #include "EngineManager.h"
 #include "GameScene.h"
 #include "MeshLibrary.h"
+#include"StartScene.h"
 #include <memory>
 #include "imgui.h"
 #include "imgui_impl_dx12.h"
@@ -54,8 +55,12 @@ void EngineManager::Initialize() {
         GetModelVertexInfo()
     );
 
-    m_activeScene = std::make_unique<GameScene>(this);
-    m_activeScene->Start();
+    /*m_activeScene = std::make_unique<GameScene>(this);
+    m_activeScene->Start();*/
+
+	m_activeScene = std::make_unique<StartScene>(this);
+	m_activeScene->Start();
+
 }
 
 void EngineManager::Start() {}
@@ -72,4 +77,11 @@ void EngineManager::Draw() {
 void EngineManager::Shutdown() {
     m_deviceManager.Cleanup();
     m_swapChainManager.Cleanup();
+}
+
+
+void EngineManager::ChangeScene(std::unique_ptr<Scene> nextScene) {
+    // 旧シーンは unique_ptr のムーブで自動破棄
+    m_activeScene = std::move(nextScene);
+    if (m_activeScene) m_activeScene->Start();
 }

@@ -51,6 +51,9 @@ public:
     Camera* GetCamera() { return &m_camera; }
     const DirectX::XMFLOAT3& GetCameraPosition() const { return m_camera.GetPosition(); }
 
+    // Ÿ‚ÌƒV[ƒ“‚ÉØ‚è‘Ö‚¦‚Ä Start() ‚Ü‚ÅŒÄ‚Ô‚…€API
+    void ChangeScene(std::unique_ptr<Scene> nextScene);
+
     std::vector<GameObject*> m_gameObjects;
     int m_texIdx = -1;
     int m_cubeTexIdx = -1;
