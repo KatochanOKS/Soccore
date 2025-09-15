@@ -88,6 +88,7 @@ void Renderer::BeginFrame() {
 }
 
 // 描画処理（型ごとに必ずPSOセット！）
+// 描画処理（型ごとに必ずPSOセット！）
 void Renderer::DrawObject(GameObject* obj, size_t idx, const XMMATRIX& view, const XMMATRIX& proj) {
     constexpr size_t CBV_SIZE = 256;
 
@@ -131,18 +132,18 @@ void Renderer::DrawObject(GameObject* obj, size_t idx, const XMMATRIX& view, con
         return;
     }
 
-    // 2. 静的メッシュ（Cubeやモデル、スカイドーム、サッカーボール）
+    // 2. 静的メッシュ（Cube / FBX / SkyDome / etc.）
     if (auto* mr = obj->GetComponent<StaticMeshRenderer>()) {
-        // スカイドーム
+        // 2-1. スカイドーム
         if (mr->isSkySphere) {
             DrawSkySphere(obj, idx, view, proj);
             return;
         }
 
-        // 通常の静的メッシュ（Cube / FBXモデルなど）
         m_cmdList->SetPipelineState(m_pipeMgr->GetPipelineState(false));
         m_cmdList->SetGraphicsRootSignature(m_pipeMgr->GetRootSignature(false));
 
+        // 共通: 定数バッファ
         D3D12_GPU_VIRTUAL_ADDRESS cbvAddr = m_cubeBufMgr->GetConstantBufferGPUAddress() + CBV_SIZE * idx;
         m_cmdList->SetGraphicsRootConstantBufferView(1, cbvAddr);
 
@@ -150,6 +151,7 @@ void Renderer::DrawObject(GameObject* obj, size_t idx, const XMMATRIX& view, con
             m_cmdList->SetGraphicsRootDescriptorTable(0, m_texMgr->GetSRV(mr->texIndex));
         m_cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
+        // 2-2. FBXモデル → 個別バッファ＋vertexInfoあり
         if (mr->modelBuffer && mr->vertexInfo) {
             auto vbv = mr->modelBuffer->GetVertexBufferView();
             auto ibv = mr->modelBuffer->GetIndexBufferView();
@@ -157,13 +159,20 @@ void Renderer::DrawObject(GameObject* obj, size_t idx, const XMMATRIX& view, con
             m_cmdList->IASetIndexBuffer(&ibv);
             m_cmdList->DrawIndexedInstanced((UINT)mr->vertexInfo->indices.size(), 1, 0, 0, 0);
         }
-        else {
-            auto vbv = m_cubeBufMgr->GetVertexBufferView();
-            auto ibv = m_cubeBufMgr->GetIndexBufferView();
+        // 2-3. Cube, Quad, Sphereなど → EngineManagerの共通バッファ参照（vertexInfo==nullptr）
+        else if (mr->modelBuffer && mr->vertexInfo == nullptr) {
+            auto vbv = mr->modelBuffer->GetVertexBufferView();
+            auto ibv = mr->modelBuffer->GetIndexBufferView();
             m_cmdList->IASetVertexBuffers(0, 1, &vbv);
             m_cmdList->IASetIndexBuffer(&ibv);
-            m_cmdList->DrawIndexedInstanced(36, 1, 0, 0, 0);
+
+            // Cubeの場合：36, Quadなら6, Sphereなら動的に管理してもOK
+            int indexCount = 36; // Cubeの場合
+            // Sphere/Quadなら別途管理（ex: obj->nameやフラグで分岐可）
+
+            m_cmdList->DrawIndexedInstanced(indexCount, 1, 0, 0, 0);
         }
+        // 万一バッファがなければ何もしない
         return;
     }
 
@@ -173,6 +182,7 @@ void Renderer::DrawObject(GameObject* obj, size_t idx, const XMMATRIX& view, con
         return;
     }
 }
+
 
 
 

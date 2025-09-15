@@ -122,6 +122,9 @@ void GameScene::Start() {
     player1->AddComponent<Player1Component>();
     player1->GetComponent<Transform>()->rotation.y = XMConvertToRadians(90.0f);
 
+    auto* comp = player1->GetComponent<Player1Component>();
+    if (comp) comp->Start();  // ‚±‚±
+
     // 2P
     int p2TexIdx = engine->GetTextureManager()->LoadTexture(L"assets/MMA2/SkeletonzombieTAvelange.fbm/skeletonZombie_diffuse.png", engine->GetDeviceManager()->GetCommandList());
     GameObject* player2 = ObjectFactory::CreateSkinningBaseModel(
@@ -294,7 +297,7 @@ void GameScene::Update() {
     }
 
     
-    if (!sceneChanged && (p1DyingEnded || p2DyingEnded)) {
+    if (!sceneChanged && (p1DyingEnded)) {
         sceneChanged = true;
         engine->ChangeScene(std::make_unique<GameOverScene>(engine));
         return;

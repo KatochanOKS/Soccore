@@ -16,5 +16,5 @@ public:
 
 private:
     EngineManager* engine = nullptr;
-    std::vector<GameObject*> m_sceneObjects;
+	std::vector<GameObject*> m_sceneObjects;  // シーン内の全オブジェクトを保持
 };

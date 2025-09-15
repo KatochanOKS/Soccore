@@ -6,6 +6,61 @@
 #include "GameScene.h"
 #include <windows.h>
 
+extern "C" {
+#include "lua.h"
+#include "lauxlib.h"
+#include "lualib.h"
+}
+
+// LuaパラメータをPlayer1Componentに適用する関数
+void Player1Component::LoadConfigFromLua() {
+    lua_State* L = luaL_newstate();
+    luaL_openlibs(L);
+
+    if (luaL_dofile(L, "assets/scripts/player1_config.lua") != LUA_OK) {
+        const char* err = lua_tostring(L, -1);
+        OutputDebugStringA(err);
+        lua_close(L);
+        return;
+    }
+
+    // maxHp
+    lua_getglobal(L, "maxHp");
+    if (lua_isnumber(L, -1)) maxHp = (float)lua_tonumber(L, -1);
+    lua_pop(L, 1);
+
+    // hp
+    lua_getglobal(L, "hp");
+    if (lua_isnumber(L, -1)) hp = (float)lua_tonumber(L, -1);
+    lua_pop(L, 1);
+
+    // speed
+    lua_getglobal(L, "speed");
+    if (lua_isnumber(L, -1)) moveSpeed = (float)lua_tonumber(L, -1);
+    lua_pop(L, 1);
+
+    // name
+    lua_getglobal(L, "name");
+    if (lua_isstring(L, -1)) {
+        const char* name_utf8 = lua_tostring(L, -1);
+        name = name_utf8;
+    }
+    lua_pop(L, 1);
+
+    lua_close(L);
+
+    // デバッグ表示
+    char buf[128];
+    sprintf_s(buf, "Player1Config: maxHp=%.1f, hp=%.1f, speed=%.3f, name=%s\n", maxHp, hp, moveSpeed, name.c_str());
+    OutputDebugStringA(buf);
+}
+
+
+void Player1Component::Start() {
+    LoadConfigFromLua();
+    // 他の初期化…
+}
+
 void Player1Component::Update() {
     auto* tr = gameObject->GetComponent<Transform>();
     auto* animator = gameObject->GetComponent<Animator>();
@@ -17,9 +72,7 @@ void Player1Component::Update() {
     bool guardKey = (GetAsyncKeyState('G') & 0x8000);
     bool moveL = (GetAsyncKeyState('A') & 0x8000);
     bool moveR = (GetAsyncKeyState('D') & 0x8000);
-    bool moveU = (GetAsyncKeyState('W') & 0x8000);
-    bool moveD = (GetAsyncKeyState('S') & 0x8000);
-    bool isMoving = moveL || moveR || moveU || moveD;
+    bool isMoving = moveL || moveR;
 
     static bool prevKickKey = false, prevPunchKey = false, prevGuardKey = false;
 
@@ -73,8 +126,6 @@ void Player1Component::Update() {
             // 移動
             if (moveL) tr->position.x -= moveSpeed;
             if (moveR) tr->position.x += moveSpeed;
-            if (moveU) tr->position.z -= moveSpeed;
-            if (moveD) tr->position.z += moveSpeed;
         }
         break;
 
@@ -129,7 +180,7 @@ void Player1Component::Update() {
     GameObject* hpRedBarObj = gameObject->scene->FindByName("HP1Red");
     if (hpRedBarObj) {
         auto* redBar = hpRedBarObj->GetComponent<UIImage>();
-        float redWidth = HPBAR_MAX_WIDTH * delayedHp;
+        float redWidth = HPBAR_MAX_WIDTH * (delayedHp / maxHp);   // ←修正ポイント
         if (redWidth < 0) redWidth = 0;
         redBar->size.x = redWidth;
         redBar->position.x = HPBAR_LEFT_EDGE;
@@ -138,11 +189,12 @@ void Player1Component::Update() {
     GameObject* hpBarObj = gameObject->scene->FindByName("HP1");
     if (hpBarObj) {
         auto* bar = hpBarObj->GetComponent<UIImage>();
-        float barWidth = HPBAR_MAX_WIDTH * hp;
+        float barWidth = HPBAR_MAX_WIDTH * (hp / maxHp);          // ←修正ポイント
         if (barWidth < 0) barWidth = 0;
         bar->size.x = barWidth;
         bar->position.x = HPBAR_LEFT_EDGE;
     }
+
 
     // 入力状態保存
     prevKickKey = kickKey;

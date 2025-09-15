@@ -44,6 +44,7 @@ public:
     FbxModelLoader::VertexInfo* GetModelVertexInfo() { return &m_modelVertexInfo; }
     BufferManager* GetModelBufferManager() { return &m_modelBufferManager; }
     BufferManager* GetQuadBufferManager() { return &m_quadBufferManager; }
+    BufferManager* GetCubeBufferManager() { return &m_cubeBufferManager; }
     BufferManager* GetSkyBufferManager() { return &m_skyBufferManager; }
     BufferManager* GetSphereBufferManager() { return &m_sphereBufferManager; }
     Renderer* GetRenderer() { return &m_renderer; }
@@ -68,6 +69,7 @@ private:
     BufferManager m_quadBufferManager;
     BufferManager m_skyBufferManager;
     BufferManager m_sphereBufferManager;
+    BufferManager m_cubeBufferManager;
     TextureManager m_textureManager;
     FbxModelLoader::VertexInfo m_modelVertexInfo;
     Renderer m_renderer;

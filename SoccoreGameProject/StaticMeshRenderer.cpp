@@ -1,9 +1,13 @@
 #include "StaticMeshRenderer.h"
 
 StaticMeshRenderer::~StaticMeshRenderer() {
-    if (modelBuffer) delete modelBuffer;
+    // FBXモデルなど個別newしたときだけdelete
     if (vertexInfo) delete vertexInfo;
+    // modelBufferもFBXモデル等のnew BufferManager時だけdelete
+    // Cube/Sphere/QuadなどEngineManagerのものはdeleteしない
+    if (modelBuffer && vertexInfo) delete modelBuffer;
 }
+
 
 // 描画処理は後ほどRenderer側で呼ぶのでここは空でもOK（仮で何か書いても良い）
 void StaticMeshRenderer::Draw() {

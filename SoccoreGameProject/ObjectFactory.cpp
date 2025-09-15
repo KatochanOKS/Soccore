@@ -43,53 +43,9 @@ GameObject* ObjectFactory::CreateCube(
     mr->texIndex = texIdx;
     mr->color = color;
 
-    auto* col = obj->AddComponent<Collider>();
-    if (colliderSize.x < 0 || colliderSize.y < 0 || colliderSize.z < 0) {
-        AutoFitCollider(col, tr);
-    }
-    else {
-        col->center = colliderCenter;
-        col->size = colliderSize;
-    }
-
-    static bool initialized = false;
-    if (!initialized) {
-        std::vector<Vertex> vertices;
-        std::vector<uint16_t> indices;
-        MeshLibrary::GetCubeMesh(vertices, indices);
-        engine->GetBufferManager()->CreateVertexBuffer(engine->GetDeviceManager()->GetDevice(), vertices);
-        engine->GetBufferManager()->CreateIndexBuffer(engine->GetDeviceManager()->GetDevice(), indices);
-        initialized = true;
-    }
-
-    return obj;
-}
-
-//---------------------------
-// Ball（サッカーボール等）
-//---------------------------
-GameObject* ObjectFactory::CreateBall(
-    EngineManager* engine,
-    const XMFLOAT3& pos,
-    const XMFLOAT3& scale,
-    int texIdx,
-    const XMFLOAT4& color,
-    const XMFLOAT3& colliderCenter,
-    const XMFLOAT3& colliderSize,
-    const std::string& tag,
-    const std::string& name
-) {
-    auto* obj = new GameObject();
-    obj->tag = tag;
-    obj->name = name;
-
-    auto* tr = obj->AddComponent<Transform>();
-    tr->position = pos;
-    tr->scale = scale;
-
-    auto* mr = obj->AddComponent<StaticMeshRenderer>();
-    mr->texIndex = texIdx;
-    mr->color = color;
+    // FBXじゃない場合は共通バッファをセット
+    mr->modelBuffer = engine->GetCubeBufferManager();
+    mr->vertexInfo = nullptr; // Cube等は個別のvertexInfo不要（共通バッファを使うだけ）
 
     auto* col = obj->AddComponent<Collider>();
     if (colliderSize.x < 0 || colliderSize.y < 0 || colliderSize.z < 0) {
@@ -98,16 +54,6 @@ GameObject* ObjectFactory::CreateBall(
     else {
         col->center = colliderCenter;
         col->size = colliderSize;
-    }
-
-    static bool initialized = false;
-    if (!initialized) {
-        std::vector<Vertex> vertices;
-        std::vector<uint16_t> indices;
-        MeshLibrary::GetCubeMesh(vertices, indices); // 仮にCube
-        engine->GetBufferManager()->CreateVertexBuffer(engine->GetDeviceManager()->GetDevice(), vertices);
-        engine->GetBufferManager()->CreateIndexBuffer(engine->GetDeviceManager()->GetDevice(), indices);
-        initialized = true;
     }
     return obj;
 }

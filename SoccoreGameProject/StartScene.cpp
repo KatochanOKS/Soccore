@@ -26,7 +26,7 @@ void StartScene::Start() {
 void StartScene::Update() {
     // 1回押し判定（ホールドで連打にならないように）
     static bool prev = false;
-    bool cur = (GetAsyncKeyState(VK_SPACE) & 0x8000) != 0;
+    bool cur = (GetAsyncKeyState(VK_RETURN) & 0x8000) != 0;
     if (cur && !prev) {
         engine->ChangeScene(std::make_unique<GameScene>(engine));
         return; // このフレームはここで終了（以降の処理は新シーンに任せる）
