@@ -1,16 +1,26 @@
 #pragma once
 #include "Component.h"
 #include "PlayerState.h" // 追加
+#include <string>
+#include <windows.h>
 
 class Player2Component : public Component {
 public:
-    PlayerState state = PlayerState::Idle; // 状態変数
+
+    FILETIME lastWriteTime = {};  // ←追加（構造体初期化）
+
+    PlayerState state = PlayerState::Idle;
     void Update() override;
     float moveSpeed = 0.01f;
     float hp = 1.0f;
     float delayedHp = 1.0f;
+    float maxHp = 1.0f;         // ★追加
     bool isGuarding = false;
-    float reactionTimer = 0.0f; // Reaction中のタイマー
+    float reactionTimer = 0.0f;
+    std::string name = "Player2"; // ★追加
 
-    void TakeDamage(float amount); // 被ダメージ用
+    void LoadConfigFromLua();     // ★追加
+    void TakeDamage(float amount);
+    void Start() override;        // ★Startで1回だけLua読込
 };
+
