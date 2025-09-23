@@ -57,11 +57,26 @@ void Player1Component::LoadConfigFromLua() {
 
 
 void Player1Component::Start() {
+    // 最初の読込時に更新時刻も覚える
+    WIN32_FILE_ATTRIBUTE_DATA data;
+    if (GetFileAttributesExA("assets/scripts/player1_config.lua", GetFileExInfoStandard, &data)) {
+        lastWriteTime = data.ftLastWriteTime;
+    }
     LoadConfigFromLua();
-    // 他の初期化…
 }
 
 void Player1Component::Update() {
+
+    // Luaファイル更新監視（自動リロード！）
+    WIN32_FILE_ATTRIBUTE_DATA data;
+    if (GetFileAttributesExA("assets/scripts/player1_config.lua", GetFileExInfoStandard, &data)) {
+        if (CompareFileTime(&lastWriteTime, &data.ftLastWriteTime) != 0) {
+            lastWriteTime = data.ftLastWriteTime;
+            LoadConfigFromLua();
+            OutputDebugStringA("Luaホットリロード!\n");
+        }
+    }
+
     auto* tr = gameObject->GetComponent<Transform>();
     auto* animator = gameObject->GetComponent<Animator>();
     if (!tr || !animator) return;

@@ -4,11 +4,15 @@
 #include "Scene.h"
 #include <memory>
 #include <string>
+#include <windows.h>
 
 
 
 class Player1Component : public Component {
 public:
+
+    FILETIME lastWriteTime = {};  // ←追加（構造体初期化）
+
     PlayerState state = PlayerState::Idle;
     void Update() override;
     float moveSpeed = 0.01f;

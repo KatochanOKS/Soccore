@@ -137,6 +137,9 @@ void GameScene::Start() {
     player2->AddComponent<Player2Component>();
     player2->GetComponent<Transform>()->rotation.y = XMConvertToRadians(-90.0f);
 
+	auto* comp2 = player2->GetComponent<Player2Component>();
+	if (comp2) comp2->Start();  // ‚±‚±
+
     m_sceneObjects.push_back(player1);
     m_sceneObjects.push_back(player2);
 
