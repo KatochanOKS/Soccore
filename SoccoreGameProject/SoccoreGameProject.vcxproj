@@ -110,7 +110,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\ExLib\DirectXTex;$(ProjectDir)..\ExLib\FBXSDK\2020.3.7\include;$(ProjectDir)..\ExLib\imgui-master;$(ProjectDir)..\ExLib\imgui-master\backends;C:\Liv\lua-5.4.8\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\ExLib\DirectXTex;$(ProjectDir)..\ExLib\FBXSDK\2020.3.7\include;$(ProjectDir)..\ExLib\imgui-master;$(ProjectDir)..\ExLib\imgui-master\backends;$(ProjectDir)..\ExLib\Lua\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -132,7 +132,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\ExLib\DirectXTex;$(ProjectDir)..\ExLib\FBXSDK\2020.3.7\include;$(ProjectDir)..\ExLib\imgui-master;$(ProjectDir)..\ExLib\imgui-master\backends;C:\Liv\lua-5.4.8\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\ExLib\DirectXTex;$(ProjectDir)..\ExLib\FBXSDK\2020.3.7\include;$(ProjectDir)..\ExLib\imgui-master;$(ProjectDir)..\ExLib\imgui-master\backends;$(ProjectDir)..\ExLib\Lua\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -157,19 +157,17 @@
     <ClCompile Include="DeviceManager.cpp" />
     <ClCompile Include="EngineManager.cpp" />
     <ClCompile Include="FbxModelLoader.cpp" />
-    <ClCompile Include="GameObject.cpp" />
     <ClCompile Include="GameOverScene.cpp" />
     <ClCompile Include="GameScene.cpp" />
-    <ClCompile Include="GoalComponent.cpp" />
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="MeshLibrary.cpp" />
     <ClCompile Include="ObjectFactory.cpp" />
     <ClCompile Include="PipelineManager.cpp" />
     <ClCompile Include="Player1Component.cpp" />
     <ClCompile Include="Player2Component.cpp" />
+    <ClCompile Include="ReelComponent.cpp" />
     <ClCompile Include="Renderer.cpp" />
     <ClCompile Include="SkinnedMeshRenderer.cpp" />
-    <ClCompile Include="SoccerBallComponent.cpp" />
     <ClCompile Include="StartScene.cpp" />
     <ClCompile Include="StaticMeshRenderer.cpp" />
     <ClCompile Include="SwapChainManager.cpp" />
@@ -194,17 +192,16 @@
     <ClInclude Include="GameObject.h" />
     <ClInclude Include="GameOverScene.h" />
     <ClInclude Include="GameScene.h" />
-    <ClInclude Include="GoalComponent.h" />
     <ClInclude Include="MeshLibrary.h" />
     <ClInclude Include="ObjectFactory.h" />
     <ClInclude Include="PipelineManager.h" />
     <ClInclude Include="Player1Component.h" />
     <ClInclude Include="Player2Component.h" />
     <ClInclude Include="PlayerState.h" />
+    <ClInclude Include="ReelComponent.h" />
     <ClInclude Include="Renderer.h" />
     <ClInclude Include="Scene.h" />
     <ClInclude Include="SkinnedMeshRenderer.h" />
-    <ClInclude Include="SoccerBallComponent.h" />
     <ClInclude Include="StartScene.h" />
     <ClInclude Include="StaticMeshRenderer.h" />
     <ClInclude Include="stb_image.h" />

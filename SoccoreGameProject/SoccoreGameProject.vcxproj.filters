@@ -45,23 +45,17 @@
     <Filter Include="F\GameObject\Player">
       <UniqueIdentifier>{d26a724b-a990-47f8-8d1c-f27edf5d9561}</UniqueIdentifier>
     </Filter>
-    <Filter Include="F\GameObject\SoccoreBall">
-      <UniqueIdentifier>{4d50f292-e8a9-4ef8-a0d5-2475402573be}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="F\GameObject\Goal">
-      <UniqueIdentifier>{13271dc4-a5c7-45ca-afc0-d6ecdf8e8919}</UniqueIdentifier>
-    </Filter>
     <Filter Include="F\Scene\GameOverScene">
       <UniqueIdentifier>{55acda99-d0e3-40cc-9a39-bcccce202449}</UniqueIdentifier>
     </Filter>
     <Filter Include="F\Scene\StartScene">
       <UniqueIdentifier>{596ce200-02e8-4b04-a8b6-31ec7a5ad998}</UniqueIdentifier>
     </Filter>
+    <Filter Include="F\Slot">
+      <UniqueIdentifier>{f0b48fbe-0675-40e5-8f18-03fba547807e}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="GameObject.cpp">
-      <Filter>F\GameObject</Filter>
-    </ClCompile>
     <ClCompile Include="MeshLibrary.cpp">
       <Filter>F\GameObject</Filter>
     </ClCompile>
@@ -122,12 +116,6 @@
     <ClCompile Include="Player1Component.cpp">
       <Filter>F\GameObject\Player</Filter>
     </ClCompile>
-    <ClCompile Include="SoccerBallComponent.cpp">
-      <Filter>F\GameObject\SoccoreBall</Filter>
-    </ClCompile>
-    <ClCompile Include="GoalComponent.cpp">
-      <Filter>F\GameObject\Goal</Filter>
-    </ClCompile>
     <ClCompile Include="Player2Component.cpp">
       <Filter>F\GameObject\Player</Filter>
     </ClCompile>
@@ -136,6 +124,9 @@
     </ClCompile>
     <ClCompile Include="StartScene.cpp">
       <Filter>F\Scene\StartScene</Filter>
+    </ClCompile>
+    <ClCompile Include="ReelComponent.cpp">
+      <Filter>F\Slot</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -229,12 +220,6 @@
     <ClInclude Include="Player1Component.h">
       <Filter>F\GameObject\Player</Filter>
     </ClInclude>
-    <ClInclude Include="SoccerBallComponent.h">
-      <Filter>F\GameObject\SoccoreBall</Filter>
-    </ClInclude>
-    <ClInclude Include="GoalComponent.h">
-      <Filter>F\GameObject\Goal</Filter>
-    </ClInclude>
     <ClInclude Include="Player2Component.h">
       <Filter>F\GameObject\Player</Filter>
     </ClInclude>
@@ -246,6 +231,9 @@
     </ClInclude>
     <ClInclude Include="StartScene.h">
       <Filter>F\Scene\StartScene</Filter>
+    </ClInclude>
+    <ClInclude Include="ReelComponent.h">
+      <Filter>F\Slot</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

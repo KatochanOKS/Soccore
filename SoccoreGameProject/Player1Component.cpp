@@ -163,7 +163,7 @@ void Player1Component::Update() {
 
     case PlayerState::Reaction:
         // ダメージ演出（一定時間でIdleに戻る）
-        reactionTimer -= 1.0f / 60.0f;
+        reactionTimer -= 0.5f / 60.0f;
         if (reactionTimer <= 0.0f) {
             state = PlayerState::Idle;
             animator->SetAnimation("Idle", true);
@@ -229,7 +229,7 @@ void Player1Component::TakeDamage(float amount) {
     }
     else {
         state = PlayerState::Reaction;
-        reactionTimer = 1.5f; // リアクション時間
+        reactionTimer = 0.8f; // リアクション時間
         auto* animator = gameObject->GetComponent<Animator>();
         if (animator) animator->SetAnimation("Reaction", false);
     }
