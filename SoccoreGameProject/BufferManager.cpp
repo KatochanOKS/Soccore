@@ -1,40 +1,44 @@
 #include "BufferManager.h"
 #include "d3dx12.h"   
 #include <DirectXMath.h>
-// 頂点バッファを作成する関数
+//--------------------------------------------------------------------------------------
+// CreateVertexBuffer
+// 指定された頂点データからDirectX 12の頂点バッファを作成し、GPUにアップロードする。
+// - 頂点数・サイズからバッファを確保
+// - アップロード用ヒープを利用しCPUからデータ転送
+// - バッファビューをセットし描画時に利用可能にする
+//--------------------------------------------------------------------------------------
 void BufferManager::CreateVertexBuffer(ID3D12Device* device, const std::vector<Vertex>& vertices)
 {
-    // バッファサイズを計算（頂点数 × 頂点サイズ）
-    const UINT bufferSize = UINT(vertices.size() * sizeof(Vertex));
+    if (vertices.empty()) return; // 頂点データが空なら何もしない
 
-    // アップロード用ヒーププロパティとリソース記述子を作成
-    CD3DX12_HEAP_PROPERTIES heapProps(D3D12_HEAP_TYPE_UPLOAD);
-    CD3DX12_RESOURCE_DESC resDesc = CD3DX12_RESOURCE_DESC::Buffer(bufferSize);
+    const UINT bufferSize = UINT(vertices.size() * sizeof(Vertex)); // バッファサイズ計算
 
-    // バッファリソースを生成
-    device->CreateCommittedResource(
+    CD3DX12_HEAP_PROPERTIES heapProps(D3D12_HEAP_TYPE_UPLOAD); // アップロード用ヒープ
+    CD3DX12_RESOURCE_DESC resDesc = CD3DX12_RESOURCE_DESC::Buffer(bufferSize); // バッファ記述子
+
+    // バッファリソース生成（アップロード用ヒープに確保）
+    HRESULT hr = device->CreateCommittedResource(
         &heapProps, // ヒーププロパティ
         D3D12_HEAP_FLAG_NONE, // ヒープフラグ
         &resDesc, // リソース記述子
-        D3D12_RESOURCE_STATE_GENERIC_READ, // リソース初期状態
+        D3D12_RESOURCE_STATE_GENERIC_READ, // 初期状態
         nullptr, // クリア値不要
         IID_PPV_ARGS(&m_vertexBuffer) // バッファのポインタ
     );
+    if (FAILED(hr)) return; // 失敗時は何もしない
 
-    // バッファをCPUメモリ空間にマッピング（書き込み可能にする）
     void* mapped = nullptr;
-    m_vertexBuffer->Map(0, nullptr, &mapped);
+    hr = m_vertexBuffer->Map(0, nullptr, &mapped); // バッファをCPUメモリ空間にマップ
+    if (SUCCEEDED(hr)) {
+        memcpy(mapped, vertices.data(), bufferSize); // 頂点データをコピー
+        m_vertexBuffer->Unmap(0, nullptr); // マッピング解除
+    }
 
-    // バッファに頂点データを書き込む
-    memcpy(mapped, vertices.data(), bufferSize);
-
-    // マッピング解除（GPUアクセス可能状態へ戻す）
-    m_vertexBuffer->Unmap(0, nullptr);
-
-    // 頂点バッファビュー（GPUに渡すバッファ情報）をセット
-    m_vbv.BufferLocation = m_vertexBuffer->GetGPUVirtualAddress();
-    m_vbv.SizeInBytes = bufferSize;
-    m_vbv.StrideInBytes = sizeof(Vertex);
+    // 頂点バッファビューをセット
+    m_vbv.BufferLocation = m_vertexBuffer->GetGPUVirtualAddress(); // GPU仮想アドレス
+    m_vbv.SizeInBytes = bufferSize; // バッファ全体サイズ
+    m_vbv.StrideInBytes = sizeof(Vertex); // 1頂点あたりのサイズ
 }
 
 void BufferManager::CreateSkinningVertexBuffer(ID3D12Device* device, const std::vector<SkinningVertex>& vertices) {

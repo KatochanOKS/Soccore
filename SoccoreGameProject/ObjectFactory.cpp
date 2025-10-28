@@ -8,6 +8,7 @@
 #include "MeshLibrary.h"
 #include "FbxModelLoader.h"
 #include "Collider.h"
+#include"ReelComponent.h"
 
 using namespace DirectX;
 
@@ -199,6 +200,42 @@ GameObject* ObjectFactory::CreateSkyDome(
         engine->GetSkyBufferManager()->CreateIndexBuffer(dev, i);
         inited = true;
     }
+
+    return obj;
+}
+
+GameObject* ObjectFactory::CreateCylinderReel(
+    EngineManager* engine,
+    const XMFLOAT3& pos,
+    const XMFLOAT3& scale,
+    int texIdx,
+    const XMFLOAT4& color,
+    const std::string& tag,
+    const std::string& name
+) {
+    auto* obj = new GameObject();
+    obj->tag = tag;
+    obj->name = name;
+
+    auto* tr = obj->AddComponent<Transform>();
+    tr->position = pos;
+    tr->scale = scale;
+    tr->rotation.z = -DirectX::XM_PIDIV2; // ← マイナスで逆方向
+    auto* mr = obj->AddComponent<StaticMeshRenderer>(); // StaticMeshRenderer流用
+    mr->texIndex = texIdx;
+    mr->color = color;
+
+    // ...前略
+    auto* reel = obj->AddComponent<ReelComponent>();
+    reel->isSpinning = true;
+
+
+    // 頂点・インデックスを生成
+    mr->vertexInfo = new FbxModelLoader::VertexInfo();
+    MeshLibrary::GetCylinderMesh(mr->vertexInfo->vertices, mr->vertexInfo->indices, 32);
+    mr->modelBuffer = new BufferManager();
+    mr->modelBuffer->CreateVertexBuffer(engine->GetDeviceManager()->GetDevice(), mr->vertexInfo->vertices);
+    mr->modelBuffer->CreateIndexBuffer(engine->GetDeviceManager()->GetDevice(), mr->vertexInfo->indices);
 
     return obj;
 }

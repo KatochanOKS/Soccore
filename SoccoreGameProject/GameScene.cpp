@@ -9,8 +9,6 @@
 #include "Collider.h"
 #include "Player1Component.h"
 #include "Player2Component.h"
-#include "SoccerBallComponent.h"
-#include "GoalComponent.h"
 #include "EngineManager.h"
 #include"GameOverScene.h"
 #include <DirectXMath.h>
@@ -48,163 +46,21 @@ GameScene::GameScene(EngineManager* engine) : engine(engine) {}
 void GameScene::Start() {
     m_sceneObjects.clear();
     sceneChanged = false;  // ★これが大事！
-    // スカイドーム
-    int skyTex = engine->GetTextureManager()->LoadTexture(
-        L"assets/SkyDome.png",
-        engine->GetDeviceManager()->GetCommandList()
-    );
-    auto* sky = ObjectFactory::CreateSkyDome(engine, skyTex, 600.0f, "Sky", "SkyDome");
-    m_sceneObjects.push_back(sky);
 
-    // HPバーUI -----------------------------------------------
+    // UI生成を関数化
+    InitUI();
 
-    // 1P用 赤残像バー（左上）
-    int logoTexRed = engine->GetTextureManager()->LoadTexture(L"assets/Red.png", engine->GetDeviceManager()->GetCommandList());
-    GameObject* hp1RedObj = new GameObject();
-    auto* hp1Red = hp1RedObj->AddComponent<UIImage>();
-    hp1Red->texIndex = logoTexRed;
-    hp1Red->size = { 500, 50 };
-    hp1Red->position = { 0, 50 };
-    hp1Red->color = { 1, 1, 1, 1 };
-    hp1RedObj->tag = "UI";
-    hp1RedObj->name = "HP1Red";
-    m_sceneObjects.push_back(hp1RedObj);
+	// ステージ生成を関数化
+	InitStage();
 
-    // 1P用 本体バー（左上）
-    int logoTex = engine->GetTextureManager()->LoadTexture(L"assets/Green3.png", engine->GetDeviceManager()->GetCommandList());
-    GameObject* hp1Obj = new GameObject();
-    auto* hp1 = hp1Obj->AddComponent<UIImage>();
-    hp1->texIndex = logoTex;
-    hp1->size = { 500, 50 };
-    hp1->position = { 0, 50 };
-    hp1->color = { 1, 1, 1, 1 };
-    hp1Obj->tag = "UI";
-    hp1Obj->name = "HP1";
-    m_sceneObjects.push_back(hp1Obj);
+	// プレイヤー生成を関数化
+	InitPlayers();
 
-    // 2P用 赤残像バー（右上）
-    GameObject* hp2RedObj = new GameObject();
-    auto* hp2Red = hp2RedObj->AddComponent<UIImage>();
-    hp2Red->texIndex = logoTexRed;
-    hp2Red->size = { 500, 50 };
-    hp2Red->position = { 780, 50 };
-    hp2Red->color = { 1, 1, 1, 1 };
-    hp2RedObj->tag = "UI";
-    hp2RedObj->name = "HP2Red";
-    m_sceneObjects.push_back(hp2RedObj);
-
-    // 2P用 本体バー（右上）
-    GameObject* hp2Obj = new GameObject();
-    auto* hp2 = hp2Obj->AddComponent<UIImage>();
-    hp2->texIndex = logoTex;
-    hp2->size = { 500, 50 };
-    hp2->position = { 780, 50 };
-    hp2->color = { 1, 1, 1, 1 };
-    hp2Obj->tag = "UI";
-    hp2Obj->name = "HP2";
-    m_sceneObjects.push_back(hp2Obj);
-
-    // 格闘ステージの床
-    m_sceneObjects.push_back(ObjectFactory::CreateCube(
-        engine, { 0.0f, -0.5f, 0.0f }, { 10.0f, 1.0f, 3.0f }, -1, Colors::Gray, { 0,0,0 }, { -1,-1,-1 }, "Ground", "GroundFloor"
-    ));
-
-    // --- プレイヤー生成・アニメ登録 ---
-    // 1P
-    int p1TexIdx = engine->GetTextureManager()->LoadTexture(L"assets/Mutant.fbm/Mutant_diffuse.png", engine->GetDeviceManager()->GetCommandList());
-    GameObject* player1 = ObjectFactory::CreateSkinningBaseModel(
-        engine, "assets/Mutant.fbx",
-        { -2.5f, 0.0f, 0.0f },
-        { 0.01f, 0.01f, 0.01f },
-        p1TexIdx, Colors::White,
-        { 0,0.85f,0 }, { 1.5f,1.7f,1.5f }, "Player", "Player1"
-    );
-    player1->AddComponent<Player1Component>();
-    player1->GetComponent<Transform>()->rotation.y = XMConvertToRadians(90.0f);
-
-    auto* comp = player1->GetComponent<Player1Component>();
-    if (comp) comp->Start();  // ここ
-
-    // 2P
-    int p2TexIdx = engine->GetTextureManager()->LoadTexture(L"assets/MMA2/SkeletonzombieTAvelange.fbm/skeletonZombie_diffuse.png", engine->GetDeviceManager()->GetCommandList());
-    GameObject* player2 = ObjectFactory::CreateSkinningBaseModel(
-        engine, "assets/MMA2/SkeletonzombieTAvelange.fbx",
-        { 2.5f, 0.0f, 0.0f },
-        { 0.01f, 0.01f, 0.01f },
-        p2TexIdx, Colors::White,
-        { 0,0.9f,0 }, { 1.5f,1.8f,1.5f }, "Enemy", "Player2"
-    );
-    player2->AddComponent<Player2Component>();
-    player2->GetComponent<Transform>()->rotation.y = XMConvertToRadians(-90.0f);
-
-	auto* comp2 = player2->GetComponent<Player2Component>();
-	if (comp2) comp2->Start();  // ここ
-
-    m_sceneObjects.push_back(player1);
-    m_sceneObjects.push_back(player2);
-
-    // --- デバッグ表示（ボーン名）---
-    auto* smr1 = player1->GetComponent<SkinnedMeshRenderer>();
-    auto* smr2 = player2->GetComponent<SkinnedMeshRenderer>();
-    char buf[256];
-
-    OutputDebugStringA("--- PLAYER1 boneNames ---\n");
-    for (size_t i = 0; i < smr1->skinVertexInfo->boneNames.size(); ++i) {
-        sprintf_s(buf, "[%02zu] %s\n", i, smr1->skinVertexInfo->boneNames[i].c_str());
-        OutputDebugStringA(buf);
-    }
-    OutputDebugStringA("--- PLAYER2 boneNames ---\n");
-    for (size_t i = 0; i < smr2->skinVertexInfo->boneNames.size(); ++i) {
-        sprintf_s(buf, "[%02zu] %s\n", i, smr2->skinVertexInfo->boneNames[i].c_str());
-        OutputDebugStringA(buf);
-    }
-
-    // --- アニメ登録 ---
-    struct AnimEntry { const char* file; const char* name; };
-    AnimEntry anims1[] = {
-        { "assets/MMA/BodyBlock.fbx",    "BodyBlock"   },
-        { "assets/MMA/MmaKick.fbx",      "Kick"        },
-        { "assets/MMA/MutantDying.fbx",  "Dying"       },
-        { "assets/MMA/Punching.fbx",     "Punch"       },
-        { "assets/MMA/BouncingFightIdle.fbx", "Idle"   },
-        { "assets/MMA/Walking.fbx",      "Walk"        },
-        { "assets/MMA/TakingPunch.fbx",      "Reaction"        },
-    };
-    AnimEntry anims2[] = {
-        { "assets/MMA2/OutwardBlock.fbx",    "BodyBlock"   },
-        { "assets/MMA2/MmaKick.fbx",         "Kick"        },
-        { "assets/MMA2/DyingBackwards.fbx",  "Dying"       },
-        { "assets/MMA2/Punching2P.fbx",      "Punch"       },
-        { "assets/MMA2/BouncingFightIdle2.fbx", "Idle"     },
-        { "assets/MMA2/WalkingPlayer2.fbx",  "Walk"        },
-        { "assets/MMA2/Kicking.fbx",         "Kick2"       },
-        { "assets/MMA2/ZombieReactionHit.fbx",         "Reaction"       },
-    };
-    // 1P
-    auto* animator1 = player1->GetComponent<Animator>();
-    for (auto& anim1 : anims1) {
-        std::vector<Animator::Keyframe> keys;
-        double animLen;
-        if (FbxModelLoader::LoadAnimationOnly(anim1.file, keys, animLen)) {
-            animator1->AddAnimation(anim1.name, keys);
-        }
-    }
-    // 2P
-    auto* animator2 = player2->GetComponent<Animator>();
-    for (auto& anim2 : anims2) {
-        std::vector<Animator::Keyframe> keys;
-        double animLen;
-        if (FbxModelLoader::LoadAnimationOnly(anim2.file, keys, animLen)) {
-            animator2->AddAnimation(anim2.name, keys);
-        }
-    }
-
+	// アニメ登録を関数化
+	RegisterAnimations();
     // シーン参照セット
-    player1->scene = this;
-    player2->scene = this;
-
-    if (skyTex < 0) { OutputDebugStringA("SkyDome texture load failed!\n"); }
-    else { OutputDebugStringA("SkyDome created!\n"); }
+    FindByName("Player1")->scene = this;
+    FindByName("Player2")->scene = this;
 }
 
 void GameScene::Update() {
@@ -237,9 +93,6 @@ void GameScene::Update() {
 
         // --- プレイヤー1の攻撃 ---
         auto* anim1 = player1->GetComponent<Animator>();
-        char buf[256];
-        sprintf_s(buf, "[DEBUG] Player1 currentAnim = %s, playing = %d\n", anim1->currentAnim.c_str(), anim1->isPlaying ? 1 : 0);
-        OutputDebugStringA(buf);
 
         auto* comp1 = player1->GetComponent<Player1Component>();
         auto* comp2 = player2->GetComponent<Player2Component>();
@@ -252,7 +105,7 @@ void GameScene::Update() {
         // 1P攻撃ヒット管理
         if (hitP1toP2 && !prevHitP1toP2) {
             if (comp2 && !comp2->isGuarding) {
-                comp2->TakeDamage(0.08f);   // ←必ずTakeDamage経由
+                comp2->TakeDamage(2.0f);   // ←必ずTakeDamage経由
             }
         }
 
@@ -268,7 +121,7 @@ void GameScene::Update() {
         // 2P攻撃ヒット管理
         if (hitP2toP1 && !prevHitP2toP1) {
             if (comp1 && !comp1->isGuarding) {
-                comp1->TakeDamage(0.08f);   // ←必ずTakeDamage経由
+                comp1->TakeDamage(3.0f);   // ←必ずTakeDamage経由
             }
         }
 
@@ -300,7 +153,7 @@ void GameScene::Update() {
     }
 
     
-    if (!sceneChanged && (p1DyingEnded)) {
+    if (!sceneChanged && (p1DyingEnded || p2DyingEnded)) {
         sceneChanged = true;
         engine->ChangeScene(std::make_unique<GameOverScene>(engine));
         return;
@@ -312,8 +165,8 @@ void GameScene::Draw() {
     Camera* cam = engine->GetCamera();
 
     // サイドビュー
-    cam->SetPosition({ 0.0f, 3.0f, -5.0f });
-    cam->SetTarget({ 0.0f, 1.0f, 0.0f });
+    cam->SetPosition({ 0.0f, 2.0f, -5.0f });
+    cam->SetTarget({ 0.0f, 2.0f, 0.0f });
 
     XMMATRIX view = cam->GetViewMatrix();
     XMMATRIX proj = cam->GetProjectionMatrix(
@@ -369,6 +222,198 @@ void GameScene::Draw() {
     }
     engine->GetRenderer()->EndFrame();
 }
+
+
+
+// UI初期化===================================================================================================================
+
+void GameScene::InitUI() {
+
+    // スカイドーム
+    int skyTex = engine->GetTextureManager()->LoadTexture(
+        L"assets/SkyDome.png",
+        engine->GetDeviceManager()->GetCommandList()
+    );
+    auto* sky = ObjectFactory::CreateSkyDome(engine, skyTex, 600.0f, "Sky", "SkyDome");
+    m_sceneObjects.push_back(sky);
+
+    int logoTexRed = engine->GetTextureManager()->LoadTexture(L"assets/Red.png", engine->GetDeviceManager()->GetCommandList());
+    int logoTex = engine->GetTextureManager()->LoadTexture(L"assets/Green3.png", engine->GetDeviceManager()->GetCommandList());
+
+    // 1P用 赤残像バー（左上）
+    GameObject* hp1RedObj = new GameObject();
+    auto* hp1Red = hp1RedObj->AddComponent<UIImage>();
+    hp1Red->texIndex = logoTexRed;
+    hp1Red->size = { 500, 50 };
+    hp1Red->position = { 0, 50 };
+    hp1Red->color = { 1, 1, 1, 1 };
+    hp1RedObj->tag = "UI";
+    hp1RedObj->name = "HP1Red";
+    m_sceneObjects.push_back(hp1RedObj);
+
+    // 1P用 本体バー（左上）
+    GameObject* hp1Obj = new GameObject();
+    auto* hp1 = hp1Obj->AddComponent<UIImage>();
+    hp1->texIndex = logoTex;
+    hp1->size = { 500, 50 };
+    hp1->position = { 0, 50 };
+    hp1->color = { 1, 1, 1, 1 };
+    hp1Obj->tag = "UI";
+    hp1Obj->name = "HP1";
+    m_sceneObjects.push_back(hp1Obj);
+
+    // 2P用 赤残像バー（右上）
+    GameObject* hp2RedObj = new GameObject();
+    auto* hp2Red = hp2RedObj->AddComponent<UIImage>();
+    hp2Red->texIndex = logoTexRed;
+    hp2Red->size = { 500, 50 };
+    hp2Red->position = { 780, 50 };
+    hp2Red->color = { 1, 1, 1, 1 };
+    hp2RedObj->tag = "UI";
+    hp2RedObj->name = "HP2Red";
+    m_sceneObjects.push_back(hp2RedObj);
+
+    // 2P用 本体バー（右上）
+    GameObject* hp2Obj = new GameObject();
+    auto* hp2 = hp2Obj->AddComponent<UIImage>();
+    hp2->texIndex = logoTex;
+    hp2->size = { 500, 50 };
+    hp2->position = { 780, 50 };
+    hp2->color = { 1, 1, 1, 1 };
+    hp2Obj->tag = "UI";
+    hp2Obj->name = "HP2";
+    m_sceneObjects.push_back(hp2Obj);
+
+    // ==== [追加] ここから ====
+// 画像をロード（戻り値は SRV のインデックス想定）
+    int texSymbol = engine->GetTextureManager()->LoadTexture(
+        L"assets/Slot/Cherry.png",
+        engine->GetDeviceManager()->GetCommandList()
+    );
+
+    // UI用のGameObjectを1つ作って画像を貼る
+    {
+        GameObject* slotObj = new GameObject();
+        slotObj->name = "Slot_SingleTest";
+        slotObj->tag = "UI";
+
+        // 画像描画用のコンポーネント
+        auto* img = slotObj->AddComponent<UIImage>();
+        img->texIndex = texSymbol;   // さっきロードした画像
+        img->size = { 128, 128 }; // 表示サイズ（ピクセル）
+        img->position = { 200.0f, 120.0f }; // 画面上の位置（お好みでOK）
+
+        // シーンのオブジェクト配列に登録（あなたのプロジェクトのやり方に合わせる）
+        m_sceneObjects.push_back(slotObj);
+    }
+    // ==== [追加] ここまで ====
+
+}
+
+// ステージ初期化===================================================================================================================
+
+void GameScene::InitStage() {
+    m_sceneObjects.push_back(ObjectFactory::CreateCube(
+        engine, { 0.0f, -0.5f, 0.0f }, { 10.0f, 1.0f, 3.0f }, -1, Colors::Gray, { 0,0,0 }, { -1,-1,-1 }, "Ground", "GroundFloor"
+    ));
+
+    int reelTex = engine->GetTextureManager()->LoadTexture(L"assets/Slot/Reel.png", engine->GetDeviceManager()->GetCommandList());
+
+    for (int i = 0; i < 3; ++i) {
+        float x = -2.0f + i * 2.0f; // X座標でリールを並べる
+        auto* reel = ObjectFactory::CreateCylinderReel(
+            engine,
+            { x, 2.0f, 0.0f },           // 位置：横並び
+            { 2.0f, 2.0f, 2.0f },        // スケール
+            reelTex,                     // 各リール用のテクスチャ
+            Colors::White,
+            "Reel",
+            "SlotReel" + std::to_string(i + 1)
+        );
+        // 必要ならそれぞれ個別にReelComponentにアクセスしてspeedを変える等
+        m_sceneObjects.push_back(reel);
+    }
+}
+
+// プレイヤー初期化===================================================================================================================
+
+void GameScene::InitPlayers() {
+    // 1P
+    int p1TexIdx = engine->GetTextureManager()->LoadTexture(L"assets/Mutant.fbm/Mutant_diffuse.png", engine->GetDeviceManager()->GetCommandList());
+    GameObject* player1 = ObjectFactory::CreateSkinningBaseModel(
+        engine, "assets/Mutant.fbx",
+        { -2.5f, 0.0f, 0.0f },
+        { 0.01f, 0.01f, 0.01f },
+        p1TexIdx, Colors::White,
+        { 0,0.85f,0 }, { 1.5f,1.7f,1.5f }, "Player", "Player1"
+    );
+    player1->AddComponent<Player1Component>();
+    player1->GetComponent<Transform>()->rotation.y = XMConvertToRadians(90.0f);
+
+    auto* comp1 = player1->GetComponent<Player1Component>();
+    if (comp1) comp1->Start();
+
+    // 2P
+    int p2TexIdx = engine->GetTextureManager()->LoadTexture(L"assets/MMA2/SkeletonzombieTAvelange.fbm/skeletonZombie_diffuse.png", engine->GetDeviceManager()->GetCommandList());
+    GameObject* player2 = ObjectFactory::CreateSkinningBaseModel(
+        engine, "assets/MMA2/SkeletonzombieTAvelange.fbx",
+        { 2.5f, 0.0f, 0.0f },
+        { 0.01f, 0.01f, 0.01f },
+        p2TexIdx, Colors::White,
+        { 0,0.9f,0 }, { 1.5f,1.8f,1.5f }, "Enemy", "Player2"
+    );
+    player2->AddComponent<Player2Component>();
+    player2->GetComponent<Transform>()->rotation.y = XMConvertToRadians(-90.0f);
+
+    auto* comp2 = player2->GetComponent<Player2Component>();
+    if (comp2) comp2->Start();
+
+    m_sceneObjects.push_back(player1);
+    m_sceneObjects.push_back(player2);
+}
+
+// アニメ登録関数===================================================================================================================
+
+void GameScene::RegisterAnimations() {
+    struct AnimEntry { const char* file; const char* name; };
+    AnimEntry anims1[] = {
+        { "assets/MMA/BodyBlock.fbx",    "BodyBlock"   },
+        { "assets/MMA/MmaKick.fbx",      "Kick"        },
+        { "assets/MMA/MutantDying.fbx",  "Dying"       },
+        { "assets/MMA/Punching.fbx",     "Punch"       },
+        { "assets/MMA/BouncingFightIdle.fbx", "Idle"   },
+        { "assets/MMA/Walking.fbx",      "Walk"        },
+        { "assets/MMA/TakingPunch.fbx",  "Reaction"    },
+    };
+    AnimEntry anims2[] = {
+        { "assets/MMA2/OutwardBlock.fbx",    "BodyBlock"   },
+        { "assets/MMA2/MmaKick.fbx",         "Kick"        },
+        { "assets/MMA2/DyingBackwards.fbx",  "Dying"       },
+        { "assets/MMA2/Punching2P.fbx",      "Punch"       },
+        { "assets/MMA2/BouncingFightIdle2.fbx", "Idle"     },
+        { "assets/MMA2/WalkingPlayer2.fbx",  "Walk"        },
+        { "assets/MMA2/Kicking.fbx",         "Kick2"       },
+        { "assets/MMA2/ZombieReactionHit.fbx", "Reaction"  },
+    };
+
+    auto* animator1 = FindByName("Player1")->GetComponent<Animator>();
+    for (auto& anim1 : anims1) {
+        std::vector<Animator::Keyframe> keys;
+        double animLen;
+        if (FbxModelLoader::LoadAnimationOnly(anim1.file, keys, animLen)) {
+            animator1->AddAnimation(anim1.name, keys);
+        }
+    }
+    auto* animator2 = FindByName("Player2")->GetComponent<Animator>();
+    for (auto& anim2 : anims2) {
+        std::vector<Animator::Keyframe> keys;
+        double animLen;
+        if (FbxModelLoader::LoadAnimationOnly(anim2.file, keys, animLen)) {
+            animator2->AddAnimation(anim2.name, keys);
+        }
+    }
+}
+
 
 GameScene::~GameScene() {
     for (auto* obj : m_sceneObjects) {

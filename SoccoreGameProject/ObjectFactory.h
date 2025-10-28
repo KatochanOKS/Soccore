@@ -56,4 +56,14 @@ public:
         const std::string& tag = "Sky",
         const std::string& name = "SkyDome"
     );
+
+    static GameObject* CreateCylinderReel(
+        EngineManager* engine,
+        const DirectX::XMFLOAT3& pos,
+        const DirectX::XMFLOAT3& scale,
+        int texIdx = -1,
+        const DirectX::XMFLOAT4& color = Colors::White,
+        const std::string& tag = "Reel",
+        const std::string& name = "SlotReel"
+    );
 };

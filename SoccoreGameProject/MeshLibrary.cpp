@@ -1,4 +1,3 @@
-// MeshLibrary.cpp
 #include "MeshLibrary.h"
 #include<DirectXMath.h>
 void MeshLibrary::GetCubeMesh(std::vector<Vertex>& vertices, std::vector<uint16_t>& indices) {
@@ -151,3 +150,37 @@ void MeshLibrary::GetSphereMesh(std::vector<Vertex>& outVertices, std::vector<ui
         }
     }
 }
+
+void MeshLibrary::GetCylinderMesh(std::vector<Vertex>& vertices, std::vector<uint16_t>& indices, int slice) {
+    float radius = 0.5f, height = 1.0f;
+    vertices.clear();
+    indices.clear();
+
+    // θで円周上をぐるっと一周
+    for (int i = 0; i <= slice; ++i) {
+        // θにπ/2ラジアン（90度）を足してZ+方向基準でスタート！
+        float theta = DirectX::XM_2PI * i / slice + DirectX::XM_PIDIV2;
+        float x = cosf(theta) * radius;
+        float z = sinf(theta) * radius;
+        float u = (float)i / slice;
+
+        vertices.push_back({ x, +height / 2, z, x, 0, z, 1, u }); // 上端：v=1
+        vertices.push_back({ x, -height / 2, z, x, 0, z, 0, u }); // 下端：v=0
+
+    }
+
+    // 側面インデックス
+    for (int i = 0; i < slice; ++i) {
+        int idx = i * 2;
+        indices.push_back(idx);
+        indices.push_back(idx + 1);
+        indices.push_back(idx + 2);
+
+        indices.push_back(idx + 2);
+        indices.push_back(idx + 1);
+        indices.push_back(idx + 3);
+    }
+    // ★天面・底面の三角形も必要なら追加可能（まずは側面のみでOK！）
+}
+
+
