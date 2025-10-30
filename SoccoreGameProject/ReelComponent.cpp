@@ -6,25 +6,27 @@
 #include <cmath>
 #include <cstdio>
 
-// 回転・停止処理
+/// <summary>
+/// リールの回転・停止処理を毎フレーム更新する
+/// </summary>
 void ReelComponent::Update() {
-    if (isSpinning) {
-        angle += speed;
+    if (m_IsSpinning) {
+        m_Angle += m_Speed;
 
         // 2πループ
-        if (angle > DirectX::XM_PI * 2.0f) angle -= DirectX::XM_PI * 2.0f;
-        if (angle < 0) angle += DirectX::XM_PI * 2.0f;
+        if (m_Angle > DirectX::XM_PI * 2.0f) m_Angle -= DirectX::XM_PI * 2.0f;
+        if (m_Angle < 0) m_Angle += DirectX::XM_PI * 2.0f;
 
         // 停止ボタン押下
         if (GetAsyncKeyState(VK_SPACE) & 0x8000) {
-            isStopping = true;
+            m_IsStopping = true;
         }
 
-        if (isStopping) {
+        if (m_IsStopping) {
             // コマの中心到達判定
-            const int N = numSymbols;
-            float unitPrev = fmodf((angle - speed) / (2.0f * DirectX::XM_PI) + 1.0f, 1.0f); // 前フレーム
-            float unitNow = fmodf(angle / (2.0f * DirectX::XM_PI) + 1.0f, 1.0f);
+            const int N = s_NumSymbols;
+            float unitPrev = fmodf((m_Angle - m_Speed) / (2.0f * DirectX::XM_PI) + 1.0f, 1.0f); // 前フレーム
+            float unitNow = fmodf(m_Angle / (2.0f * DirectX::XM_PI) + 1.0f, 1.0f);
 
             // 「-0.5f/N」で中央基準に
             unitPrev = fmodf(unitPrev - 0.5f / N + 1.0f, 1.0f);
@@ -36,48 +38,52 @@ void ReelComponent::Update() {
             if (idxPrev != idxNow) {
                 // コマの中心を通過したタイミング！
                 StopAndSnap(); // ピタッとコマ中心へスナップ＆出目判定
-                isStopping = false;
-                isSpinning = false;
+                m_IsStopping = false;
+                m_IsSpinning = false;
             }
         }
     }
     // Transform反映
     if (auto* tr = gameObject->GetComponent<Transform>()) {
-        tr->rotation.x = angle;
+        tr->rotation.x = m_Angle;
     }
 }
 
+/// <summary>
+/// コマの中心に角度をスナップし、停止インデックスと出目を確定する
+/// </summary>
 void ReelComponent::StopAndSnap() {
-    int N = numSymbols;
-    float unit = angle / (2.0f * DirectX::XM_PI);
+    int N = s_NumSymbols;
+    float unit = m_Angle / (2.0f * DirectX::XM_PI);
     unit = fmodf(unit + 1.0f - 0.5f / N, 1.0f);
 
     int idx = (int)(unit * N) % N; // 切り捨て
-    stopIndex = idx;
+    m_StopIndex = idx;
 
     // ピタッと中央
     float snapAngle = (2.0f * DirectX::XM_PI) * (idx + 0.5f) / N;
-    angle = snapAngle;
-    isSpinning = false;
+    m_Angle = snapAngle;
+    m_IsSpinning = false;
 
     // デバッグ
     char buf[128];
-    sprintf_s(buf, "[DEBUG] idx=%d symbol=%s angle=%.3f\n", idx, symbols[idx].c_str(), angle);
+    sprintf_s(buf, "[DEBUG] idx=%d symbol=%s angle=%.3f\n", idx, m_Symbols[idx].c_str(), m_Angle);
     OutputDebugStringA(buf);
 }
 
 
 
-// ---- 「出目のみ判定したい」場合にも対応 ----
+/// <summary>
+/// 現在の角度から出目インデックスとシンボルを判定する
+/// </summary>
 void ReelComponent::JudgeSymbol() {
-    // 今のangleからidx計算（StopAndSnapでも同じ）
-    float unit = angle / (2.0f * DirectX::XM_PI);
+    float unit = m_Angle / (2.0f * DirectX::XM_PI);
     unit = fmodf(unit + 1.0f, 1.0f);
-    int idx = (int)(unit * numSymbols + 0.5f) % numSymbols;
-    stopIndex = idx;
-    std::string symbol = symbols[stopIndex];
+    int idx = (int)(unit * s_NumSymbols + 0.5f) % s_NumSymbols;
+    m_StopIndex = idx;
+    std::string symbol = m_Symbols[m_StopIndex];
 
     char buf[128];
-    sprintf_s(buf, "[DEBUG][JUDGE] idx=%d symbol=%s\n", stopIndex, symbol.c_str());
+    sprintf_s(buf, "[DEBUG][JUDGE] idx=%d symbol=%s\n", m_StopIndex, symbol.c_str());
     OutputDebugStringA(buf);
 }
