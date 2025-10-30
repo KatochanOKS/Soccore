@@ -2,11 +2,18 @@
 #pragma once
 #include "UIComponent.h"
 
+/// <summary>
+/// 画像表示専用のUIコンポーネント（テクスチャID・色付き）
+/// </summary>
+
 class UIImage : public UIComponent {
 public:
-    int texIndex = -1;
-    DirectX::XMFLOAT4 color{ 1, 1, 1, 1 }; // RGBA
+    int m_TexIndex = -1;                    ///< 使用するテクスチャのインデックス
+    DirectX::XMFLOAT4 m_Color{ 1, 1, 1, 1 };///< RGBAカラー
 
-    // 描画リクエスト（実際の描画処理はRendererでやる想定）
+    /// <summary>
+    /// 画像UIの描画リクエスト（実際の描画処理はRendererで行う）
+    /// </summary>
+    
     void Draw(class Renderer* renderer, size_t idx) override;
 };

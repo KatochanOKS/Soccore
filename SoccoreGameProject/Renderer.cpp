@@ -218,8 +218,8 @@ void Renderer::DrawUIImage(UIImage* image, size_t idx) {
     m_cmdList->SetDescriptorHeaps(_countof(heaps), heaps);
 
     // テクスチャSRV
-    if (image->texIndex >= 0)
-        m_cmdList->SetGraphicsRootDescriptorTable(0, m_texMgr->GetSRV(image->texIndex));
+    if (image->m_TexIndex >= 0)
+        m_cmdList->SetGraphicsRootDescriptorTable(0, m_texMgr->GetSRV(image->m_TexIndex));
 
     // --- 左上基準・ピクセル指定のNDC変換 ---
     // 画面解像度
@@ -227,10 +227,10 @@ void Renderer::DrawUIImage(UIImage* image, size_t idx) {
     float screenH = m_height;
 
     // ピクセル座標（左上）
-    float px = image->position.x;
-    float py = image->position.y;
-    float sx = image->size.x;
-    float sy = image->size.y;
+    float px = image->m_Position.x;
+    float py = image->m_Position.y;
+    float sx = image->m_Size.x;
+    float sy = image->m_Size.y;
 
     // 左上と右下をNDCに変換
     float ndcL = (px / screenW) * 2.0f - 1.0f;
@@ -250,8 +250,8 @@ void Renderer::DrawUIImage(UIImage* image, size_t idx) {
     // 定数バッファ
     ObjectCB cbData{};
     cbData.WorldViewProj = DirectX::XMMatrixTranspose(world);
-    cbData.Color = image->color;
-    cbData.UseTexture = (image->texIndex >= 0) ? 1 : 0;
+    cbData.Color = image->m_Color;
+    cbData.UseTexture = (image->m_TexIndex >= 0) ? 1 : 0;
 
     constexpr size_t CBV_SIZE = 256;
     void* mapped = nullptr;

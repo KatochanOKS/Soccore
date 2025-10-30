@@ -195,8 +195,8 @@ void Player2Component::Update() {
         auto* redBar = hpRedBarObj->GetComponent<UIImage>();
         float redWidth = HPBAR_MAX_WIDTH * (delayedHp / maxHp);
         if (redWidth < 0) redWidth = 0;
-        redBar->size.x = redWidth;
-        redBar->position.x = HPBAR_RIGHT_EDGE + (HPBAR_MAX_WIDTH - redWidth); // 右端固定
+        redBar->m_Size.x = redWidth;
+        redBar->m_Position.x = HPBAR_RIGHT_EDGE + (HPBAR_MAX_WIDTH - redWidth); // 右端固定
     }
 
     GameObject* hpBarObj = gameObject->scene->FindByName("HP2");
@@ -204,8 +204,8 @@ void Player2Component::Update() {
         auto* bar = hpBarObj->GetComponent<UIImage>();
         float barWidth = HPBAR_MAX_WIDTH * (hp / maxHp);
         if (barWidth < 0) barWidth = 0;
-        bar->size.x = barWidth;
-        bar->position.x = HPBAR_RIGHT_EDGE + (HPBAR_MAX_WIDTH - barWidth); // 右端固定
+        bar->m_Size.x = barWidth;
+        bar->m_Position.x = HPBAR_RIGHT_EDGE + (HPBAR_MAX_WIDTH - barWidth); // 右端固定
     }
 
 

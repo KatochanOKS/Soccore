@@ -54,6 +54,9 @@
     <Filter Include="F\Slot">
       <UniqueIdentifier>{f0b48fbe-0675-40e5-8f18-03fba547807e}</UniqueIdentifier>
     </Filter>
+    <Filter Include="F\Scene\GameScene">
+      <UniqueIdentifier>{6e83e59e-7f0c-4d3c-ac45-0bbe228547e5}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="MeshLibrary.cpp">
@@ -101,9 +104,6 @@
     <ClCompile Include="SkinnedMeshRenderer.cpp">
       <Filter>F\Rederer</Filter>
     </ClCompile>
-    <ClCompile Include="GameScene.cpp">
-      <Filter>F\Scene</Filter>
-    </ClCompile>
     <ClCompile Include="Collider.cpp">
       <Filter>F\Collider</Filter>
     </ClCompile>
@@ -127,6 +127,15 @@
     </ClCompile>
     <ClCompile Include="ReelComponent.cpp">
       <Filter>F\Slot</Filter>
+    </ClCompile>
+    <ClCompile Include="GameUIManager.cpp">
+      <Filter>F\UI</Filter>
+    </ClCompile>
+    <ClCompile Include="GameScene.cpp">
+      <Filter>F\Scene\GameScene</Filter>
+    </ClCompile>
+    <ClCompile Include="PlayerManager.cpp">
+      <Filter>F\GameObject\Player</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -199,9 +208,6 @@
     <ClInclude Include="Scene.h">
       <Filter>F\Scene</Filter>
     </ClInclude>
-    <ClInclude Include="GameScene.h">
-      <Filter>F\Scene</Filter>
-    </ClInclude>
     <ClInclude Include="Collider.h">
       <Filter>F\Collider</Filter>
     </ClInclude>
@@ -234,6 +240,15 @@
     </ClInclude>
     <ClInclude Include="ReelComponent.h">
       <Filter>F\Slot</Filter>
+    </ClInclude>
+    <ClInclude Include="GameUIManager.h">
+      <Filter>F\UI</Filter>
+    </ClInclude>
+    <ClInclude Include="GameScene.h">
+      <Filter>F\Scene\GameScene</Filter>
+    </ClInclude>
+    <ClInclude Include="PlayerManager.h">
+      <Filter>F\GameObject\Player</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -227,7 +227,7 @@ GameObject* ObjectFactory::CreateCylinderReel(
 
     // ...前略
     auto* reel = obj->AddComponent<ReelComponent>();
-    reel->isSpinning = true;
+    reel->m_IsSpinning = true;
 
 
     // 頂点・インデックスを生成

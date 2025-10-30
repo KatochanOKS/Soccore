@@ -19,10 +19,10 @@ void GameOverScene::Start() {
     {
         auto* ui = new GameObject();
         auto* img = ui->AddComponent<UIImage>();
-        img->texIndex = overTex;         // 画像が無いときは -1 でもOK（色ベタ表示）
-        img->size = { 1280, 720 };
-        img->position = { 0, 0 };    // 1280x720想定の中央付近
-        img->color = { 1, 1, 1, 1 };
+        img->m_TexIndex = overTex;         // 画像が無いときは -1 でもOK（色ベタ表示）
+        img->m_Size = { 1280, 720 };
+        img->m_Position = { 0, 0 };    // 1280x720想定の中央付近
+        img->m_Color = { 1, 1, 1, 1 };
         m_sceneObjects.push_back(ui);
     }
 }

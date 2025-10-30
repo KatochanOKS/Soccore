@@ -197,8 +197,8 @@ void Player1Component::Update() {
         auto* redBar = hpRedBarObj->GetComponent<UIImage>();
         float redWidth = HPBAR_MAX_WIDTH * (delayedHp / maxHp);   // ←修正ポイント
         if (redWidth < 0) redWidth = 0;
-        redBar->size.x = redWidth;
-        redBar->position.x = HPBAR_LEFT_EDGE;
+        redBar->m_Size.x = redWidth;
+        redBar->m_Position.x = HPBAR_LEFT_EDGE;
     }
 
     GameObject* hpBarObj = gameObject->scene->FindByName("HP1");
@@ -206,8 +206,8 @@ void Player1Component::Update() {
         auto* bar = hpBarObj->GetComponent<UIImage>();
         float barWidth = HPBAR_MAX_WIDTH * (hp / maxHp);          // ←修正ポイント
         if (barWidth < 0) barWidth = 0;
-        bar->size.x = barWidth;
-        bar->position.x = HPBAR_LEFT_EDGE;
+        bar->m_Size.x = barWidth;
+        bar->m_Position.x = HPBAR_LEFT_EDGE;
     }
 
 

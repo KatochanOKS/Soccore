@@ -17,9 +17,9 @@ void StartScene::Start() {
     );
     GameObject* logoObj = new GameObject();
     auto* logo = logoObj->AddComponent<UIImage>();
-    logo->texIndex = logoTex;
-    logo->size = { 1280 , 720 };
-    logo->position = { 0, 0 };
+    logo->m_TexIndex = logoTex;
+    logo->m_Size = { 1280 , 720 };
+    logo->m_Position = { 0, 0 };
     m_sceneObjects.push_back(logoObj);
 }
 
