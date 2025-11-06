@@ -39,9 +39,6 @@
     <Filter Include="F\UI">
       <UniqueIdentifier>{713db6fc-8c25-4417-820f-03c18371e77d}</UniqueIdentifier>
     </Filter>
-    <Filter Include="F\Resources\imgui">
-      <UniqueIdentifier>{08c7dc16-fdee-49f7-8868-02c27c15c948}</UniqueIdentifier>
-    </Filter>
     <Filter Include="F\GameObject\Player">
       <UniqueIdentifier>{d26a724b-a990-47f8-8d1c-f27edf5d9561}</UniqueIdentifier>
     </Filter>
@@ -56,6 +53,9 @@
     </Filter>
     <Filter Include="F\Scene\GameScene">
       <UniqueIdentifier>{6e83e59e-7f0c-4d3c-ac45-0bbe228547e5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="F\Scene\Stage">
+      <UniqueIdentifier>{b554d6c9-d097-4b1a-8ccd-326f98433217}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -136,6 +136,15 @@
     </ClCompile>
     <ClCompile Include="PlayerManager.cpp">
       <Filter>F\GameObject\Player</Filter>
+    </ClCompile>
+    <ClCompile Include="AnimationManager.cpp">
+      <Filter>F\Animation</Filter>
+    </ClCompile>
+    <ClCompile Include="StageManager.cpp">
+      <Filter>F\Scene\Stage</Filter>
+    </ClCompile>
+    <ClCompile Include="ReelController.cpp">
+      <Filter>F\Slot</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -249,6 +258,15 @@
     </ClInclude>
     <ClInclude Include="PlayerManager.h">
       <Filter>F\GameObject\Player</Filter>
+    </ClInclude>
+    <ClInclude Include="AnimationManager.h">
+      <Filter>F\Animation</Filter>
+    </ClInclude>
+    <ClInclude Include="StageManager.h">
+      <Filter>F\Scene\Stage</Filter>
+    </ClInclude>
+    <ClInclude Include="ReelController.h">
+      <Filter>F\Slot</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

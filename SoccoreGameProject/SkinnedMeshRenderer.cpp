@@ -1,12 +1,12 @@
 #include "SkinnedMeshRenderer.h"
 
 SkinnedMeshRenderer::~SkinnedMeshRenderer() {
-    if (modelBuffer) delete modelBuffer;
-    if (skinVertexInfo) delete skinVertexInfo;
-	if (boneCB) delete boneCB;
+    if (m_ModelBuffer) delete m_ModelBuffer;
+    if (m_SkinVertexInfo) delete m_SkinVertexInfo;
+	if (m_BoneCB) delete m_BoneCB;
     // animatorはGameObjectのcomponentsで一括deleteされるのでここではdeleteしない！
 }
 
 void SkinnedMeshRenderer::Draw() {
-    // 必要なら「自分用の特殊な処理」をここに書く
+    // 描画はRendererクラスに委譲するのでここでは何もしない
 }

@@ -5,33 +5,37 @@
 #include <unordered_map>
 #include <vector>
 
-// 役割：アプリ全体で使うテクスチャを一括管理し、SRVディスクリプタヒープに並べていく。
-// - Initialize() で SRV用ディスクリプタヒープを作成
-// - LoadTexture() で画像ファイルを読み込み → GPUテクスチャを作って転送 → SRVを割り当て
-// - GetSRVHeap()/GetSRV() で描画側にSRVハンドルを渡す
+/// <summary>
+/// テクスチャを一括管理し、SRVディスクリプタヒープ経由で描画に利用できるようにするクラス。
+/// </summary>
 class TextureManager {
 public:
-    // device: D3D12デバイス
-    // maxTextureNum: SRVヒープに確保する最大テクスチャ数（ディスクリプタ数）
+    /// <summary>
+    /// SRVディスクリプタヒープの初期化
+    /// </summary>
     void Initialize(ID3D12Device* device, UINT maxTextureNum = 64);
 
-    // filename: 読み込む画像（WIC対応：png/jpg/bmpなど）
-    // cmdList : 転送コマンド記録用（Upload→Default へのコピーで使用）
-    // 戻り値 : SRVヒープ上のインデックス（＝ルートパラメータに渡すときのオフセットに使う）
+    /// <summary>
+    /// テクスチャの読み込みとSRV割り当て
+    /// </summary>
     int LoadTexture(const std::wstring& filename, ID3D12GraphicsCommandList* cmdList);
 
-    // 描画前に SetDescriptorHeaps で渡すためのSRVヒープ生ポインタ
+    /// <summary>
+    /// SRVヒープの取得
+    /// </summary>
     ID3D12DescriptorHeap* GetSRVHeap();
 
-    // SRVテーブルの GPU ハンドルを取得（index は LoadTexture の戻り値）
+    /// <summary>
+    /// SRVハンドルの取得
+    /// </summary>
     D3D12_GPU_DESCRIPTOR_HANDLE GetSRV(int index);
 
 private:
-    Microsoft::WRL::ComPtr<ID3D12Device> m_device;                 // デバイス（Create* 用）
-    Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> m_srvHeap;        // SRVの置き場（シェーダ可視）
-    std::unordered_map<std::wstring, int> m_textureIndices;        // 同じファイルの重複読み込みを防ぐ
-    std::vector<Microsoft::WRL::ComPtr<ID3D12Resource>> m_textures; // 実体（Default Heap）
-    std::vector<Microsoft::WRL::ComPtr<ID3D12Resource>> m_uploadBuffers; // Upload保持（GPU転送が完全に終わるまで解放しない）
-    UINT m_descriptorSize = 0;                                     // SRVディスクリプタサイズ（インクリメント幅）
-    UINT m_nextIndex = 0;                                          // 次に割り当てるSRVスロット
+    Microsoft::WRL::ComPtr<ID3D12Device> m_Device;                 ///< デバイス
+    Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> m_SrvHeap;        ///< SRVヒープ
+    std::unordered_map<std::wstring, int> m_TextureIndices;        ///< 重複読み込み防止
+    std::vector<Microsoft::WRL::ComPtr<ID3D12Resource>> m_Textures; ///< テクスチャリソース
+    std::vector<Microsoft::WRL::ComPtr<ID3D12Resource>> m_UploadBuffers; ///< Uploadバッファ
+    UINT m_DescriptorSize = 0;                                     ///< SRVディスクリプタサイズ
+    UINT m_NextIndex = 0;                                          ///< 次のSRVスロット
 };

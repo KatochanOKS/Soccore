@@ -5,27 +5,27 @@
 
 void TextureManager::Initialize(ID3D12Device* device, UINT maxTextureNum) {
     // 1) SRV用のディスクリプタヒープを作成（シェーダから見えるように SHADER_VISIBLE）
-    m_device = device;
+    m_Device = device;
     D3D12_DESCRIPTOR_HEAP_DESC desc = {};
     desc.NumDescriptors = maxTextureNum;                               // 予約数
     desc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;               // SRV/CBV/UAV用
     desc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;           // これ大事：シェーダから使う
 
     // CreateDescriptorHeap に失敗すると致命的。hrチェックを厳密にするなら assert の代わりに if(FAILED(hr)) でログ＆return。
-    HRESULT hr = device->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&m_srvHeap));
+    HRESULT hr = device->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&m_SrvHeap));
     assert(SUCCEEDED(hr));
 
     // 2) SRVディスクリプタの「1個あたりのサイズ」を問い合わせておく（オフセット計算に使う）
-    m_descriptorSize = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+    m_DescriptorSize = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
     // 3) 次に使う空きスロット番号を0にリセット
-    m_nextIndex = 0;
+    m_NextIndex = 0;
 }
 
 int TextureManager::LoadTexture(const std::wstring& filename, ID3D12GraphicsCommandList* cmdList) {
     // 0) 二重読み込み対策：同じパスは同じインデックスを返す
-    auto it = m_textureIndices.find(filename);
-    if (it != m_textureIndices.end()) return it->second;
+    auto it = m_TextureIndices.find(filename);
+    if (it != m_TextureIndices.end()) return it->second;
 
     // 1) CPU側へ画像ロード（WIC：png/jpg/bmp等）
     DirectX::TexMetadata metadata = {};
@@ -41,7 +41,7 @@ int TextureManager::LoadTexture(const std::wstring& filename, ID3D12GraphicsComm
 
     // 2) GPU(Default heap)側のテクスチャリソースを作成（まだ中身は空）
     Microsoft::WRL::ComPtr<ID3D12Resource> texture;
-    hr = DirectX::CreateTexture(m_device.Get(), metadata, &texture);
+    hr = DirectX::CreateTexture(m_Device.Get(), metadata, &texture);
     assert(SUCCEEDED(hr));
 
     // 3) Upload heap の一時バッファを用意（コピー元）
@@ -52,7 +52,7 @@ int TextureManager::LoadTexture(const std::wstring& filename, ID3D12GraphicsComm
     Microsoft::WRL::ComPtr<ID3D12Resource> uploadBuffer;
     CD3DX12_HEAP_PROPERTIES heapProps(D3D12_HEAP_TYPE_UPLOAD);           // CPU書き込み可
     CD3DX12_RESOURCE_DESC   resDesc = CD3DX12_RESOURCE_DESC::Buffer(uploadBufferSize);
-    hr = m_device->CreateCommittedResource(
+    hr = m_Device->CreateCommittedResource(
         &heapProps,
         D3D12_HEAP_FLAG_NONE,
         &resDesc,
@@ -94,18 +94,18 @@ int TextureManager::LoadTexture(const std::wstring& filename, ID3D12GraphicsComm
     srvDesc.Texture2D.MipLevels = static_cast<UINT>(metadata.mipLevels); // WIC読み込みは通常ミップ1枚。必要なら自前でミップ生成
 
     // 7-1) ヒープ先頭CPUハンドル + オフセット（インクリメント幅×インデックス）
-    D3D12_CPU_DESCRIPTOR_HANDLE handle = m_srvHeap->GetCPUDescriptorHandleForHeapStart();
-    handle.ptr += static_cast<SIZE_T>(m_nextIndex) * m_descriptorSize;
+    D3D12_CPU_DESCRIPTOR_HANDLE handle = m_SrvHeap->GetCPUDescriptorHandleForHeapStart();
+    handle.ptr += static_cast<SIZE_T>(m_NextIndex) * m_DescriptorSize;
 
     // 7-2) SRVを作る（この時点でテクスチャは PS から参照可能）
-    m_device->CreateShaderResourceView(texture.Get(), &srvDesc, handle);
+    m_Device->CreateShaderResourceView(texture.Get(), &srvDesc, handle);
 
     // 8) 管理テーブルに登録
-    m_textures.push_back(texture);                // 実体（Default）保持
-    const int texIndex = static_cast<int>(m_nextIndex);
-    m_textureIndices[filename] = texIndex;        // パス→インデックスの辞書
-    m_nextIndex++;                                // 次の空きスロットへ
-    m_uploadBuffers.push_back(uploadBuffer);      // ★重要：GPU転送完了まで解放しないため保持
+    m_Textures.push_back(texture);                // 実体（Default）保持
+    const int texIndex = static_cast<int>(m_NextIndex);
+    m_TextureIndices[filename] = texIndex;        // パス→インデックスの辞書
+    m_NextIndex++;                                // 次の空きスロットへ
+    m_UploadBuffers.push_back(uploadBuffer);      // ★重要：GPU転送完了まで解放しないため保持
 
     // 9) エラーログ（hr は直前のCreateSRVの戻りではないので注意。必要なら個別チェックにする）
     if (FAILED(hr)) {
@@ -118,12 +118,12 @@ int TextureManager::LoadTexture(const std::wstring& filename, ID3D12GraphicsComm
 
 ID3D12DescriptorHeap* TextureManager::GetSRVHeap() {
     // 描画前に CommandList::SetDescriptorHeaps でこのヒープをセットするために返す
-    return m_srvHeap.Get();
+    return m_SrvHeap.Get();
 }
 
 D3D12_GPU_DESCRIPTOR_HANDLE TextureManager::GetSRV(int index) {
     // SRVテーブルの「GPU可視」先頭から index 個分だけポインタを進めたハンドルを返す
-    D3D12_GPU_DESCRIPTOR_HANDLE handle = m_srvHeap->GetGPUDescriptorHandleForHeapStart();
-    handle.ptr += static_cast<UINT64>(index) * m_descriptorSize;
+    D3D12_GPU_DESCRIPTOR_HANDLE handle = m_SrvHeap->GetGPUDescriptorHandleForHeapStart();
+    handle.ptr += static_cast<UINT64>(index) * m_DescriptorSize;
     return handle;
 }

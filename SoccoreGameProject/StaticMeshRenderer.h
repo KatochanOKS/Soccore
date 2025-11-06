@@ -9,13 +9,19 @@
 // ------------------------------
 class StaticMeshRenderer : public BaseMeshRenderer {
 public:
-    BufferManager* modelBuffer = nullptr;               // 頂点・インデックスバッファ
-    FbxModelLoader::VertexInfo* vertexInfo = nullptr;   // モデルデータ（頂点・インデックス配列）
-    bool isSkySphere = false; // 2D平面用・球体用のフラグ（QuadやSphereなら特別な処理をする）
+    BufferManager* m_ModelBuffer = nullptr;               ///< 頂点・インデックスバッファ
+    FbxModelLoader::VertexInfo* m_VertexInfo = nullptr;   ///< モデルデータ（頂点・インデックス配列）
+    bool IsSkySphere = false; ///< モデルデータ（頂点・インデックス配列）
 	
-    // デストラクタ（newしたものは必ずdelete！）
+    /// <summary>
+    /// デストラクタ（newしたものは必ずdelete）
+    /// </summary>
+    
     ~StaticMeshRenderer() override;
 
-    // 描画処理（後で実装例を説明！）
-    void Draw() override;
+	/// <summary>
+    /// 描画処理
+    /// </summary>
+    
+	void Draw() override;
 };
