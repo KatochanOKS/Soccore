@@ -149,6 +149,7 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="AnimationManager.cpp" />
     <ClCompile Include="Animator.cpp" />
     <ClCompile Include="ApplicationManager.cpp" />
     <ClCompile Include="BufferManager.cpp" />
@@ -168,8 +169,10 @@
     <ClCompile Include="Player2Component.cpp" />
     <ClCompile Include="PlayerManager.cpp" />
     <ClCompile Include="ReelComponent.cpp" />
+    <ClCompile Include="ReelController.cpp" />
     <ClCompile Include="Renderer.cpp" />
     <ClCompile Include="SkinnedMeshRenderer.cpp" />
+    <ClCompile Include="StageManager.cpp" />
     <ClCompile Include="StartScene.cpp" />
     <ClCompile Include="StaticMeshRenderer.cpp" />
     <ClCompile Include="SwapChainManager.cpp" />
@@ -177,6 +180,7 @@
     <ClCompile Include="UIImage.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="AnimationManager.h" />
     <ClInclude Include="Animator.h" />
     <ClInclude Include="ApplicationManager.h" />
     <ClInclude Include="BaseMeshRenderer.h" />
@@ -203,9 +207,11 @@
     <ClInclude Include="PlayerManager.h" />
     <ClInclude Include="PlayerState.h" />
     <ClInclude Include="ReelComponent.h" />
+    <ClInclude Include="ReelController.h" />
     <ClInclude Include="Renderer.h" />
     <ClInclude Include="Scene.h" />
     <ClInclude Include="SkinnedMeshRenderer.h" />
+    <ClInclude Include="StageManager.h" />
     <ClInclude Include="StartScene.h" />
     <ClInclude Include="StaticMeshRenderer.h" />
     <ClInclude Include="stb_image.h" />

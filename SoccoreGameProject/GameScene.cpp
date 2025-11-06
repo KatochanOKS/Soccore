@@ -51,7 +51,10 @@ bool CheckAABBOverlap(const XMFLOAT3& minA, const XMFLOAT3& maxA,
 /// <summary>
 /// ゲームシーンのコンストラクタ
 /// </summary>
-GameScene::GameScene(EngineManager* engine) : engine(engine) {}
+GameScene::GameScene(EngineManager* engine)
+    : engine(engine)
+	, m_StageManage(engine) // ステージ管理初期化
+{}
 
 /// <summary>
 /// シーン開始時の初期化処理
@@ -61,7 +64,7 @@ void GameScene::Start() {
     sceneChanged = false;  // シーン切り替えフラグ初期化
     m_UIManager.InitUI(engine, m_SceneObjects); // UI初期化
     m_PlayerManager.InitPlayers(engine, m_SceneObjects); // プレイヤー管理初期化
-    InitStage();     // ステージ生成
+    m_StageManage.InitStage(m_SceneObjects); // ステージ初期化
     RegisterAnimations(); // アニメーション登録
 
     // プレイヤーのシーン参照セット
@@ -130,12 +133,12 @@ void GameScene::Draw() {
 
         ObjectCB cbData{};
         if (auto* smr = obj->GetComponent<SkinnedMeshRenderer>()) {
-            cbData.Color = smr->color;
-            cbData.UseTexture = smr->texIndex >= 0 ? 1 : 0;
+            cbData.Color = smr->m_Color;
+            cbData.UseTexture = smr->m_TexIndex >= 0 ? 1 : 0;
         }
         else if (auto* mr = obj->GetComponent<StaticMeshRenderer>()) {
-            cbData.Color = mr->color;
-            cbData.UseTexture = mr->texIndex >= 0 ? 1 : 0;
+            cbData.Color = mr->m_Color;
+            cbData.UseTexture = mr->m_TexIndex >= 0 ? 1 : 0;
         }
         cbData.WorldViewProj = XMMatrixTranspose(tr->GetWorldMatrix() * view * proj);
         memcpy((char*)mapped + CBV_SIZE * i, &cbData, sizeof(cbData));
@@ -160,73 +163,14 @@ void GameScene::Draw() {
     engine->GetRenderer()->EndFrame();
 }
 
-/// <summary>
-/// ステージの初期化処理
-/// </summary>
-void GameScene::InitStage() {
-    m_SceneObjects.push_back(ObjectFactory::CreateCube(
-        engine, { 0.0f, -0.5f, 0.0f }, { 10.0f, 1.0f, 3.0f }, -1, Colors::Gray, { 0,0,0 }, { -1,-1,-1 }, "Ground", "GroundFloor"
-    ));
-
-    int reelTex = engine->GetTextureManager()->LoadTexture(L"assets/Slot/Reel.png", engine->GetDeviceManager()->GetCommandList());
-
-    // スロットリール3本を横並びで生成
-    for (int i = 0; i < 3; ++i) {
-        float x = -2.0f + i * 2.0f;
-        auto* reel = ObjectFactory::CreateCylinderReel(
-            engine,
-            { x, 2.0f, 0.0f },
-            { 2.0f, 2.0f, 2.0f },
-            reelTex,
-            Colors::White,
-            "Reel",
-            "SlotReel" + std::to_string(i + 1)
-        );
-        m_SceneObjects.push_back(reel);
-    }
-}
 
 /// <summary>
 /// アニメーションの登録処理
 /// </summary>
 void GameScene::RegisterAnimations() {
-    struct AnimEntry { const char* file; const char* name; };
-    AnimEntry anims1[] = {
-        { "assets/MMA/BodyBlock.fbx",    "BodyBlock"   },
-        { "assets/MMA/MmaKick.fbx",      "Kick"        },
-        { "assets/MMA/MutantDying.fbx",  "Dying"       },
-        { "assets/MMA/Punching.fbx",     "Punch"       },
-        { "assets/MMA/BouncingFightIdle.fbx", "Idle"   },
-        { "assets/MMA/Walking.fbx",      "Walk"        },
-        { "assets/MMA/TakingPunch.fbx",  "Reaction"    },
-    };
-    AnimEntry anims2[] = {
-        { "assets/MMA2/OutwardBlock.fbx",    "BodyBlock"   },
-        { "assets/MMA2/MmaKick.fbx",         "Kick"        },
-        { "assets/MMA2/DyingBackwards.fbx",  "Dying"       },
-        { "assets/MMA2/Punching2P.fbx",      "Punch"       },
-        { "assets/MMA2/BouncingFightIdle2.fbx", "Idle"     },
-        { "assets/MMA2/WalkingPlayer2.fbx",  "Walk"        },
-        { "assets/MMA2/Kicking.fbx",         "Kick2"       },
-        { "assets/MMA2/ZombieReactionHit.fbx", "Reaction"  },
-    };
-
     auto* animator1 = FindByName("Player1")->GetComponent<Animator>();
-    for (auto& anim1 : anims1) {
-        std::vector<Animator::Keyframe> keys;
-        double animLen;
-        if (FbxModelLoader::LoadAnimationOnly(anim1.file, keys, animLen)) {
-            animator1->AddAnimation(anim1.name, keys);
-        }
-    }
     auto* animator2 = FindByName("Player2")->GetComponent<Animator>();
-    for (auto& anim2 : anims2) {
-        std::vector<Animator::Keyframe> keys;
-        double animLen;
-        if (FbxModelLoader::LoadAnimationOnly(anim2.file, keys, animLen)) {
-            animator2->AddAnimation(anim2.name, keys);
-        }
-    }
+    m_AnimationManager.RegisterPlayerAnimations(animator1, animator2);
 }
 
 /// <summary>

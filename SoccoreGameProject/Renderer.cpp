@@ -23,68 +23,68 @@ void Renderer::Initialize(
 	BufferManager* sphereBufMgr,
     FbxModelLoader::VertexInfo* modelVertexInfo
 ) {
-    m_deviceMgr = deviceMgr;
-    m_swapMgr = swapMgr;
-    m_depthMgr = depthMgr;
-    m_pipeMgr = pipeMgr;
-    m_texMgr = texMgr;
-    m_cubeBufMgr = cubeBufMgr;
-    m_modelBufMgr = modelBufMgr;
-    m_quadBufferMgr = quadBufMgr;
-	m_skyBufferMgr = skyBufMgr; // スカイドーム専用バッファ
-	m_sphereBufferMgr = sphereBufMgr; // サッカーボール用の球体バッファ
-    m_modelVertexInfo = modelVertexInfo;
-    m_width = static_cast<float>(m_swapMgr->GetWidth());
-    m_height = static_cast<float>(m_swapMgr->GetHeight());
+    m_DeviceMgr = deviceMgr;
+    m_SwapMgr = swapMgr;
+    m_DepthMgr = depthMgr;
+    m_PipeMgr = pipeMgr;
+    m_TexMgr = texMgr;
+    m_CubeBufMgr = cubeBufMgr;
+    m_ModelBufMgr = modelBufMgr;
+    m_QuadBufferMgr = quadBufMgr;
+	m_SkyBufferMgr = skyBufMgr; // スカイドーム専用バッファ
+	m_SphereBufferMgr = sphereBufMgr; // サッカーボール用の球体バッファ
+    m_ModelVertexInfo = modelVertexInfo;
+    m_Width = static_cast<float>(m_SwapMgr->GetWidth());
+    m_Height = static_cast<float>(m_SwapMgr->GetHeight());
 
     // スキニング用CBVバッファ作成（80ボーン想定）
-    m_skinCBSize = sizeof(DirectX::XMMATRIX) * 80;
+    m_SkinCBSize = sizeof(DirectX::XMMATRIX) * 80;
     CD3DX12_HEAP_PROPERTIES heapProps(D3D12_HEAP_TYPE_UPLOAD);
-    CD3DX12_RESOURCE_DESC cbDesc = CD3DX12_RESOURCE_DESC::Buffer((m_skinCBSize + 255) & ~255);
+    CD3DX12_RESOURCE_DESC cbDesc = CD3DX12_RESOURCE_DESC::Buffer((m_SkinCBSize + 255) & ~255);
 
-    m_deviceMgr->GetDevice()->CreateCommittedResource(
+    m_DeviceMgr->GetDevice()->CreateCommittedResource(
         &heapProps, D3D12_HEAP_FLAG_NONE, &cbDesc,
         D3D12_RESOURCE_STATE_GENERIC_READ, nullptr,
-        IID_PPV_ARGS(&m_skinningConstantBuffer)
+        IID_PPV_ARGS(&m_SkinningConstantBuffer)
     );
-    m_skinCBGpuAddr = m_skinningConstantBuffer->GetGPUVirtualAddress();
+    m_SkinCBGpuAddr = m_SkinningConstantBuffer->GetGPUVirtualAddress();
 }
 
 // フレーム開始
 void Renderer::BeginFrame() {
-    m_backBufferIndex = m_swapMgr->GetSwapChain()->GetCurrentBackBufferIndex();
-    m_cmdList = m_deviceMgr->GetCommandList();
+    m_BackBufferIndex = m_SwapMgr->GetSwapChain()->GetCurrentBackBufferIndex();
+    m_CmdList = m_DeviceMgr->GetCommandList();
 
     // バリア設定
     D3D12_RESOURCE_BARRIER barrier = {};
     barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-    barrier.Transition.pResource = m_swapMgr->GetBackBuffer(m_backBufferIndex);
+    barrier.Transition.pResource = m_SwapMgr->GetBackBuffer(m_BackBufferIndex);
     barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_PRESENT;
     barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
     barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
-    m_cmdList->ResourceBarrier(1, &barrier);
+    m_CmdList->ResourceBarrier(1, &barrier);
 
     // RTV/DSV設定
-    D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle = m_swapMgr->GetRTVHeap()->GetCPUDescriptorHandleForHeapStart();
-    rtvHandle.ptr += m_backBufferIndex * m_swapMgr->GetRTVHeapSize();
-    D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = m_depthMgr->GetDSVHeap()->GetCPUDescriptorHandleForHeapStart();
-    m_cmdList->OMSetRenderTargets(1, &rtvHandle, FALSE, &dsvHandle);
+    D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle = m_SwapMgr->GetRTVHeap()->GetCPUDescriptorHandleForHeapStart();
+    rtvHandle.ptr += m_BackBufferIndex * m_SwapMgr->GetRTVHeapSize();
+    D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = m_DepthMgr->GetDSVHeap()->GetCPUDescriptorHandleForHeapStart();
+    m_CmdList->OMSetRenderTargets(1, &rtvHandle, FALSE, &dsvHandle);
 
     // 画面クリア
     const float clearColor[] = { 0.75f, 0.85f, 0.95f, 1.0f }; // 明るい空色
 
-    m_cmdList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
-    m_cmdList->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
+    m_CmdList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
+    m_CmdList->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
 
     // ビューポート・シザー設定
-    D3D12_VIEWPORT viewport = { 0, 0, m_width, m_height, 0.0f, 1.0f };
-    D3D12_RECT scissorRect = { 0, 0, (LONG)m_width, (LONG)m_height };
-    m_cmdList->RSSetViewports(1, &viewport);
-    m_cmdList->RSSetScissorRects(1, &scissorRect);
+    D3D12_VIEWPORT viewport = { 0, 0, m_Width, m_Height, 0.0f, 1.0f };
+    D3D12_RECT scissorRect = { 0, 0, (LONG)m_Width, (LONG)m_Height };
+    m_CmdList->RSSetViewports(1, &viewport);
+    m_CmdList->RSSetScissorRects(1, &scissorRect);
 
     // テクスチャヒープをセット（どのPSOでも共通）
-    ID3D12DescriptorHeap* heaps[] = { m_texMgr->GetSRVHeap() };
-    m_cmdList->SetDescriptorHeaps(_countof(heaps), heaps);
+    ID3D12DescriptorHeap* heaps[] = { m_TexMgr->GetSRVHeap() };
+    m_CmdList->SetDescriptorHeaps(_countof(heaps), heaps);
 }
 
 // 描画処理（型ごとに必ずPSOセット！）
@@ -94,40 +94,40 @@ void Renderer::DrawObject(GameObject* obj, size_t idx, const XMMATRIX& view, con
 
     // 1. スキニングメッシュ（アニメ付きモデル）
     if (auto* smr = obj->GetComponent<SkinnedMeshRenderer>()) {
-        m_cmdList->SetPipelineState(m_pipeMgr->GetPipelineState(true));
-        m_cmdList->SetGraphicsRootSignature(m_pipeMgr->GetRootSignature(true));
+        m_CmdList->SetPipelineState(m_PipeMgr->GetPipelineState(true));
+        m_CmdList->SetGraphicsRootSignature(m_PipeMgr->GetRootSignature(true));
 
-        if (smr->texIndex >= 0)
-            m_cmdList->SetGraphicsRootDescriptorTable(0, m_texMgr->GetSRV(smr->texIndex));
+        if (smr->m_TexIndex >= 0)
+            m_CmdList->SetGraphicsRootDescriptorTable(0, m_TexMgr->GetSRV(smr->m_TexIndex));
 
         XMMATRIX world = obj->GetComponent<Transform>()->GetWorldMatrix();
         XMMATRIX wvp = XMMatrixTranspose(world * view * proj);
 
         std::vector<XMMATRIX> skinnedMats;
-        if (smr->animator && smr->skinVertexInfo) {
-            skinnedMats = smr->animator->GetSkinnedPose(smr->skinVertexInfo->bindPoses);
+        if (smr->m_Animator && smr->m_SkinVertexInfo) {
+            skinnedMats = smr->m_Animator->GetSkinnedPose(smr->m_SkinVertexInfo->bindPoses);
             for (auto& m : skinnedMats)
                 m = XMMatrixTranspose(m);
         }
 
         void* mapped = nullptr;
-        if (SUCCEEDED(smr->boneCB->GetConstantBuffer()->Map(0, nullptr, &mapped))) {
+        if (SUCCEEDED(smr->m_BoneCB->GetConstantBuffer()->Map(0, nullptr, &mapped))) {
             memcpy((char*)mapped, &wvp, sizeof(XMMATRIX));
             if (!skinnedMats.empty())
                 memcpy((char*)mapped + 256, skinnedMats.data(), sizeof(XMMATRIX) * skinnedMats.size());
-            smr->boneCB->GetConstantBuffer()->Unmap(0, nullptr);
+            smr->m_BoneCB->GetConstantBuffer()->Unmap(0, nullptr);
 
-            m_cmdList->SetGraphicsRootConstantBufferView(1, smr->boneCB->GetConstantBufferGPUAddress());
-            m_cmdList->SetGraphicsRootConstantBufferView(2, smr->boneCB->GetConstantBufferGPUAddress() + 256);
+            m_CmdList->SetGraphicsRootConstantBufferView(1, smr->m_BoneCB->GetConstantBufferGPUAddress());
+            m_CmdList->SetGraphicsRootConstantBufferView(2, smr->m_BoneCB->GetConstantBufferGPUAddress() + 256);
         }
 
-        if (smr->modelBuffer && smr->skinVertexInfo) {
-            auto vbv = smr->modelBuffer->GetVertexBufferView();
-            auto ibv = smr->modelBuffer->GetIndexBufferView();
-            m_cmdList->IASetVertexBuffers(0, 1, &vbv);
-            m_cmdList->IASetIndexBuffer(&ibv);
-            m_cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-            m_cmdList->DrawIndexedInstanced((UINT)smr->skinVertexInfo->indices.size(), 1, 0, 0, 0);
+        if (smr->m_ModelBuffer && smr->m_SkinVertexInfo) {
+            auto vbv = smr->m_ModelBuffer->GetVertexBufferView();
+            auto ibv = smr->m_ModelBuffer->GetIndexBufferView();
+            m_CmdList->IASetVertexBuffers(0, 1, &vbv);
+            m_CmdList->IASetIndexBuffer(&ibv);
+            m_CmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+            m_CmdList->DrawIndexedInstanced((UINT)smr->m_SkinVertexInfo->indices.size(), 1, 0, 0, 0);
         }
         return;
     }
@@ -135,42 +135,42 @@ void Renderer::DrawObject(GameObject* obj, size_t idx, const XMMATRIX& view, con
     // 2. 静的メッシュ（Cube / FBX / SkyDome / etc.）
     if (auto* mr = obj->GetComponent<StaticMeshRenderer>()) {
         // 2-1. スカイドーム
-        if (mr->isSkySphere) {
+        if (mr->IsSkySphere) {
             DrawSkySphere(obj, idx, view, proj);
             return;
         }
 
-        m_cmdList->SetPipelineState(m_pipeMgr->GetPipelineState(false));
-        m_cmdList->SetGraphicsRootSignature(m_pipeMgr->GetRootSignature(false));
+        m_CmdList->SetPipelineState(m_PipeMgr->GetPipelineState(false));
+        m_CmdList->SetGraphicsRootSignature(m_PipeMgr->GetRootSignature(false));
 
         // 共通: 定数バッファ
-        D3D12_GPU_VIRTUAL_ADDRESS cbvAddr = m_cubeBufMgr->GetConstantBufferGPUAddress() + CBV_SIZE * idx;
-        m_cmdList->SetGraphicsRootConstantBufferView(1, cbvAddr);
+        D3D12_GPU_VIRTUAL_ADDRESS cbvAddr = m_CubeBufMgr->GetConstantBufferGPUAddress() + CBV_SIZE * idx;
+        m_CmdList->SetGraphicsRootConstantBufferView(1, cbvAddr);
 
-        if (mr->texIndex >= 0)
-            m_cmdList->SetGraphicsRootDescriptorTable(0, m_texMgr->GetSRV(mr->texIndex));
-        m_cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+        if (mr->m_TexIndex >= 0)
+            m_CmdList->SetGraphicsRootDescriptorTable(0, m_TexMgr->GetSRV(mr->m_TexIndex));
+        m_CmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
         // 2-2. FBXモデル → 個別バッファ＋vertexInfoあり
-        if (mr->modelBuffer && mr->vertexInfo) {
-            auto vbv = mr->modelBuffer->GetVertexBufferView();
-            auto ibv = mr->modelBuffer->GetIndexBufferView();
-            m_cmdList->IASetVertexBuffers(0, 1, &vbv);
-            m_cmdList->IASetIndexBuffer(&ibv);
-            m_cmdList->DrawIndexedInstanced((UINT)mr->vertexInfo->indices.size(), 1, 0, 0, 0);
+        if (mr->m_ModelBuffer && mr->m_VertexInfo) {
+            auto vbv = mr->m_ModelBuffer->GetVertexBufferView();
+            auto ibv = mr->m_ModelBuffer->GetIndexBufferView();
+            m_CmdList->IASetVertexBuffers(0, 1, &vbv);
+            m_CmdList->IASetIndexBuffer(&ibv);
+            m_CmdList->DrawIndexedInstanced((UINT)mr->m_VertexInfo->indices.size(), 1, 0, 0, 0);
         }
         // 2-3. Cube, Quad, Sphereなど → EngineManagerの共通バッファ参照（vertexInfo==nullptr）
-        else if (mr->modelBuffer && mr->vertexInfo == nullptr) {
-            auto vbv = mr->modelBuffer->GetVertexBufferView();
-            auto ibv = mr->modelBuffer->GetIndexBufferView();
-            m_cmdList->IASetVertexBuffers(0, 1, &vbv);
-            m_cmdList->IASetIndexBuffer(&ibv);
+        else if (mr->m_ModelBuffer && mr->m_VertexInfo == nullptr) {
+            auto vbv = mr->m_ModelBuffer->GetVertexBufferView();
+            auto ibv = mr->m_ModelBuffer->GetIndexBufferView();
+            m_CmdList->IASetVertexBuffers(0, 1, &vbv);
+            m_CmdList->IASetIndexBuffer(&ibv);
 
             // Cubeの場合：36, Quadなら6, Sphereなら動的に管理してもOK
             int indexCount = 36; // Cubeの場合
             // Sphere/Quadなら別途管理（ex: obj->nameやフラグで分岐可）
 
-            m_cmdList->DrawIndexedInstanced(indexCount, 1, 0, 0, 0);
+            m_CmdList->DrawIndexedInstanced(indexCount, 1, 0, 0, 0);
         }
         // 万一バッファがなければ何もしない
         return;
@@ -191,40 +191,40 @@ void Renderer::EndFrame() {
     // バリア設定
     D3D12_RESOURCE_BARRIER barrier = {};
     barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-    barrier.Transition.pResource = m_swapMgr->GetBackBuffer(m_backBufferIndex);
+    barrier.Transition.pResource = m_SwapMgr->GetBackBuffer(m_BackBufferIndex);
     barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
     barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
     barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
-    m_cmdList->ResourceBarrier(1, &barrier);
+    m_CmdList->ResourceBarrier(1, &barrier);
 
     // コマンドリスト実行とPresent
-    m_cmdList->Close();
-    ID3D12CommandList* commandLists[] = { m_cmdList };
-    m_deviceMgr->GetCommandQueue()->ExecuteCommandLists(1, commandLists);
-    m_deviceMgr->WaitForGpu();
-    m_swapMgr->GetSwapChain()->Present(1, 0);
+    m_CmdList->Close();
+    ID3D12CommandList* commandLists[] = { m_CmdList };
+    m_DeviceMgr->GetCommandQueue()->ExecuteCommandLists(1, commandLists);
+    m_DeviceMgr->WaitForGpu();
+    m_SwapMgr->GetSwapChain()->Present(1, 0);
 
     // コマンドアロケータ/リストをリセット
-    m_deviceMgr->GetCommandAllocator()->Reset();
-    m_cmdList->Reset(m_deviceMgr->GetCommandAllocator(), nullptr);
+    m_DeviceMgr->GetCommandAllocator()->Reset();
+    m_CmdList->Reset(m_DeviceMgr->GetCommandAllocator(), nullptr);
 }
 
 // UI専用描画
 void Renderer::DrawUIImage(UIImage* image, size_t idx) {
     // ★UI専用PSO/RootSignatureに切り替え
-    m_cmdList->SetPipelineState(m_pipeMgr->GetPipelineStateUI());
-    m_cmdList->SetGraphicsRootSignature(m_pipeMgr->GetRootSignatureUI());
-    ID3D12DescriptorHeap* heaps[] = { m_texMgr->GetSRVHeap() };
-    m_cmdList->SetDescriptorHeaps(_countof(heaps), heaps);
+    m_CmdList->SetPipelineState(m_PipeMgr->GetPipelineStateUI());
+    m_CmdList->SetGraphicsRootSignature(m_PipeMgr->GetRootSignatureUI());
+    ID3D12DescriptorHeap* heaps[] = { m_TexMgr->GetSRVHeap() };
+    m_CmdList->SetDescriptorHeaps(_countof(heaps), heaps);
 
     // テクスチャSRV
     if (image->m_TexIndex >= 0)
-        m_cmdList->SetGraphicsRootDescriptorTable(0, m_texMgr->GetSRV(image->m_TexIndex));
+        m_CmdList->SetGraphicsRootDescriptorTable(0, m_TexMgr->GetSRV(image->m_TexIndex));
 
     // --- 左上基準・ピクセル指定のNDC変換 ---
     // 画面解像度
-    float screenW = m_width;
-    float screenH = m_height;
+    float screenW = m_Width;
+    float screenH = m_Height;
 
     // ピクセル座標（左上）
     float px = image->m_Position.x;
@@ -255,22 +255,22 @@ void Renderer::DrawUIImage(UIImage* image, size_t idx) {
 
     constexpr size_t CBV_SIZE = 256;
     void* mapped = nullptr;
-    m_quadBufferMgr->GetConstantBuffer()->Map(0, nullptr, &mapped);
+    m_QuadBufferMgr->GetConstantBuffer()->Map(0, nullptr, &mapped);
     memcpy((char*)mapped + CBV_SIZE * idx, &cbData, sizeof(cbData));
-    m_quadBufferMgr->GetConstantBuffer()->Unmap(0, nullptr);
+    m_QuadBufferMgr->GetConstantBuffer()->Unmap(0, nullptr);
 
-    D3D12_GPU_VIRTUAL_ADDRESS cbvAddr = m_quadBufferMgr->GetConstantBufferGPUAddress() + CBV_SIZE * idx;
-    m_cmdList->SetGraphicsRootConstantBufferView(1, cbvAddr);
+    D3D12_GPU_VIRTUAL_ADDRESS cbvAddr = m_QuadBufferMgr->GetConstantBufferGPUAddress() + CBV_SIZE * idx;
+    m_CmdList->SetGraphicsRootConstantBufferView(1, cbvAddr);
 
     // 頂点・インデックスバッファ（左上基準1x1のQuadを使うこと！）
-    auto vbv = m_quadBufferMgr->GetVertexBufferView();
-    auto ibv = m_quadBufferMgr->GetIndexBufferView();
-    m_cmdList->IASetVertexBuffers(0, 1, &vbv);
-    m_cmdList->IASetIndexBuffer(&ibv);
-    m_cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    auto vbv = m_QuadBufferMgr->GetVertexBufferView();
+    auto ibv = m_QuadBufferMgr->GetIndexBufferView();
+    m_CmdList->IASetVertexBuffers(0, 1, &vbv);
+    m_CmdList->IASetIndexBuffer(&ibv);
+    m_CmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
     // 描画
-    m_cmdList->DrawIndexedInstanced(6, 1, 0, 0, 0);
+    m_CmdList->DrawIndexedInstanced(6, 1, 0, 0, 0);
 }
 
 
@@ -279,28 +279,28 @@ void Renderer::DrawSkySphere(GameObject* obj, size_t idx, const DirectX::XMMATRI
     constexpr size_t CBV_SIZE = 256;
     // スカイドーム専用PSO/RootSignatureに切り替え（必要に応じて用意）
     // 例: m_pipeMgr->GetPipelineStateSkyDome(), m_pipeMgr->GetRootSignatureSkyDome()
-    m_cmdList->SetPipelineState(m_pipeMgr->GetPipelineStateSkyDome());
-    m_cmdList->SetGraphicsRootSignature(m_pipeMgr->GetRootSignatureSkyDome());
+    m_CmdList->SetPipelineState(m_PipeMgr->GetPipelineStateSkyDome());
+    m_CmdList->SetGraphicsRootSignature(m_PipeMgr->GetRootSignatureSkyDome());
 
     // 定数バッファアドレス
-    D3D12_GPU_VIRTUAL_ADDRESS cbvAddr = m_cubeBufMgr->GetConstantBufferGPUAddress() + CBV_SIZE * idx;
-    m_cmdList->SetGraphicsRootConstantBufferView(1, cbvAddr);
+    D3D12_GPU_VIRTUAL_ADDRESS cbvAddr = m_CubeBufMgr->GetConstantBufferGPUAddress() + CBV_SIZE * idx;
+    m_CmdList->SetGraphicsRootConstantBufferView(1, cbvAddr);
 
     // テクスチャ
     auto* mr = obj->GetComponent<StaticMeshRenderer>();
-    if (mr && mr->texIndex >= 0)
-        m_cmdList->SetGraphicsRootDescriptorTable(0, m_texMgr->GetSRV(mr->texIndex));
+    if (mr && mr->m_TexIndex >= 0)
+        m_CmdList->SetGraphicsRootDescriptorTable(0, m_TexMgr->GetSRV(mr->m_TexIndex));
 
-    m_cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    m_CmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
     // 頂点・インデックスバッファ（球体バッファを使う）
-    auto vbv = m_skyBufferMgr->GetVertexBufferView();
-    auto ibv = m_skyBufferMgr->GetIndexBufferView();
-    m_cmdList->IASetVertexBuffers(0, 1, &vbv);
-    m_cmdList->IASetIndexBuffer(&ibv);
+    auto vbv = m_SkyBufferMgr->GetVertexBufferView();
+    auto ibv = m_SkyBufferMgr->GetIndexBufferView();
+    m_CmdList->IASetVertexBuffers(0, 1, &vbv);
+    m_CmdList->IASetIndexBuffer(&ibv);
 
     // 球体のインデックス数（MeshLibraryで使ってる値と合わせる）
-    m_cmdList->DrawIndexedInstanced(32 * 64 * 6, 1, 0, 0, 0);
+    m_CmdList->DrawIndexedInstanced(32 * 64 * 6, 1, 0, 0, 0);
 }
 
 void Renderer::DrawSoccerBall(GameObject* obj, size_t idx, const DirectX::XMMATRIX& view, const DirectX::XMMATRIX& proj)
@@ -308,26 +308,26 @@ void Renderer::DrawSoccerBall(GameObject* obj, size_t idx, const DirectX::XMMATR
     constexpr size_t CBV_SIZE = 256;
 
     // パイプライン設定（通常のPSO/RootSigを使用）
-    m_cmdList->SetPipelineState(m_pipeMgr->GetPipelineState(false));
-    m_cmdList->SetGraphicsRootSignature(m_pipeMgr->GetRootSignature(false));
+    m_CmdList->SetPipelineState(m_PipeMgr->GetPipelineState(false));
+    m_CmdList->SetGraphicsRootSignature(m_PipeMgr->GetRootSignature(false));
 
     // 定数バッファアドレス（通常のCubeと共用でOK）
-    D3D12_GPU_VIRTUAL_ADDRESS cbvAddr = m_cubeBufMgr->GetConstantBufferGPUAddress() + CBV_SIZE * idx;
-    m_cmdList->SetGraphicsRootConstantBufferView(1, cbvAddr);
+    D3D12_GPU_VIRTUAL_ADDRESS cbvAddr = m_CubeBufMgr->GetConstantBufferGPUAddress() + CBV_SIZE * idx;
+    m_CmdList->SetGraphicsRootConstantBufferView(1, cbvAddr);
 
     // テクスチャがあればSRVを設定
     auto* mr = obj->GetComponent<StaticMeshRenderer>();
-    if (mr && mr->texIndex >= 0)
-        m_cmdList->SetGraphicsRootDescriptorTable(0, m_texMgr->GetSRV(mr->texIndex));
+    if (mr && mr->m_TexIndex >= 0)
+        m_CmdList->SetGraphicsRootDescriptorTable(0, m_TexMgr->GetSRV(mr->m_TexIndex));
 
-    m_cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    m_CmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
     // 球体のVB/IB（m_sphereBufferMgrを使う）
-    auto vbv = m_sphereBufferMgr->GetVertexBufferView();
-    auto ibv = m_sphereBufferMgr->GetIndexBufferView();
-    m_cmdList->IASetVertexBuffers(0, 1, &vbv);
-    m_cmdList->IASetIndexBuffer(&ibv);
+    auto vbv = m_SphereBufferMgr->GetVertexBufferView();
+    auto ibv = m_SphereBufferMgr->GetIndexBufferView();
+    m_CmdList->IASetVertexBuffers(0, 1, &vbv);
+    m_CmdList->IASetIndexBuffer(&ibv);
 
     // インデックス数はスカイドームと同じ（32×64×6）
-    m_cmdList->DrawIndexedInstanced(32 * 64 * 6, 1, 0, 0, 0);
+    m_CmdList->DrawIndexedInstanced(32 * 64 * 6, 1, 0, 0, 0);
 }

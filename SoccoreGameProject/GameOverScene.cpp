@@ -8,7 +8,7 @@
 GameOverScene::GameOverScene(EngineManager* engine) : engine(engine) {}
 
 void GameOverScene::Start() {
-    m_sceneObjects.clear();
+    m_SceneObjects.clear();
 
 
     // 「GAME OVER」画像（無ければテキスト画像を用意してね）
@@ -23,7 +23,7 @@ void GameOverScene::Start() {
         img->m_Size = { 1280, 720 };
         img->m_Position = { 0, 0 };    // 1280x720想定の中央付近
         img->m_Color = { 1, 1, 1, 1 };
-        m_sceneObjects.push_back(ui);
+        m_SceneObjects.push_back(ui);
     }
 }
 
@@ -54,7 +54,7 @@ void GameOverScene::Draw() {
     );
 
     // スカイドームをカメラに追従
-    for (auto* obj : m_sceneObjects) {
+    for (auto* obj : m_SceneObjects) {
         if (obj->tag == "Sky") {
             if (auto* tr = obj->GetComponent<Transform>())
                 tr->position = cam->GetPosition();
@@ -62,13 +62,13 @@ void GameOverScene::Draw() {
     }
 
     engine->GetRenderer()->BeginFrame();
-    for (size_t i = 0; i < m_sceneObjects.size(); ++i) {
-        engine->GetRenderer()->DrawObject(m_sceneObjects[i], i, view, proj);
+    for (size_t i = 0; i < m_SceneObjects.size(); ++i) {
+        engine->GetRenderer()->DrawObject(m_SceneObjects[i], i, view, proj);
     }
     engine->GetRenderer()->EndFrame();
 }
 
 GameOverScene::~GameOverScene() {
-    for (auto* obj : m_sceneObjects) delete obj;
-    m_sceneObjects.clear();
+    for (auto* obj : m_SceneObjects) delete obj;
+    m_SceneObjects.clear();
 }

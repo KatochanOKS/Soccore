@@ -41,12 +41,12 @@ GameObject* ObjectFactory::CreateCube(
     tr->scale = scale;
 
     auto* mr = obj->AddComponent<StaticMeshRenderer>();
-    mr->texIndex = texIdx;
-    mr->color = color;
+    mr->m_TexIndex = texIdx;
+    mr->m_Color = color;
 
     // FBXじゃない場合は共通バッファをセット
-    mr->modelBuffer = engine->GetCubeBufferManager();
-    mr->vertexInfo = nullptr; // Cube等は個別のvertexInfo不要（共通バッファを使うだけ）
+    mr->m_ModelBuffer = engine->GetCubeBufferManager();
+    mr->m_VertexInfo = nullptr; // Cube等は個別のvertexInfo不要（共通バッファを使うだけ）
 
     auto* col = obj->AddComponent<Collider>();
     if (colliderSize.x < 0 || colliderSize.y < 0 || colliderSize.z < 0) {
@@ -83,17 +83,17 @@ GameObject* ObjectFactory::CreateModel(
     tr->scale = scale;
 
     auto* mr = obj->AddComponent<StaticMeshRenderer>();
-    mr->texIndex = texIdx;
-    mr->color = color;
+    mr->m_TexIndex = texIdx;
+    mr->m_Color = color;
 
-    mr->vertexInfo = new FbxModelLoader::VertexInfo();
-    if (!FbxModelLoader::Load(path, mr->vertexInfo)) {
+    mr->m_VertexInfo = new FbxModelLoader::VertexInfo();
+    if (!FbxModelLoader::Load(path, mr->m_VertexInfo)) {
         delete obj;
         return nullptr;
     }
-    mr->modelBuffer = new BufferManager();
-    mr->modelBuffer->CreateVertexBuffer(engine->GetDeviceManager()->GetDevice(), mr->vertexInfo->vertices);
-    mr->modelBuffer->CreateIndexBuffer(engine->GetDeviceManager()->GetDevice(), mr->vertexInfo->indices);
+    mr->m_ModelBuffer = new BufferManager();
+    mr->m_ModelBuffer->CreateVertexBuffer(engine->GetDeviceManager()->GetDevice(), mr->m_VertexInfo->vertices);
+    mr->m_ModelBuffer->CreateIndexBuffer(engine->GetDeviceManager()->GetDevice(), mr->m_VertexInfo->indices);
 
     auto* col = obj->AddComponent<Collider>();
     if (colliderSize.x < 0 || colliderSize.y < 0 || colliderSize.z < 0) {
@@ -130,8 +130,8 @@ GameObject* ObjectFactory::CreateSkinningBaseModel(
     tr->scale = scale;
 
     auto* smr = obj->AddComponent<SkinnedMeshRenderer>();
-    smr->texIndex = texIdx;
-    smr->color = color;
+    smr->m_TexIndex = texIdx;
+    smr->m_Color = color;
 
     auto* col = obj->AddComponent<Collider>();
     if (colliderSize.x < 0 || colliderSize.y < 0 || colliderSize.z < 0) {
@@ -148,15 +148,15 @@ GameObject* ObjectFactory::CreateSkinningBaseModel(
         delete obj;
         return nullptr;
     }
-    smr->skinVertexInfo = skinInfo;
-    smr->modelBuffer = new BufferManager();
-    smr->modelBuffer->CreateSkinningVertexBuffer(engine->GetDeviceManager()->GetDevice(), skinInfo->vertices);
-    smr->modelBuffer->CreateIndexBuffer(engine->GetDeviceManager()->GetDevice(), skinInfo->indices);
+    smr->m_SkinVertexInfo = skinInfo;
+    smr->m_ModelBuffer = new BufferManager();
+    smr->m_ModelBuffer->CreateSkinningVertexBuffer(engine->GetDeviceManager()->GetDevice(), skinInfo->vertices);
+    smr->m_ModelBuffer->CreateIndexBuffer(engine->GetDeviceManager()->GetDevice(), skinInfo->indices);
 
     // ==== ここから追加！ ====
 // ワールド＋ボーン行列80個ぶんのサイズ（256+80*64=5376バイト）でOK
-    smr->boneCB = new BufferManager();
-    smr->boneCB->CreateConstantBuffer(
+    smr->m_BoneCB = new BufferManager();
+    smr->m_BoneCB->CreateConstantBuffer(
         engine->GetDeviceManager()->GetDevice(),
         256 + sizeof(DirectX::XMMATRIX) * 80
     );
@@ -164,7 +164,7 @@ GameObject* ObjectFactory::CreateSkinningBaseModel(
     auto* animator = obj->AddComponent<Animator>();
     animator->boneNames = skinInfo->boneNames;
     animator->bindPoses = skinInfo->bindPoses;
-    smr->animator = animator;
+    smr->m_Animator = animator;
     return obj;
 }
 
@@ -187,9 +187,9 @@ GameObject* ObjectFactory::CreateSkyDome(
     tr->scale = { radius, radius, radius };
 
     auto* mr = obj->AddComponent<StaticMeshRenderer>();
-    mr->texIndex = texIdx;
-    mr->color = Colors::White;
-    mr->isSkySphere = true;
+    mr->m_TexIndex = texIdx;
+    mr->m_Color = Colors::White;
+    mr->IsSkySphere = true;
 
     static bool inited = false;
     if (!inited) {
@@ -222,20 +222,19 @@ GameObject* ObjectFactory::CreateCylinderReel(
     tr->scale = scale;
     tr->rotation.z = -DirectX::XM_PIDIV2; // ← マイナスで逆方向
     auto* mr = obj->AddComponent<StaticMeshRenderer>(); // StaticMeshRenderer流用
-    mr->texIndex = texIdx;
-    mr->color = color;
+    mr->m_TexIndex = texIdx;
+    mr->m_Color = color;
+
 
     // ...前略
     auto* reel = obj->AddComponent<ReelComponent>();
-    reel->m_IsSpinning = true;
-
 
     // 頂点・インデックスを生成
-    mr->vertexInfo = new FbxModelLoader::VertexInfo();
-    MeshLibrary::GetCylinderMesh(mr->vertexInfo->vertices, mr->vertexInfo->indices, 32);
-    mr->modelBuffer = new BufferManager();
-    mr->modelBuffer->CreateVertexBuffer(engine->GetDeviceManager()->GetDevice(), mr->vertexInfo->vertices);
-    mr->modelBuffer->CreateIndexBuffer(engine->GetDeviceManager()->GetDevice(), mr->vertexInfo->indices);
+    mr->m_VertexInfo = new FbxModelLoader::VertexInfo();
+    MeshLibrary::GetCylinderMesh(mr->m_VertexInfo->vertices, mr->m_VertexInfo->indices, 32);
+    mr->m_ModelBuffer = new BufferManager();
+    mr->m_ModelBuffer->CreateVertexBuffer(engine->GetDeviceManager()->GetDevice(), mr->m_VertexInfo->vertices);
+    mr->m_ModelBuffer->CreateIndexBuffer(engine->GetDeviceManager()->GetDevice(), mr->m_VertexInfo->indices);
 
     return obj;
 }
