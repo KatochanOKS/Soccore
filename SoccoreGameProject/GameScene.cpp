@@ -238,6 +238,4 @@ void GameScene::ApplySlotEffect(const std::string& result) {
     case SlotRole::Miss:
         break;
     }
-
-    OutputDebugStringA(("[Slot] effect applied: " + result + "\n").c_str());
 }
