@@ -47,10 +47,10 @@ float ReelComponent::IndexToCenterAngle(int idx) const {
 }
 
 int ReelComponent::DecideStopIndex(float prevAngle, float nowAngle) const {
-    float uPrev = AngleToUnit(prevAngle);
-    float uNow = AngleToUnit(nowAngle);
-    int idxPrev = UnitToCenterIndex(uPrev);
-    int idxNow = UnitToCenterIndex(uNow);
+    float uPrev = AngleToUnit(prevAngle);   // 前回角度を「0～1の単位角度」に変換
+    float uNow = AngleToUnit(nowAngle);    // 現在角度を「0～1の単位角度」に変換
+    int idxPrev = UnitToCenterIndex(uPrev); // 前回角度が指す“正面に最も近いコマ”のインデックス取得
+    int idxNow = UnitToCenterIndex(uNow);  // 現在角度が指す“正面に最も近いコマ”のインデックス取得
 
     if (idxNow == idxPrev) {
         return idxNow; // 未通過 → 今のコマ
@@ -193,3 +193,10 @@ int ReelComponent::FindNextIndex(const std::string& symbol, int fromIdx) const {
 void ReelComponent::PlanStopSymbol(const std::string& symbol) {
     m_PlannedSymbol = symbol;
 }
+
+std::string ReelComponent::GetCurrentSymbol() const {
+    if (m_Symbols.empty()) return "";
+    int idx = (m_StopIndex >= 0) ? m_StopIndex : CurrentCenterIndex();
+    return m_Symbols[idx % m_Symbols.size()];
+}
+

@@ -12,8 +12,15 @@
 #include "EngineManager.h"
 #include "GameOverScene.h"
 #include "PlayerManager.h"
+#include <algorithm>
 #include <DirectXMath.h>
 #include <cmath>
+#include <Windows.h>
+#undef min
+#undef max
+
+
+
 using namespace DirectX;
 
 static bool sceneChanged = false;
@@ -67,9 +74,8 @@ void GameScene::Start() {
     m_StageManage.InitStage(m_SceneObjects); // ステージ初期化
     RegisterAnimations(); // アニメーション登録
 
-    // プレイヤーのシーン参照セット
-    FindByName("Player1")->scene = this;
-    FindByName("Player2")->scene = this;
+    // これが無いと Controller や UI に scene が入らない
+    for (auto* obj : m_SceneObjects) obj->scene = this;
 }
 
 /// <summary>
@@ -181,4 +187,57 @@ GameScene::~GameScene() {
         delete obj;
     }
     m_SceneObjects.clear();
+}
+
+namespace {
+
+    enum class SlotRole { Big, Bell, Replay, Bar, Power, Miss };
+
+    static SlotRole ParseSlotResult(const std::string& s) {
+        if (s == "BIG")           return SlotRole::Big;
+        if (s == "ベル揃い")      return SlotRole::Bell;
+        if (s == "リプレイ")      return SlotRole::Replay;
+        if (s == "BAR揃い")       return SlotRole::Bar;
+        if (s == "力揃い")        return SlotRole::Power;
+        return SlotRole::Miss;
+    }
+
+    template<class TComp>
+    void SafeDamage(GameObject* obj, float dmg) {
+        if (!obj) return;
+        if (auto* c = obj->GetComponent<TComp>()) c->TakeDamage(dmg);
+    }
+
+}
+
+void GameScene::ApplySlotEffect(const std::string& result) {
+    auto* p1 = m_PlayerManager.GetPlayer1();
+    auto* p2 = m_PlayerManager.GetPlayer2();
+
+    constexpr float DMG_SMALL = 0.10f;
+    constexpr float DMG_MEDIUM = 0.25f;
+    constexpr float DMG_LARGE = 0.50f;
+    constexpr float DMG_HUGE = 1.00f;
+
+    switch (ParseSlotResult(result)) {
+    case SlotRole::Big:
+        SafeDamage<Player2Component>(p2, DMG_HUGE);
+        break;
+    case SlotRole::Bar:
+        SafeDamage<Player2Component>(p2, DMG_LARGE);
+        break;
+    case SlotRole::Power:
+    case SlotRole::Bell:
+        SafeDamage<Player2Component>(p2, DMG_MEDIUM);
+        break;
+    case SlotRole::Replay:
+        if (auto* c = p1 ? p1->GetComponent<Player1Component>() : nullptr) {
+            c->hp = std::min(c->maxHp, c->hp + 0.10f);
+        }
+        break;
+    case SlotRole::Miss:
+        break;
+    }
+
+    OutputDebugStringA(("[Slot] effect applied: " + result + "\n").c_str());
 }

@@ -49,6 +49,9 @@ public:
     /// <summary>次回停止時に狙う図柄を予約（コントローラからの指示）。停止決定時に自動消費。</summary>
     void PlanStopSymbol(const std::string& symbol);
 
+    std::string GetCurrentSymbol() const;
+
+
 private:
     // ===== 数学ユーティリティ =====
     static float Wrap01(float x);          // 値を0〜1に正規化

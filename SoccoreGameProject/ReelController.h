@@ -24,4 +24,5 @@ private:
     bool m_IsPrevX = false;
     bool m_IsPrevC = false;
     bool m_IsPrevS = false;
+    bool m_ResultShown = false;
 };
