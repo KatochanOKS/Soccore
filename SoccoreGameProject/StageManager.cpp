@@ -47,7 +47,7 @@ void StageManager::InitStage(std::vector<GameObject*>& sceneObjects) {
         );
         sceneObjects.push_back(reel);
         auto* rc = reel->GetComponent<ReelComponent>();
-        rc->SetSpeed(-0.01f);
+        rc->SetSpeed(-0.04f);
         reels[i] = rc;
     }
 

@@ -146,6 +146,9 @@
     <ClCompile Include="ReelController.cpp">
       <Filter>F\Slot</Filter>
     </ClCompile>
+    <ClCompile Include="ReelJudge.cpp">
+      <Filter>F\Slot</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="GameObject.h">
@@ -266,6 +269,9 @@
       <Filter>F\Scene\Stage</Filter>
     </ClInclude>
     <ClInclude Include="ReelController.h">
+      <Filter>F\Slot</Filter>
+    </ClInclude>
+    <ClInclude Include="ReelJudge.h">
       <Filter>F\Slot</Filter>
     </ClInclude>
   </ItemGroup>

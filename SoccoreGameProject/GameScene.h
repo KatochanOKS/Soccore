@@ -59,6 +59,8 @@ public:
 
     std::vector<GameObject*> m_SceneObjects; ///< シーン内の全GameObjectリスト
 
+    void ApplySlotEffect(const std::string& result);
+
 private:
 
     /// <summary>

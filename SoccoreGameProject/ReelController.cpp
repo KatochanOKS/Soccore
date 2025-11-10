@@ -1,5 +1,7 @@
 #include "ReelController.h"
 #include "ReelComponent.h"
+#include "ReelJudge.h"
+#include "GameScene.h"
 #include <Windows.h>
 #include <cstdlib>
 #include <string>
@@ -95,8 +97,6 @@ void ReelController::Update() {
         }
         else {
             // ハズレ：意図的に揃えない形を作る
-            //   - ベース図柄は見栄えの良い「ベル」を多めに採用（好みで変更OK）
-            //   - 片方だけ別図柄にしてニ連を見せる（他パターンに差し替え可）
             const std::string base = "ベル";
             PlanLosePattern(m_Left, m_Middle, m_Right, base);
         }
@@ -107,7 +107,39 @@ void ReelController::Update() {
         if (m_Left)   m_Left->RequestStart();
         if (m_Middle) m_Middle->RequestStart();
         if (m_Right)  m_Right->RequestStart();
+
+        m_ResultShown = false; // スタート時にリセット
     }
 
+
     m_IsPrevZ = z; m_IsPrevX = x; m_IsPrevC = c; m_IsPrevS = s;
+
+    // === 全リール停止後の出目判定 ===
+    if (m_Left && m_Middle && m_Right)
+    {
+        if (!m_Left->IsSpinning() && !m_Middle->IsSpinning() && !m_Right->IsSpinning())
+        {
+            if (!m_ResultShown) { // 一度だけ表示
+                std::array<std::string, 3> symbols = {
+                    m_Left->GetCurrentSymbol(),
+                    m_Middle->GetCurrentSymbol(),
+                    m_Right->GetCurrentSymbol()
+                };
+                std::string result = ReelJudge::Judge(symbols);
+
+                OutputDebugStringA(("出目結果: " + result + "\n").c_str());
+
+                // ★ ここでシーンへ通知して、小役ごとの処理を実行
+                if (gameObject && gameObject->scene) {
+                    if (auto* gs = dynamic_cast<GameScene*>(gameObject->scene)) {
+                        gs->ApplySlotEffect(result);
+                    }
+                }
+
+                m_ResultShown = true; // 表示済みに
+            }
+        }
+    }
+
+
 }

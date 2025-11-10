@@ -170,6 +170,7 @@
     <ClCompile Include="PlayerManager.cpp" />
     <ClCompile Include="ReelComponent.cpp" />
     <ClCompile Include="ReelController.cpp" />
+    <ClCompile Include="ReelJudge.cpp" />
     <ClCompile Include="Renderer.cpp" />
     <ClCompile Include="SkinnedMeshRenderer.cpp" />
     <ClCompile Include="StageManager.cpp" />
@@ -208,6 +209,7 @@
     <ClInclude Include="PlayerState.h" />
     <ClInclude Include="ReelComponent.h" />
     <ClInclude Include="ReelController.h" />
+    <ClInclude Include="ReelJudge.h" />
     <ClInclude Include="Renderer.h" />
     <ClInclude Include="Scene.h" />
     <ClInclude Include="SkinnedMeshRenderer.h" />
