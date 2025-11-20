@@ -1,84 +1,84 @@
-#include "pch.h"
 #include "TextureManager.h"
+#include <DirectXTex.h>   // WICƒ[ƒ_ / CreateTexture / UpdateSubresources ‚É•K—v
 #include <cassert>
 #include "d3dx12.h"
 
 void TextureManager::Initialize(ID3D12Device* device, UINT maxTextureNum) {
-    // 1) SRVç”¨ã®ãƒ‡ã‚£ã‚¹ã‚¯ãƒªãƒ—ã‚¿ãƒ’ãƒ¼ãƒ—ã‚’ä½œæˆï¼ˆã‚·ã‚§ãƒ¼ãƒ€ã‹ã‚‰è¦‹ãˆã‚‹ã‚ˆã†ã« SHADER_VISIBLEï¼‰
+    // 1) SRV—p‚ÌƒfƒBƒXƒNƒŠƒvƒ^ƒq[ƒv‚ğì¬iƒVƒF[ƒ_‚©‚çŒ©‚¦‚é‚æ‚¤‚É SHADER_VISIBLEj
     m_Device = device;
     D3D12_DESCRIPTOR_HEAP_DESC desc = {};
-    desc.NumDescriptors = maxTextureNum;                               // äºˆç´„æ•°
-    desc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;               // SRV/CBV/UAVç”¨
-    desc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;           // ã“ã‚Œå¤§äº‹ï¼šã‚·ã‚§ãƒ¼ãƒ€ã‹ã‚‰ä½¿ã†
+    desc.NumDescriptors = maxTextureNum;                               // —\–ñ”
+    desc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;               // SRV/CBV/UAV—p
+    desc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;           // ‚±‚ê‘å–FƒVƒF[ƒ_‚©‚çg‚¤
 
-    // CreateDescriptorHeap ã«å¤±æ•—ã™ã‚‹ã¨è‡´å‘½çš„ã€‚hrãƒã‚§ãƒƒã‚¯ã‚’å³å¯†ã«ã™ã‚‹ãªã‚‰ assert ã®ä»£ã‚ã‚Šã« if(FAILED(hr)) ã§ãƒ­ã‚°ï¼†returnã€‚
+    // CreateDescriptorHeap ‚É¸”s‚·‚é‚Æ’v–½“IBhrƒ`ƒFƒbƒN‚ğŒµ–§‚É‚·‚é‚È‚ç assert ‚Ì‘ã‚í‚è‚É if(FAILED(hr)) ‚ÅƒƒO•returnB
     HRESULT hr = device->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&m_SrvHeap));
     assert(SUCCEEDED(hr));
 
-    // 2) SRVãƒ‡ã‚£ã‚¹ã‚¯ãƒªãƒ—ã‚¿ã®ã€Œ1å€‹ã‚ãŸã‚Šã®ã‚µã‚¤ã‚ºã€ã‚’å•ã„åˆã‚ã›ã¦ãŠãï¼ˆã‚ªãƒ•ã‚»ãƒƒãƒˆè¨ˆç®—ã«ä½¿ã†ï¼‰
+    // 2) SRVƒfƒBƒXƒNƒŠƒvƒ^‚Ìu1ŒÂ‚ ‚½‚è‚ÌƒTƒCƒYv‚ğ–â‚¢‡‚í‚¹‚Ä‚¨‚­iƒIƒtƒZƒbƒgŒvZ‚Ég‚¤j
     m_DescriptorSize = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
-    // 3) æ¬¡ã«ä½¿ã†ç©ºãã‚¹ãƒ­ãƒƒãƒˆç•ªå·ã‚’0ã«ãƒªã‚»ãƒƒãƒˆ
+    // 3) Ÿ‚Ég‚¤‹ó‚«ƒXƒƒbƒg”Ô†‚ğ0‚ÉƒŠƒZƒbƒg
     m_NextIndex = 0;
 }
 
 int TextureManager::LoadTexture(const std::wstring& filename, ID3D12GraphicsCommandList* cmdList) {
-    // 0) äºŒé‡èª­ã¿è¾¼ã¿å¯¾ç­–ï¼šåŒã˜ãƒ‘ã‚¹ã¯åŒã˜ã‚¤ãƒ³ãƒ‡ãƒƒã‚¯ã‚¹ã‚’è¿”ã™
+    // 0) “ñd“Ç‚İ‚İ‘ÎôF“¯‚¶ƒpƒX‚Í“¯‚¶ƒCƒ“ƒfƒbƒNƒX‚ğ•Ô‚·
     auto it = m_TextureIndices.find(filename);
     if (it != m_TextureIndices.end()) return it->second;
 
-    // 1) CPUå´ã¸ç”»åƒãƒ­ãƒ¼ãƒ‰ï¼ˆWICï¼špng/jpg/bmpç­‰ï¼‰
+    // 1) CPU‘¤‚Ö‰æ‘œƒ[ƒhiWICFpng/jpg/bmp“™j
     DirectX::TexMetadata metadata = {};
     DirectX::ScratchImage image = {};
-    // ãƒ¡ãƒ¢ï¼šsRGBç”»åƒãªã‚‰ WIC_FLAGS_FORCE_SRGB ã‚’ä½¿ã†ã¨ç™ºè‰²ãŒæ­£ã—ããªã‚‹å ´åˆãŒã‚ã‚‹
+    // ƒƒ‚FsRGB‰æ‘œ‚È‚ç WIC_FLAGS_FORCE_SRGB ‚ğg‚¤‚Æ”­F‚ª³‚µ‚­‚È‚éê‡‚ª‚ ‚é
     HRESULT hr = DirectX::LoadFromWICFile(
         filename.c_str(),
-        DirectX::WIC_FLAGS_NONE, // ã“ã“ã‚’ WIC_FLAGS_FORCE_SRGB ã‚„ WIC_FLAGS_IGNORE_SRGB ã«å¤‰ãˆã‚‹ã¨è‰²ç©ºé–“ã‚’åˆ¶å¾¡ã§ãã‚‹
+        DirectX::WIC_FLAGS_NONE, // ‚±‚±‚ğ WIC_FLAGS_FORCE_SRGB ‚â WIC_FLAGS_IGNORE_SRGB ‚É•Ï‚¦‚é‚ÆF‹óŠÔ‚ğ§Œä‚Å‚«‚é
         &metadata,
         image
     );
-    assert(SUCCEEDED(hr)); // å¤±æ•—ãªã‚‰ãƒ•ã‚¡ã‚¤ãƒ«ãƒ‘ã‚¹/æ‹¡å¼µå­/ç›¸å¯¾ãƒ‘ã‚¹ã‚’ç¢ºèª
+    assert(SUCCEEDED(hr)); // ¸”s‚È‚çƒtƒ@ƒCƒ‹ƒpƒX/Šg’£q/‘Š‘ÎƒpƒX‚ğŠm”F
 
-    // 2) GPU(Default heap)å´ã®ãƒ†ã‚¯ã‚¹ãƒãƒ£ãƒªã‚½ãƒ¼ã‚¹ã‚’ä½œæˆï¼ˆã¾ã ä¸­èº«ã¯ç©ºï¼‰
+    // 2) GPU(Default heap)‘¤‚ÌƒeƒNƒXƒ`ƒƒƒŠƒ\[ƒX‚ğì¬i‚Ü‚¾’†g‚Í‹ój
     Microsoft::WRL::ComPtr<ID3D12Resource> texture;
     hr = DirectX::CreateTexture(m_Device.Get(), metadata, &texture);
     assert(SUCCEEDED(hr));
 
-    // 3) Upload heap ã®ä¸€æ™‚ãƒãƒƒãƒ•ã‚¡ã‚’ç”¨æ„ï¼ˆã‚³ãƒ”ãƒ¼å…ƒï¼‰
-    //    ç”»åƒã®å…¨ã‚µãƒ–ãƒªã‚½ãƒ¼ã‚¹ï¼ˆãƒŸãƒƒãƒ—/é…åˆ—/é¢ï¼‰ã‚’è»¢é€ã™ã‚‹ã®ã«å¿…è¦ãªã‚µã‚¤ã‚ºã‚’è¦‹ç©ã‚‚ã‚‹
+    // 3) Upload heap ‚Ìˆêƒoƒbƒtƒ@‚ğ—pˆÓiƒRƒs[Œ³j
+    //    ‰æ‘œ‚Ì‘SƒTƒuƒŠƒ\[ƒXiƒ~ƒbƒv/”z—ñ/–Êj‚ğ“]‘—‚·‚é‚Ì‚É•K—v‚ÈƒTƒCƒY‚ğŒ©Ï‚à‚é
     const UINT subresourceCount = static_cast<UINT>(image.GetImageCount());
     size_t uploadBufferSize = GetRequiredIntermediateSize(texture.Get(), 0, subresourceCount);
 
     Microsoft::WRL::ComPtr<ID3D12Resource> uploadBuffer;
-    CD3DX12_HEAP_PROPERTIES heapProps(D3D12_HEAP_TYPE_UPLOAD);           // CPUæ›¸ãè¾¼ã¿å¯
+    CD3DX12_HEAP_PROPERTIES heapProps(D3D12_HEAP_TYPE_UPLOAD);           // CPU‘‚«‚İ‰Â
     CD3DX12_RESOURCE_DESC   resDesc = CD3DX12_RESOURCE_DESC::Buffer(uploadBufferSize);
     hr = m_Device->CreateCommittedResource(
         &heapProps,
         D3D12_HEAP_FLAG_NONE,
         &resDesc,
-        D3D12_RESOURCE_STATE_GENERIC_READ, // Uploadã¯å¸¸ã«ã“ã®ã‚¹ãƒ†ãƒ¼ãƒˆ
+        D3D12_RESOURCE_STATE_GENERIC_READ, // Upload‚Íí‚É‚±‚ÌƒXƒe[ƒg
         nullptr,
         IID_PPV_ARGS(&uploadBuffer)
     );
     assert(SUCCEEDED(hr));
 
-    // 4) UpdateSubresources ã§ Upload â†’ Default ã¸ã‚³ãƒ”ãƒ¼ã™ã‚‹ãŸã‚ã®æ§‹é€ ä½“é…åˆ—ã‚’ä½œæˆ
+    // 4) UpdateSubresources ‚Å Upload ¨ Default ‚ÖƒRƒs[‚·‚é‚½‚ß‚Ì\‘¢‘Ì”z—ñ‚ğì¬
     std::vector<D3D12_SUBRESOURCE_DATA> subresources;
     subresources.reserve(subresourceCount);
     const DirectX::Image* img = image.GetImages();
     for (size_t i = 0; i < image.GetImageCount(); ++i) {
         D3D12_SUBRESOURCE_DATA sub = {};
-        sub.pData = img[i].pixels;     // ãƒ”ã‚¯ã‚»ãƒ«å…ˆé ­
-        sub.RowPitch = img[i].rowPitch;   // 1è¡Œã‚ãŸã‚Šã®ãƒã‚¤ãƒˆæ•°
-        sub.SlicePitch = img[i].slicePitch; // 1é¢ï¼ˆãƒŸãƒƒãƒ—/ã‚¢ãƒ¬ã‚¤è¦ç´ ï¼‰ã®ãƒã‚¤ãƒˆæ•°
+        sub.pData = img[i].pixels;     // ƒsƒNƒZƒ‹æ“ª
+        sub.RowPitch = img[i].rowPitch;   // 1s‚ ‚½‚è‚ÌƒoƒCƒg”
+        sub.SlicePitch = img[i].slicePitch; // 1–Êiƒ~ƒbƒv/ƒAƒŒƒC—v‘fj‚ÌƒoƒCƒg”
         subresources.push_back(sub);
     }
 
-    // 5) ã‚³ãƒ”ãƒ¼ï¼ˆCopyDest â†’ PixelShaderResource ã¸é·ç§»ï¼‰
-    //    UpdateSubresources ã¯å†…éƒ¨ã§ CopyBufferRegion / CopyTextureRegion ã‚’è¨˜éŒ²ã—ã¦ãã‚Œã‚‹
+    // 5) ƒRƒs[iCopyDest ¨ PixelShaderResource ‚Ö‘JˆÚj
+    //    UpdateSubresources ‚Í“à•”‚Å CopyBufferRegion / CopyTextureRegion ‚ğ‹L˜^‚µ‚Ä‚­‚ê‚é
     UpdateSubresources(cmdList, texture.Get(), uploadBuffer.Get(), 0, 0, subresourceCount, subresources.data());
 
-    // 6) ã‚·ã‚§ãƒ¼ãƒ€ã‹ã‚‰å‚ç…§ã§ãã‚‹ã‚ˆã†ã«ã‚¹ãƒ†ãƒ¼ãƒˆé·ç§»ï¼ˆCOPY_DEST â†’ PIXEL_SHADER_RESOURCEï¼‰
+    // 6) ƒVƒF[ƒ_‚©‚çQÆ‚Å‚«‚é‚æ‚¤‚ÉƒXƒe[ƒg‘JˆÚiCOPY_DEST ¨ PIXEL_SHADER_RESOURCEj
     CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(
         texture.Get(),
         D3D12_RESOURCE_STATE_COPY_DEST,
@@ -86,43 +86,43 @@ int TextureManager::LoadTexture(const std::wstring& filename, ID3D12GraphicsComm
     );
     cmdList->ResourceBarrier(1, &barrier);
 
-    // 7) SRVï¼ˆShader Resource Viewï¼‰ã‚’ã€ãƒ’ãƒ¼ãƒ—ã® m_nextIndex ç•ªã«ä½œæˆ
+    // 7) SRViShader Resource Viewj‚ğAƒq[ƒv‚Ì m_nextIndex ”Ô‚Éì¬
     D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
-    srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING; // é€šå¸¸ã¯æ—¢å®šãƒãƒƒãƒ”ãƒ³ã‚°
-    srvDesc.Format = metadata.format;                      // ç”»åƒãƒ•ã‚©ãƒ¼ãƒãƒƒãƒˆï¼ˆsRGBã«ã—ãŸã„ãªã‚‰å¤‰æ›ã‚’æ¤œè¨ï¼‰
-    srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D; // ä»Šå›ã¯2Dé™å®šã®æƒ³å®š
-    srvDesc.Texture2D.MipLevels = static_cast<UINT>(metadata.mipLevels); // WICèª­ã¿è¾¼ã¿ã¯é€šå¸¸ãƒŸãƒƒãƒ—1æšã€‚å¿…è¦ãªã‚‰è‡ªå‰ã§ãƒŸãƒƒãƒ—ç”Ÿæˆ
+    srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING; // ’Êí‚ÍŠù’èƒ}ƒbƒsƒ“ƒO
+    srvDesc.Format = metadata.format;                      // ‰æ‘œƒtƒH[ƒ}ƒbƒgisRGB‚É‚µ‚½‚¢‚È‚ç•ÏŠ·‚ğŒŸ“¢j
+    srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D; // ¡‰ñ‚Í2DŒÀ’è‚Ì‘z’è
+    srvDesc.Texture2D.MipLevels = static_cast<UINT>(metadata.mipLevels); // WIC“Ç‚İ‚İ‚Í’Êíƒ~ƒbƒv1–‡B•K—v‚È‚ç©‘O‚Åƒ~ƒbƒv¶¬
 
-    // 7-1) ãƒ’ãƒ¼ãƒ—å…ˆé ­CPUãƒãƒ³ãƒ‰ãƒ« + ã‚ªãƒ•ã‚»ãƒƒãƒˆï¼ˆã‚¤ãƒ³ã‚¯ãƒªãƒ¡ãƒ³ãƒˆå¹…Ã—ã‚¤ãƒ³ãƒ‡ãƒƒã‚¯ã‚¹ï¼‰
+    // 7-1) ƒq[ƒvæ“ªCPUƒnƒ“ƒhƒ‹ + ƒIƒtƒZƒbƒgiƒCƒ“ƒNƒŠƒƒ“ƒg•~ƒCƒ“ƒfƒbƒNƒXj
     D3D12_CPU_DESCRIPTOR_HANDLE handle = m_SrvHeap->GetCPUDescriptorHandleForHeapStart();
     handle.ptr += static_cast<SIZE_T>(m_NextIndex) * m_DescriptorSize;
 
-    // 7-2) SRVã‚’ä½œã‚‹ï¼ˆã“ã®æ™‚ç‚¹ã§ãƒ†ã‚¯ã‚¹ãƒãƒ£ã¯ PS ã‹ã‚‰å‚ç…§å¯èƒ½ï¼‰
+    // 7-2) SRV‚ğì‚éi‚±‚Ì“_‚ÅƒeƒNƒXƒ`ƒƒ‚Í PS ‚©‚çQÆ‰Â”\j
     m_Device->CreateShaderResourceView(texture.Get(), &srvDesc, handle);
 
-    // 8) ç®¡ç†ãƒ†ãƒ¼ãƒ–ãƒ«ã«ç™»éŒ²
-    m_Textures.push_back(texture);                // å®Ÿä½“ï¼ˆDefaultï¼‰ä¿æŒ
+    // 8) ŠÇ—ƒe[ƒuƒ‹‚É“o˜^
+    m_Textures.push_back(texture);                // À‘ÌiDefaultj•Û
     const int texIndex = static_cast<int>(m_NextIndex);
-    m_TextureIndices[filename] = texIndex;        // ãƒ‘ã‚¹â†’ã‚¤ãƒ³ãƒ‡ãƒƒã‚¯ã‚¹ã®è¾æ›¸
-    m_NextIndex++;                                // æ¬¡ã®ç©ºãã‚¹ãƒ­ãƒƒãƒˆã¸
-    m_UploadBuffers.push_back(uploadBuffer);      // â˜…é‡è¦ï¼šGPUè»¢é€å®Œäº†ã¾ã§è§£æ”¾ã—ãªã„ãŸã‚ä¿æŒ
+    m_TextureIndices[filename] = texIndex;        // ƒpƒX¨ƒCƒ“ƒfƒbƒNƒX‚Ì«‘
+    m_NextIndex++;                                // Ÿ‚Ì‹ó‚«ƒXƒƒbƒg‚Ö
+    m_UploadBuffers.push_back(uploadBuffer);      // šd—vFGPU“]‘—Š®—¹‚Ü‚Å‰ğ•ú‚µ‚È‚¢‚½‚ß•Û
 
-    // 9) ã‚¨ãƒ©ãƒ¼ãƒ­ã‚°ï¼ˆhr ã¯ç›´å‰ã®CreateSRVã®æˆ»ã‚Šã§ã¯ãªã„ã®ã§æ³¨æ„ã€‚å¿…è¦ãªã‚‰å€‹åˆ¥ãƒã‚§ãƒƒã‚¯ã«ã™ã‚‹ï¼‰
+    // 9) ƒGƒ‰[ƒƒOihr ‚Í’¼‘O‚ÌCreateSRV‚Ì–ß‚è‚Å‚Í‚È‚¢‚Ì‚Å’ˆÓB•K—v‚È‚çŒÂ•Êƒ`ƒFƒbƒN‚É‚·‚éj
     if (FAILED(hr)) {
-        OutputDebugStringA("â˜…ãƒ†ã‚¯ã‚¹ãƒãƒ£èª­ã¿è¾¼ã¿å¤±æ•—ï¼\n");
+        OutputDebugStringA("šƒeƒNƒXƒ`ƒƒ“Ç‚İ‚İ¸”sI\n");
     }
 
-    // 10) SRVã‚¹ãƒ­ãƒƒãƒˆç•ªå·ã‚’è¿”ã™ï¼ˆæç”»å´ã¯ GetSRV(texIndex) ã§ GPUãƒãƒ³ãƒ‰ãƒ«ã‚’å¾—ã‚‹ï¼‰
+    // 10) SRVƒXƒƒbƒg”Ô†‚ğ•Ô‚·i•`‰æ‘¤‚Í GetSRV(texIndex) ‚Å GPUƒnƒ“ƒhƒ‹‚ğ“¾‚éj
     return texIndex;
 }
 
 ID3D12DescriptorHeap* TextureManager::GetSRVHeap() {
-    // æç”»å‰ã« CommandList::SetDescriptorHeaps ã§ã“ã®ãƒ’ãƒ¼ãƒ—ã‚’ã‚»ãƒƒãƒˆã™ã‚‹ãŸã‚ã«è¿”ã™
+    // •`‰æ‘O‚É CommandList::SetDescriptorHeaps ‚Å‚±‚Ìƒq[ƒv‚ğƒZƒbƒg‚·‚é‚½‚ß‚É•Ô‚·
     return m_SrvHeap.Get();
 }
 
 D3D12_GPU_DESCRIPTOR_HANDLE TextureManager::GetSRV(int index) {
-    // SRVãƒ†ãƒ¼ãƒ–ãƒ«ã®ã€ŒGPUå¯è¦–ã€å…ˆé ­ã‹ã‚‰ index å€‹åˆ†ã ã‘ãƒã‚¤ãƒ³ã‚¿ã‚’é€²ã‚ãŸãƒãƒ³ãƒ‰ãƒ«ã‚’è¿”ã™
+    // SRVƒe[ƒuƒ‹‚ÌuGPU‰Â‹væ“ª‚©‚ç index ŒÂ•ª‚¾‚¯ƒ|ƒCƒ“ƒ^‚ği‚ß‚½ƒnƒ“ƒhƒ‹‚ğ•Ô‚·
     D3D12_GPU_DESCRIPTOR_HANDLE handle = m_SrvHeap->GetGPUDescriptorHandleForHeapStart();
     handle.ptr += static_cast<UINT64>(index) * m_DescriptorSize;
     return handle;
@@ -141,6 +141,6 @@ D3D12_GPU_DESCRIPTOR_HANDLE TextureManager::GetSRVGPUHandle(int index) const {
 }
 
 int TextureManager::ReserveSlot() {
-    return m_NextIndex++; // SRV ã‚’ä½œã‚‰ãšã« "ç©ºã1ã‚¹ãƒ­ãƒƒãƒˆ" ã¨ã—ã¦ç¢ºä¿ã™ã‚‹
+    return m_NextIndex++; // SRV ‚ğì‚ç‚¸‚É "‹ó‚«1ƒXƒƒbƒg" ‚Æ‚µ‚ÄŠm•Û‚·‚é
 }
 

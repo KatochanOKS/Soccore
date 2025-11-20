@@ -1,13 +1,12 @@
-#include "pch.h"
 #include "SkinnedMeshRenderer.h"
 
 SkinnedMeshRenderer::~SkinnedMeshRenderer() {
     if (m_ModelBuffer) delete m_ModelBuffer;
     if (m_SkinVertexInfo) delete m_SkinVertexInfo;
 	if (m_BoneCB) delete m_BoneCB;
-    // animatorã¯GameObjectã®componentsã§ä¸€æ‹¬deleteã•ã‚Œã‚‹ã®ã§ã“ã“ã§ã¯deleteã—ãªã„ï¼
+    // animator‚ÍGameObject‚Ìcomponents‚ÅˆêŠ‡delete‚³‚ê‚é‚Ì‚Å‚±‚±‚Å‚Ídelete‚µ‚È‚¢I
 }
 
 void SkinnedMeshRenderer::Draw() {
-    // æç”»ã¯Rendererã‚¯ãƒ©ã‚¹ã«å§”è­²ã™ã‚‹ã®ã§ã“ã“ã§ã¯ä½•ã‚‚ã—ãªã„
+    // •`‰æ‚ÍRendererƒNƒ‰ƒX‚ÉˆÏ÷‚·‚é‚Ì‚Å‚±‚±‚Å‚Í‰½‚à‚µ‚È‚¢
 }

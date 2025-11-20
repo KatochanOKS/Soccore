@@ -1,8 +1,8 @@
-#include "pch.h"
 #include "DepthBufferManager.h"
+#include <cassert>
 
 bool DepthBufferManager::Initialize(ID3D12Device* device, UINT width, UINT height) {
-    // デプスバッファ生成
+    // �f�v�X�o�b�t�@����
     D3D12_HEAP_PROPERTIES prop = {};
     prop.Type = D3D12_HEAP_TYPE_DEFAULT;
 
@@ -31,7 +31,7 @@ bool DepthBufferManager::Initialize(ID3D12Device* device, UINT width, UINT heigh
     );
     if (FAILED(hr)) return false;
 
-    // DSVヒープ作成
+    // DSV�q�[�v�쐬
     D3D12_DESCRIPTOR_HEAP_DESC heapDesc = {};
     heapDesc.NumDescriptors = 1;
     heapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
@@ -40,7 +40,7 @@ bool DepthBufferManager::Initialize(ID3D12Device* device, UINT width, UINT heigh
     hr = device->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(&m_dsvHeap));
     if (FAILED(hr)) return false;
 
-    // DSVビュー作成
+    // DSV�r���[�쐬
     D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc = {};
     dsvDesc.Format = DXGI_FORMAT_D32_FLOAT;
     dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;

@@ -1,5 +1,9 @@
-﻿#include "pch.h"
-#include "Animator.h"
+﻿#include "Animator.h"
+#define NOMINMAX      // ←これが必須！！
+#include <windows.h>
+#include <algorithm>  // min, max, std::min, std::maxが両立できる
+#include <DirectXMath.h>
+#include <cassert>
 #include <sstream>
 using namespace DirectX;
 

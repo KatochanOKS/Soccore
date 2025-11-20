@@ -1,21 +1,26 @@
-#include "pch.h"
 #include "FbxModelLoader.h"
 #include "BufferManager.h"
+#include <DirectXMath.h>
+#include <algorithm>
+#include <map>
+#include <tuple>
 #include <iostream>
+#include <functional>
+#include <fstream>
 using namespace DirectX;
 
 //------------------------------------------------------------
-// コンストラクタ
+// �R���X�g���N�^
 //------------------------------------------------------------
 FbxModelLoader::FbxModelLoader() {}
 
 
 //------------------------------------------------------------
-// 静的メッシュの読み込み
+// �ÓI���b�V���̓ǂݍ���
 //------------------------------------------------------------
 bool FbxModelLoader::Load(const std::string& filePath, VertexInfo* vertexInfo)
 {
-    // FBXマネージャ・インポータ作成
+    // FBX�}�l�[�W���E�C���|�[�^�쐬
     auto manager = FbxManager::Create();
     auto importer = FbxImporter::Create(manager, "");
     if (!importer->Initialize(filePath.c_str(), -1, manager->GetIOSettings()))
@@ -24,12 +29,12 @@ bool FbxModelLoader::Load(const std::string& filePath, VertexInfo* vertexInfo)
     importer->Import(scene);
     importer->Destroy();
 
-    // メッシュの三角形化
+    // ���b�V���̎O�p�`��
     FbxGeometryConverter geometryConverter(manager);
     if (!geometryConverter.Triangulate(scene, true))
         return false;
 
-    // 全メッシュ走査
+    // �S���b�V������
     int meshCount = scene->GetSrcObjectCount<FbxMesh>();
     std::vector<Vertex> allVertices;
     std::vector<unsigned short> allIndices;
@@ -39,13 +44,13 @@ bool FbxModelLoader::Load(const std::string& filePath, VertexInfo* vertexInfo)
         auto mesh = scene->GetSrcObject<FbxMesh>(m);
         if (!mesh) continue;
 
-        // UVセット名取得
+        // UV�Z�b�g���擾
         FbxStringList uvSetNameList;
         mesh->GetUVSetNames(uvSetNameList);
         if (uvSetNameList.GetCount() == 0) continue;
         const char* uvSetName = uvSetNameList.GetStringAt(0);
 
-        // 頂点座標リスト
+        // ���_���W���X�g
         std::vector<std::vector<float>> vertexInfoList;
         for (int i = 0; i < mesh->GetControlPointsCount(); i++) {
             auto point = mesh->GetControlPointAt(i);
@@ -57,7 +62,7 @@ bool FbxModelLoader::Load(const std::string& filePath, VertexInfo* vertexInfo)
             vertexInfoList.push_back(vertex);
         }
 
-        // 頂点ごとに法線・UV情報付与
+        // ���_���Ƃɖ@���EUV���t�^
         std::vector<unsigned short> indices;
         std::vector<std::array<int, 2>> oldNewIndexPairList;
         for (int polIndex = 0; polIndex < mesh->GetPolygonCount(); polIndex++) {
@@ -79,17 +84,17 @@ bool FbxModelLoader::Load(const std::string& filePath, VertexInfo* vertexInfo)
             }
         }
 
-        // 頂点データ構築
+        // ���_�f�[�^�\�z
         std::vector<Vertex> vertices;
         for (int i = 0; i < vertexInfoList.size(); i++) {
             std::vector<float>& vi = vertexInfoList[i];
             vertices.push_back(Vertex{
                 vi[0], vi[1], vi[2],
                 vi[3], vi[4], vi[5],
-                vi[6], 1.0f - vi[7] // vは上下反転
+                vi[6], 1.0f - vi[7] // v�͏㉺���]
                 });
         }
-        // インデックス・頂点配列格納
+        // �C���f�b�N�X�E���_�z��i�[
         for (auto idx : indices) {
             allIndices.push_back(idx + indexOffset);
         }
@@ -97,7 +102,7 @@ bool FbxModelLoader::Load(const std::string& filePath, VertexInfo* vertexInfo)
         indexOffset += static_cast<unsigned short>(vertices.size());
     }
 
-    // メモリ解放
+    // ���������
     scene->Destroy();
     manager->Destroy();
     *vertexInfo = { allVertices, allIndices };
@@ -105,7 +110,7 @@ bool FbxModelLoader::Load(const std::string& filePath, VertexInfo* vertexInfo)
 }
 
 //------------------------------------------------------------
-// 頂点が法線・UVを持っているか
+// ���_���@���EUV�������Ă��邩
 //------------------------------------------------------------
 bool FbxModelLoader::IsExistNormalUVInfo(const std::vector<float>& vertexInfo)
 {
@@ -113,7 +118,7 @@ bool FbxModelLoader::IsExistNormalUVInfo(const std::vector<float>& vertexInfo)
 }
 
 //------------------------------------------------------------
-// 頂点情報に法線・UV追加
+// ���_���ɖ@���EUV�ǉ�
 //------------------------------------------------------------
 std::vector<float> FbxModelLoader::CreateVertexInfo(const std::vector<float>& vertexInfo, const FbxVector4& normalVec4, const FbxVector2& uvVec2)
 {
@@ -127,7 +132,7 @@ std::vector<float> FbxModelLoader::CreateVertexInfo(const std::vector<float>& ve
 }
 
 //------------------------------------------------------------
-// 新たな法線・UVを持つ頂点を新規追加
+// �V���Ȗ@���EUV�������_��V�K�ǉ�
 //------------------------------------------------------------
 int FbxModelLoader::CreateNewVertexIndex(const std::vector<float>& vertexInfo, const FbxVector4& normalVec4, const FbxVector2& uvVec2,
     std::vector<std::vector<float>>& vertexInfoList, int oldIndex, std::vector<std::array<int, 2>>& oldNewIndexPairList)
@@ -148,7 +153,7 @@ int FbxModelLoader::CreateNewVertexIndex(const std::vector<float>& vertexInfo, c
 }
 
 //------------------------------------------------------------
-// 既存頂点が指定法線・UVと一致するか
+// �������_���w��@���EUV�ƈ�v���邩
 //------------------------------------------------------------
 bool FbxModelLoader::IsSetNormalUV(const std::vector<float> vertexInfo, const FbxVector4& normalVec4, const FbxVector2& uvVec2)
 {
@@ -160,17 +165,17 @@ bool FbxModelLoader::IsSetNormalUV(const std::vector<float> vertexInfo, const Fb
 }
 
 //----------------------------------------
-// スキニングモデル読み込み（バイナリキャッシュ対応）
+// �X�L�j���O���f���ǂݍ��݁i�o�C�i���L���b�V���Ή��j
 //----------------------------------------
 bool FbxModelLoader::LoadSkinningModel(const std::string& filePath, SkinningVertexInfo* outInfo)
 {
     std::string binPath = filePath + ".sknbin";
     if (LoadSkinningBin(binPath, outInfo)) {
-        OutputDebugStringA("[FBX] バイナリキャッシュから即ロード\n");
+        OutputDebugStringA("[FBX] �o�C�i���L���b�V�����瑦���[�h\n");
         return true;
     }
 
-    // --- FBXパース開始 ---
+    // --- FBX�p�[�X�J�n ---
     FbxManager* manager = FbxManager::Create();
     FbxImporter* importer = FbxImporter::Create(manager, "");
     if (!importer->Initialize(filePath.c_str(), -1, manager->GetIOSettings())) return false;
@@ -178,11 +183,11 @@ bool FbxModelLoader::LoadSkinningModel(const std::string& filePath, SkinningVert
     if (!importer->Import(scene)) { importer->Destroy(); manager->Destroy(); return false; }
     importer->Destroy();
 
-    // ルートノード取得
+    // ���[�g�m�[�h�擾
     FbxNode* rootNode = scene->GetRootNode();
     if (!rootNode) { scene->Destroy(); manager->Destroy(); return false; }
 
-    // --- ボーン名抽出 ---
+    // --- �{�[�������o ---
     outInfo->boneNames.clear();
     std::function<void(FbxNode*)> ListBones = [&](FbxNode* node) {
         std::string name = node->GetName();
@@ -193,7 +198,7 @@ bool FbxModelLoader::LoadSkinningModel(const std::string& filePath, SkinningVert
         };
     ListBones(rootNode);
 
-    // --- バインドポーズ取得 ---
+    // --- �o�C���h�|�[�Y�擾 ---
     outInfo->bindPoses.clear();
     auto* pose = scene->GetPose(0);
     for (const std::string& boneName : outInfo->boneNames) {
@@ -218,7 +223,7 @@ bool FbxModelLoader::LoadSkinningModel(const std::string& filePath, SkinningVert
         outInfo->bindPoses.push_back(dxMat);
     }
 
-    // --- 頂点/インデックス/スキン情報抽出 ---
+    // --- ���_/�C���f�b�N�X/�X�L����񒊏o ---
     outInfo->vertices.clear();
     outInfo->indices.clear();
     int meshCount = scene->GetSrcObjectCount<FbxMesh>();
@@ -284,7 +289,7 @@ bool FbxModelLoader::LoadSkinningModel(const std::string& filePath, SkinningVert
         }
     }
 
-    // --- バイナリキャッシュ書き出し ---
+    // --- �o�C�i���L���b�V�������o�� ---
     SaveSkinningBin(binPath, outInfo);
 
     scene->Destroy();
@@ -293,7 +298,7 @@ bool FbxModelLoader::LoadSkinningModel(const std::string& filePath, SkinningVert
 }
 
 //----------------------------------------
-// アニメーションのみ読み込み（バイナリキャッシュ対応）
+// �A�j���[�V�����̂ݓǂݍ��݁i�o�C�i���L���b�V���Ή��j
 //----------------------------------------
 bool FbxModelLoader::LoadAnimationOnly(
     const std::string& fbxPath,
@@ -302,7 +307,7 @@ bool FbxModelLoader::LoadAnimationOnly(
 ) {
     std::string binPath = fbxPath + ".anmbin";
     if (LoadAnimationBin(binPath, outKeyframes, outLength)) {
-        OutputDebugStringA("[FBX] アニメバイナリ即ロード\n");
+        OutputDebugStringA("[FBX] �A�j���o�C�i�������[�h\n");
         return true;
     }
 
@@ -313,7 +318,7 @@ bool FbxModelLoader::LoadAnimationOnly(
     if (!importer->Import(scene)) { importer->Destroy(); manager->Destroy(); return false; }
     importer->Destroy();
 
-    // ボーン名抽出
+    // �{�[�������o
     std::vector<std::string> boneNames;
     std::function<void(FbxNode*)> FindBones = [&](FbxNode* node) {
         std::string name = node->GetName();
@@ -353,7 +358,7 @@ bool FbxModelLoader::LoadAnimationOnly(
         }
         outKeyframes.push_back({ sec, pose });
     }
-    // キャッシュ書き出し
+    // �L���b�V�������o��
     SaveAnimationBin(binPath, outKeyframes, outLength);
 
     scene->Destroy();
@@ -362,7 +367,7 @@ bool FbxModelLoader::LoadAnimationOnly(
 }
 
 //----------------------------------------
-// バイナリ保存・読込（実装はそのまま利用）
+// �o�C�i���ۑ��E�Ǎ��i�����͂��̂܂ܗ��p�j
 //----------------------------------------
 bool FbxModelLoader::SaveSkinningBin(const std::string& path, const SkinningVertexInfo* info)
 {
@@ -488,138 +493,138 @@ bool FbxModelLoader::LoadAnimationBin(const std::string& path, std::vector<Anima
     return true;
 }
 
-//【全体の流れ】
+//�y�S�̗̂���z
 //
-//このファイルは
-//** 「FBXファイルからモデル・スキニング・アニメ情報をDirectX用データに変換するローダの実装」** です。
+//���̃t�@�C����
+//** �uFBX�t�@�C�����烂�f���E�X�L�j���O�E�A�j������DirectX�p�f�[�^�ɕϊ����郍�[�_�̎����v** �ł��B
 //
-//1. コンストラクタ
+//1. �R���X�g���N�^
 //FbxModelLoader::FbxModelLoader() {}
 //
 //
-//クラス初期化用。特に初期化処理はありません。
+//�N���X�������p�B���ɏ����������͂���܂���B
 //
-//2. Load（静的メッシュ読み込み）
-//目的
+//2. Load�i�ÓI���b�V���ǂݍ��݁j
+//�ړI
 //
-//FBXファイルから「動かない（スキニングしない）静的メッシュ」を読み込む
+//FBX�t�@�C������u�����Ȃ��i�X�L�j���O���Ȃ��j�ÓI���b�V���v��ǂݍ���
 //
-//頂点座標、法線、UVなどを抽出してDirectX用Vertex配列とIndex配列を作成
+//���_���W�A�@���AUV�Ȃǂ𒊏o����DirectX�pVertex�z���Index�z����쐬
 //
-//やっていること
+//����Ă��邱��
 //
-//FBXマネージャ・インポータを作成してFBXファイルを読み込む
+//FBX�}�l�[�W���E�C���|�[�^���쐬����FBX�t�@�C����ǂݍ���
 //
-//全てのメッシュを「三角形化」する
+//�S�Ẵ��b�V�����u�O�p�`���v����
 //
-//どんな多角形モデルも必ず三角形ポリゴンへ変換（DirectXで扱いやすくするため）
+//�ǂ�ȑ��p�`���f�����K���O�p�`�|���S���֕ϊ��iDirectX�ň����₷�����邽�߁j
 //
-//各メッシュ内の全頂点（コントロールポイント）の座標(x, y, z)をfloat型でvectorに格納
+//�e���b�V�����̑S���_�i�R���g���[���|�C���g�j�̍��W(x, y, z)��float�^��vector�Ɋi�[
 //
-//各ポリゴン（面）ごとに、法線・UV座標情報を付与
+//�e�|���S���i�ʁj���ƂɁA�@���EUV���W����t�^
 //
-//頂点が持つ法線・UVが違う場合は複製して新しい頂点として扱う
+//���_�����@���EUV���Ⴄ�ꍇ�͕������ĐV�������_�Ƃ��Ĉ���
 //
-//DirectX用の「Vertex型配列」と「Index配列」を構築
+//DirectX�p�́uVertex�^�z��v�ƁuIndex�z��v���\�z
 //
-//バッファに詰めて返す
+//�o�b�t�@�ɋl�߂ĕԂ�
 //
-//ポイント
+//�|�C���g
 //
-//double型 → float型への型変換が頻出（FBX→DirectXで重要）
+//double�^ �� float�^�ւ̌^�ϊ����p�o�iFBX��DirectX�ŏd�v�j
 //
-//DirectXで効率よく描画できる「三角形＋頂点配列＋インデックス配列」形式に変換している
+//DirectX�Ō����悭�`��ł���u�O�p�`�{���_�z��{�C���f�b�N�X�z��v�`���ɕϊ����Ă���
 //
 //3. IsExistNormalUVInfo
 //bool FbxModelLoader::IsExistNormalUVInfo(const std::vector<float>&vertexInfo)
 //
 //
-//頂点情報に法線とUV情報が既に含まれているかどうかを判定する
+//���_���ɖ@����UV��񂪊��Ɋ܂܂�Ă��邩�ǂ����𔻒肷��
 //
-//8要素（x, y, z, nx, ny, nz, u, v）があればtrue
+//8�v�f�ix, y, z, nx, ny, nz, u, v�j�������true
 //
 //4. CreateVertexInfo
 //std::vector<float> FbxModelLoader::CreateVertexInfo(...)
 //
 //
-//頂点の元座標データに法線・UV情報を合成して返す
+//���_�̌����W�f�[�^�ɖ@���EUV�����������ĕԂ�
 //
-//FBXメッシュの頂点を「x, y, z, nx, ny, nz, u, v」の形にする
+//FBX���b�V���̒��_���ux, y, z, nx, ny, nz, u, v�v�̌`�ɂ���
 //
 //5. CreateNewVertexIndex
 //int FbxModelLoader::CreateNewVertexIndex(...)
 //
 //
-//同じコントロールポイントでも、法線・UVの組み合わせが違う場合は新しい頂点として追加
+//�����R���g���[���|�C���g�ł��A�@���EUV�̑g�ݍ��킹���Ⴄ�ꍇ�͐V�������_�Ƃ��Ēǉ�
 //
-//これにより、モデルの各三角形の各頂点ごとに「最適な頂点情報」を確保
+//����ɂ��A���f���̊e�O�p�`�̊e���_���ƂɁu�œK�Ȓ��_���v���m��
 //
 //6. IsSetNormalUV
 //bool FbxModelLoader::IsSetNormalUV(...)
 //
 //
-//既存頂点が、指定した法線・UVと同じかどうか（float同士の差が非常に小さければ同じと判定）
+//�������_���A�w�肵���@���EUV�Ɠ������ǂ����ifloat���m�̍������ɏ�������Γ����Ɣ���j
 //
-//7. LoadSkinningModel（スキニング対応モデル読み込み）
-//目的
+//7. LoadSkinningModel�i�X�L�j���O�Ή����f���ǂݍ��݁j
+//�ړI
 //
-//「FBXファイルからスキニングモデル（ボーンで動くキャラ）」＋「アニメーション」まで一気に抽出する
+//�uFBX�t�@�C������X�L�j���O���f���i�{�[���œ����L�����j�v�{�u�A�j���[�V�����v�܂ň�C�ɒ��o����
 //
-//やっていること
+//����Ă��邱��
 //
-//FBXマネージャ・インポータ作成＆FBX読み込み
+//FBX�}�l�[�W���E�C���|�[�^�쐬��FBX�ǂݍ���
 //
-//三角形化
+//�O�p�`��
 //
-//ボーン（Mixamoなら"mixamorig:"）の名前を全てリストアップ
+//�{�[���iMixamo�Ȃ�"mixamorig:"�j�̖��O��S�ă��X�g�A�b�v
 //
-//バインドポーズ行列（初期姿勢のボーン行列）を抽出
+//�o�C���h�|�[�Y�s��i�����p���̃{�[���s��j�𒊏o
 //
-//全頂点（コントロールポイント）について、どのボーンに何 % 支配されているか（ボーンインデックス＋ウェイト）を抽出
+//�S���_�i�R���g���[���|�C���g�j�ɂ��āA�ǂ̃{�[���ɉ� % �x�z����Ă��邩�i�{�[���C���f�b�N�X�{�E�F�C�g�j�𒊏o
 //
-//各面ごとに「位置」「法線」「UV」「ボーン4つ＋ウェイト4つ」情報を持ったSkinningVertex配列を作る
+//�e�ʂ��ƂɁu�ʒu�v�u�@���v�uUV�v�u�{�[��4�{�E�F�C�g4�v����������SkinningVertex�z������
 //
-//Index配列も構築
+//Index�z����\�z
 //
-//アニメーション情報をすべてキーフレームとして抜き出す
+//�A�j���[�V�����������ׂăL�[�t���[���Ƃ��Ĕ����o��
 //
-//すべてのアニメクリップごとに、各フレーム・各ボーンの「グローバル変換行列」を保存
+//���ׂẴA�j���N���b�v���ƂɁA�e�t���[���E�e�{�[���́u�O���[�o���ϊ��s��v��ۑ�
 //
-//すべてSkinningVertexInfo構造体にまとめて返却
+//���ׂ�SkinningVertexInfo�\���̂ɂ܂Ƃ߂ĕԋp
 //
-//ポイント
+//�|�C���g
 //
-//スキニング情報やアニメ情報の抽出にはボーン名リストの順番が重要
+//�X�L�j���O����A�j�����̒��o�ɂ̓{�[�������X�g�̏��Ԃ��d�v
 //
-//「ボーンごとの4つまでのインデックス・ウェイト」「各キーフレーム時のボーン姿勢行列」が完全に取得できる
+//�u�{�[�����Ƃ�4�܂ł̃C���f�b�N�X�E�E�F�C�g�v�u�e�L�[�t���[�����̃{�[���p���s��v�����S�Ɏ擾�ł���
 //
-//8. LoadAnimationOnly（アニメーションのみ抽出）
-//目的
+//8. LoadAnimationOnly�i�A�j���[�V�����̂ݒ��o�j
+//�ړI
 //
-//FBXファイルから * *「モデル情報は不要、アニメーションだけを抽出したい」場合に使う * *
+//FBX�t�@�C������ * *�u���f�����͕s�v�A�A�j���[�V���������𒊏o�������v�ꍇ�Ɏg�� * *
 //
-//やっていること
+//����Ă��邱��
 //
-//FBXファイルを読み込む（マネージャ / インポータ / シーン）
+//FBX�t�@�C����ǂݍ��ށi�}�l�[�W�� / �C���|�[�^ / �V�[���j
 //
-//ボーン名リストを全て抽出（"mixamorig:"で判定）
+//�{�[�������X�g��S�Ē��o�i"mixamorig:"�Ŕ���j
 //
-//最初のアニメーションスタック（クリップ）を走査
+//�ŏ��̃A�j���[�V�����X�^�b�N�i�N���b�v�j�𑖍�
 //
-//全フレーム（frameRate = 30として割り算）について：
+//�S�t���[���iframeRate = 30�Ƃ��Ċ���Z�j�ɂ��āF
 //
-//各ボーンのグローバル行列を取得してKeyframeに詰める
+//�e�{�[���̃O���[�o���s����擾����Keyframe�ɋl�߂�
 //
-//全フレーム分をKeyframe配列として返す
+//�S�t���[������Keyframe�z��Ƃ��ĕԂ�
 //
-//【全体まとめ】
+//�y�S�̂܂Ƃ߁z
 //
-//このクラスは「FBX形式で保存された3Dモデルデータ（メッシュ・ボーン・アニメ）」を「DirectXや独自エンジンで使える形式（頂点配列、ボーン行列、アニメフレーム配列など）」に変換してくれるローダである
+//���̃N���X�́uFBX�`���ŕۑ����ꂽ3D���f���f�[�^�i���b�V���E�{�[���E�A�j���j�v���uDirectX��Ǝ��G���W���Ŏg����`���i���_�z��A�{�[���s��A�A�j���t���[���z��Ȃǁj�v�ɕϊ����Ă���郍�[�_�ł���
 //
-//静的メッシュ用、スキニング付きキャラ用、アニメーションのみの3通りの抽出が可能
+//�ÓI���b�V���p�A�X�L�j���O�t���L�����p�A�A�j���[�V�����݂̂�3�ʂ�̒��o���\
 //
-//DirectXやゲームエンジンで3Dキャラや背景を正しく表示・動かすために必須の「頂点・ボーン・アニメ」情報を安全かつ正確に変換・格納している
+//DirectX��Q�[���G���W����3D�L������w�i�𐳂����\���E���������߂ɕK�{�́u���_�E�{�[���E�A�j���v�������S�����m�ɕϊ��E�i�[���Ă���
 //
-//MixamoやBlenderなどで作成・書き出したFBX資産をプログラムで自前で扱えるようにする基盤の役割
+//Mixamo��Blender�Ȃǂō쐬�E�����o����FBX���Y���v���O�����Ŏ��O�ň�����悤�ɂ����Ղ̖���
 //
-//面接で聞かれたら「FBXモデル・アニメ・ボーン情報を正しく抽出してDirectXで扱える頂点・アニメ・ボーンデータに変換するためのローダです」と一言で説明すればOKです。
+//�ʐڂŕ����ꂽ��uFBX���f���E�A�j���E�{�[�����𐳂������o����DirectX�ň����钸�_�E�A�j���E�{�[���f�[�^�ɕϊ����邽�߂̃��[�_�ł��v�ƈꌾ�Ő��������OK�ł��B

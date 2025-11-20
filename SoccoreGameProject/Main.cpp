@@ -1,4 +1,3 @@
-#include "pch.h"
 #include "ApplicationManager.h"
 #include "EngineManager.h"
 
@@ -9,6 +8,6 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR, int nCmdShow)
     ApplicationManager appManager;
     EngineManager engineManager;
 
-    // EngineManagerã«HWNDã‚’ã‚»ãƒƒãƒˆã—ãŸå¾Œã€åˆæœŸåŒ–
+    // EngineManager‚ÉHWND‚ğƒZƒbƒg‚µ‚½ŒãA‰Šú‰»
     return appManager.Run(&engineManager, hInstance, nCmdShow);
 }

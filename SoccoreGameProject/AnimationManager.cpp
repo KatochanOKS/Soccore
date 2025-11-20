@@ -1,4 +1,3 @@
-#include "pch.h"
 #include "AnimationManager.h"
 
 void AnimationManager::RegisterPlayerAnimations(Animator* animator1, Animator* animator2) {

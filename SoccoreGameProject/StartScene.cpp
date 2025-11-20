@@ -1,4 +1,3 @@
-#include "pch.h"
 #include "StartScene.h"
 #include "ObjectFactory.h"
 #include "Transform.h"
@@ -11,7 +10,7 @@ StartScene::StartScene(EngineManager* engine) : engine(engine) {}
 void StartScene::Start() {
     m_sceneObjects.clear();
 
-    // ã‚¿ã‚¤ãƒˆãƒ«ãƒ­ã‚´
+    // ƒ^ƒCƒgƒ‹ƒƒS
     int logoTex = engine->GetTextureManager()->LoadTexture(
         L"assets/Start.png",
         engine->GetDeviceManager()->GetCommandList()
@@ -25,12 +24,12 @@ void StartScene::Start() {
 }
 
 void StartScene::Update() {
-    // 1å›æŠ¼ã—åˆ¤å®šï¼ˆãƒ›ãƒ¼ãƒ«ãƒ‰ã§é€£æ‰“ã«ãªã‚‰ãªã„ã‚ˆã†ã«ï¼‰
+    // 1‰ñ‰Ÿ‚µ”»’èiƒz[ƒ‹ƒh‚Å˜A‘Å‚É‚È‚ç‚È‚¢‚æ‚¤‚Éj
     static bool prev = false;
     bool cur = (GetAsyncKeyState(VK_RETURN) & 0x8000) != 0;
     if (cur && !prev) {
         engine->ChangeScene(std::make_unique<GameScene>(engine));
-        return; // ã“ã®ãƒ•ãƒ¬ãƒ¼ãƒ ã¯ã“ã“ã§çµ‚äº†ï¼ˆä»¥é™ã®å‡¦ç†ã¯æ–°ã‚·ãƒ¼ãƒ³ã«ä»»ã›ã‚‹ï¼‰
+        return; // ‚±‚ÌƒtƒŒ[ƒ€‚Í‚±‚±‚ÅI—¹iˆÈ~‚Ìˆ—‚ÍVƒV[ƒ“‚É”C‚¹‚éj
     }
     prev = cur;
 }
