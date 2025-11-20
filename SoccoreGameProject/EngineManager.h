@@ -16,7 +16,7 @@
 #include "Animator.h"
 #include "Scene.h"
 #include "Camera.h"
-
+#include <wrl.h>
 struct ObjectCB {
     DirectX::XMMATRIX WorldViewProj;
     DirectX::XMFLOAT4 Color;
@@ -79,4 +79,6 @@ private:
     std::unique_ptr<Scene> m_activeScene;
     bool isMoving = false;
 
+
+    Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> m_imguiSrvHeap; // ImGui ópÉqÅ[Év
 };

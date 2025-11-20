@@ -5,6 +5,10 @@
 #include "SkinnedMeshRenderer.h"
 #include "EngineManager.h"
 #include "UIImage.h"
+
+#include "imgui.h"
+#include "imgui_impl_dx12.h"
+
 using namespace DirectX;
 
 // 初期化
@@ -34,8 +38,8 @@ void Renderer::Initialize(
 	m_SkyBufferMgr = skyBufMgr; // スカイドーム専用バッファ
 	m_SphereBufferMgr = sphereBufMgr; // サッカーボール用の球体バッファ
     m_ModelVertexInfo = modelVertexInfo;
-    m_Width = static_cast<float>(m_SwapMgr->GetWidth());
-    m_Height = static_cast<float>(m_SwapMgr->GetHeight());
+    m_Width =  m_SwapMgr->GetWidth();
+    m_Height= m_SwapMgr->GetHeight();
 
     // スキニング用CBVバッファ作成（80ボーン想定）
     m_SkinCBSize = sizeof(DirectX::XMMATRIX) * 80;
@@ -48,11 +52,13 @@ void Renderer::Initialize(
         IID_PPV_ARGS(&m_SkinningConstantBuffer)
     );
     m_SkinCBGpuAddr = m_SkinningConstantBuffer->GetGPUVirtualAddress();
+
 }
 
 // フレーム開始
 void Renderer::BeginFrame() {
     m_BackBufferIndex = m_SwapMgr->GetSwapChain()->GetCurrentBackBufferIndex();
+
     m_CmdList = m_DeviceMgr->GetCommandList();
 
     // バリア設定
@@ -77,8 +83,8 @@ void Renderer::BeginFrame() {
     m_CmdList->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
 
     // ビューポート・シザー設定
-    D3D12_VIEWPORT viewport = { 0, 0, m_Width, m_Height, 0.0f, 1.0f };
-    D3D12_RECT scissorRect = { 0, 0, (LONG)m_Width, (LONG)m_Height };
+    D3D12_VIEWPORT viewport = { 0, 0, static_cast<float>(m_Width), static_cast<float>(m_Height), 0.0f, 1.0f };
+    D3D12_RECT scissorRect = { 0, 0, static_cast<LONG>(m_Width), static_cast<LONG>(m_Height) };
     m_CmdList->RSSetViewports(1, &viewport);
     m_CmdList->RSSetScissorRects(1, &scissorRect);
 
@@ -188,6 +194,17 @@ void Renderer::DrawObject(GameObject* obj, size_t idx, const XMMATRIX& view, con
 
 // フレーム終了
 void Renderer::EndFrame() {
+
+    // ★ ImGui 描画（バックバッファはまだ RENDER_TARGET 状態）
+    if (m_ImGuiSrvHeap) {
+        ImGui::Render();
+
+        ID3D12DescriptorHeap* heaps[] = { m_ImGuiSrvHeap };
+        m_CmdList->SetDescriptorHeaps(_countof(heaps), heaps);
+
+        ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), m_CmdList);
+    }
+
     // バリア設定
     D3D12_RESOURCE_BARRIER barrier = {};
     barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
@@ -223,8 +240,8 @@ void Renderer::DrawUIImage(UIImage* image, size_t idx) {
 
     // --- 左上基準・ピクセル指定のNDC変換 ---
     // 画面解像度
-    float screenW = m_Width;
-    float screenH = m_Height;
+    float screenW = static_cast<float>(m_Width);
+    float screenH = static_cast<float>(m_Height);
 
     // ピクセル座標（左上）
     float px = image->m_Position.x;

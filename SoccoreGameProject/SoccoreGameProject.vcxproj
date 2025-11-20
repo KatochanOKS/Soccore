@@ -110,7 +110,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\ExLib\DirectXTex;$(ProjectDir)..\ExLib\FBXSDK\2020.3.7\include;$(ProjectDir)..\ExLib\imgui-master;$(ProjectDir)..\ExLib\imgui-master\backends;$(ProjectDir)..\ExLib\Lua\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\ExLib\DirectXTex;$(ProjectDir)..\ExLib\FBXSDK\2020.3.7\include;$(ProjectDir)..\ExLib\Lua\include;$(ProjectDir)..\ExLib\imgui;$(ProjectDir)..\ExLib\imgui\backends;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -132,7 +132,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\ExLib\DirectXTex;$(ProjectDir)..\ExLib\FBXSDK\2020.3.7\include;$(ProjectDir)..\ExLib\imgui-master;$(ProjectDir)..\ExLib\imgui-master\backends;$(ProjectDir)..\ExLib\Lua\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\ExLib\DirectXTex;$(ProjectDir)..\ExLib\FBXSDK\2020.3.7\include;$(ProjectDir)..\ExLib\Lua\include;$(ProjectDir)..\ExLib\imgui;$(ProjectDir)..\ExLib\imgui\backends;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -161,6 +161,13 @@
     <ClCompile Include="GameOverScene.cpp" />
     <ClCompile Include="GameScene.cpp" />
     <ClCompile Include="GameUIManager.cpp" />
+    <ClCompile Include="imgui.cpp" />
+    <ClCompile Include="imgui_demo.cpp" />
+    <ClCompile Include="imgui_draw.cpp" />
+    <ClCompile Include="imgui_impl_dx12.cpp" />
+    <ClCompile Include="imgui_impl_win32.cpp" />
+    <ClCompile Include="imgui_tables.cpp" />
+    <ClCompile Include="imgui_widgets.cpp" />
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="MeshLibrary.cpp" />
     <ClCompile Include="ObjectFactory.cpp" />

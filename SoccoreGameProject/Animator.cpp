@@ -140,7 +140,7 @@ void Animator::Update(float deltaTime) {
         return;
     }
 
-    currentTime += deltaTime;
+    currentTime += deltaTime * 0.8;
     double animLength = frames.back().time;
     if (animLength <= 0.0) {
         OutputDebugStringA("[Animator][Error] アニメ長さ0\n");

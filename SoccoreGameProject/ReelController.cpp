@@ -109,6 +109,7 @@ void ReelController::Update() {
         if (m_Right)  m_Right->RequestStart();
 
         m_ResultShown = false; // スタート時にリセット
+        m_IsStarted = true;  // ←追加：初回スタート時にtrueに
     }
 
 
@@ -117,9 +118,10 @@ void ReelController::Update() {
     // === 全リール停止後の出目判定 ===
     if (m_Left && m_Middle && m_Right)
     {
-        if (!m_Left->IsSpinning() && !m_Middle->IsSpinning() && !m_Right->IsSpinning())
+        // 一度でも回転したことがあるかを確認
+        if (m_IsStarted && !m_Left->IsSpinning() && !m_Middle->IsSpinning() && !m_Right->IsSpinning())
         {
-            if (!m_ResultShown) { // 一度だけ表示
+            if (!m_ResultShown) {
                 std::array<std::string, 3> symbols = {
                     m_Left->GetCurrentSymbol(),
                     m_Middle->GetCurrentSymbol(),
@@ -129,14 +131,13 @@ void ReelController::Update() {
 
                 OutputDebugStringA(("出目結果: " + result + "\n").c_str());
 
-                // ★ ここでシーンへ通知して、小役ごとの処理を実行
                 if (gameObject && gameObject->scene) {
                     if (auto* gs = dynamic_cast<GameScene*>(gameObject->scene)) {
                         gs->ApplySlotEffect(result);
                     }
                 }
 
-                m_ResultShown = true; // 表示済みに
+                m_ResultShown = true;
             }
         }
     }

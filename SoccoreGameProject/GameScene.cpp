@@ -19,6 +19,7 @@
 #undef min
 #undef max
 
+#include "imgui.h"
 
 
 using namespace DirectX;
@@ -101,6 +102,14 @@ void GameScene::Update() {
         engine->ChangeScene(std::make_unique<GameOverScene>(engine));
         return;
     }
+
+    ImGui::Begin("Mouse Debug");
+    ImGuiIO& io = ImGui::GetIO();
+    ImGui::Text("MousePos: %.1f, %.1f", io.MousePos.x, io.MousePos.y);
+    ImGui::Text("DisplaySize: %.1f, %.1f", io.DisplaySize.x, io.DisplaySize.y);
+    ImGui::Text("FramebufferScale: %.2f, %.2f", io.DisplayFramebufferScale.x, io.DisplayFramebufferScale.y);
+    ImGui::End();
+
 }
 
 /// <summary>
@@ -214,10 +223,10 @@ void GameScene::ApplySlotEffect(const std::string& result) {
     auto* p1 = m_PlayerManager.GetPlayer1();
     auto* p2 = m_PlayerManager.GetPlayer2();
 
-    constexpr float DMG_SMALL = 0.10f;
-    constexpr float DMG_MEDIUM = 0.25f;
-    constexpr float DMG_LARGE = 0.50f;
-    constexpr float DMG_HUGE = 1.00f;
+    constexpr float DMG_SMALL = 0.5f;
+    constexpr float DMG_MEDIUM = 1.0f;
+    constexpr float DMG_LARGE = 1.5f;
+    constexpr float DMG_HUGE = 3.0f;
 
     switch (ParseSlotResult(result)) {
     case SlotRole::Big:

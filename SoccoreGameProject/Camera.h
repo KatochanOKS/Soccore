@@ -16,10 +16,11 @@ public:
         return DirectX::XMMatrixLookAtLH(eye, target, up);
     }
 
-    DirectX::XMMATRIX GetProjectionMatrix(float screenWidth, float screenHeight) const {
+    DirectX::XMMATRIX GetProjectionMatrix(UINT screenWidth, UINT screenHeight) const {
+        float aspect = static_cast<float>(screenWidth) / static_cast<float>(screenHeight);
         return DirectX::XMMatrixPerspectiveFovLH(
             DirectX::XMConvertToRadians(75.0f),
-            screenWidth / screenHeight,
+            aspect,
             0.1f, 1000.0f
         );
     }

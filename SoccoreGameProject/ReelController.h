@@ -25,4 +25,5 @@ private:
     bool m_IsPrevC = false;
     bool m_IsPrevS = false;
     bool m_ResultShown = false;
+    bool m_IsStarted = false; // ˆê“x‚Å‚à‰ñ“]‚µ‚½‚ç true
 };

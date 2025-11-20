@@ -60,20 +60,4 @@ void GameUIManager::InitUI(EngineManager* engine, std::vector<GameObject*>& scen
         hp2Obj->tag = "UI";
         hp2Obj->name = "HP2";
         sceneObjects.push_back(hp2Obj);
-
-        // スロットシンボル画像の追加
-        int texSymbol = engine->GetTextureManager()->LoadTexture(
-            L"assets/Slot/Cherry.png",
-            engine->GetDeviceManager()->GetCommandList()
-        );
-        {
-            GameObject* slotObj = new GameObject();
-            slotObj->name = "Slot_SingleTest";
-            slotObj->tag = "UI";
-            auto* img = slotObj->AddComponent<UIImage>();
-            img->m_TexIndex = texSymbol;
-            img->m_Size = { 128, 128 };
-            img->m_Position = { 200.0f, 120.0f };
-            sceneObjects.push_back(slotObj);
-        }
 }
