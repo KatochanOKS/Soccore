@@ -54,7 +54,16 @@ static void PlanWinAllSame(ReelComponent* L, ReelComponent* M, ReelComponent* R,
     if (R) R->PlanStopSymbol(symbol);
 }
 
+// === ★★ S 再受付と4.1秒管理用 追加変数 ★★ ===
+static constexpr float GAME_MIN_TIME = 4.1f;
+
 void ReelController::Update() {
+
+    // ---- タイマー更新（毎フレーム Update 呼ばれる前提） ----
+    if (!m_CanStart) {
+        m_Timer += 1.0f / 60.0f;  // 仮に60FPSとして
+    }
+
     bool z = IsDown('Z');
     bool x = IsDown('X');
     bool c = IsDown('C');
@@ -65,8 +74,16 @@ void ReelController::Update() {
     if (x && !m_IsPrevX && m_Middle) m_Middle->RequestStop();
     if (c && !m_IsPrevC && m_Right)  m_Right->RequestStop();
 
+	bool allStopped = 
+		m_Left && !m_Left->IsSpinning()&&
+		m_Middle && !m_Middle->IsSpinning()&&
+		m_Right && !m_Right->IsSpinning();
+
+    bool startAllowed =
+        m_CanStart && allStopped;   // S受付可能 かつ 全停止
+
     // === スタート（立ち上がりのみ）===
-    if (s && !m_IsPrevS) {
+    if (s && !m_IsPrevS && startAllowed) {
 
         // ------------------------------------------------------------
         // 1) 排他的な当選抽選：上から順に「当たったら即採用」
@@ -110,8 +127,16 @@ void ReelController::Update() {
 
         m_ResultShown = false; // スタート時にリセット
         m_IsStarted = true;  // ←追加：初回スタート時にtrueに
+
+		m_CanStart = false; // S再受付禁止
+		m_Timer = 0.0f; // タイマーリセット
     }
 
+    if (!m_CanStart) {
+        if (m_Timer >= GAME_MIN_TIME) {
+            m_CanStart = true; // 再びS受付可能に
+        }
+	}
 
     m_IsPrevZ = z; m_IsPrevX = x; m_IsPrevC = c; m_IsPrevS = s;
 

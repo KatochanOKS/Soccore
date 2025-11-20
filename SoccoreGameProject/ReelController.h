@@ -24,6 +24,9 @@ private:
     bool m_IsPrevX = false;
     bool m_IsPrevC = false;
     bool m_IsPrevS = false;
-    bool m_ResultShown = false;
+	bool m_ResultShown = false; // 結果表示済みフラグ
     bool m_IsStarted = false; // 一度でも回転したら true
+	bool m_CanStart = true; // スタート可能フラグ
+
+	float m_Timer = 0.0f; //経過時間
 };

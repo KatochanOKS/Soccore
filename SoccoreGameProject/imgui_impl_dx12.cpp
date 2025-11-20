@@ -332,6 +332,11 @@ void ImGui_ImplDX12_RenderDrawData(ImDrawData* draw_data, ID3D12GraphicsCommandL
 
                 // Apply scissor/clipping rectangle
                 const D3D12_RECT r = { (LONG)clip_min.x, (LONG)clip_min.y, (LONG)clip_max.x, (LONG)clip_max.y };
+
+                // ★★ DX12警告回避：空シザーなら描画スキップ ★★
+                if (r.right <= r.left || r.bottom <= r.top)
+                    continue;
+
                 command_list->RSSetScissorRects(1, &r);
 
                 // Bind texture, Draw
