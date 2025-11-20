@@ -1,38 +1,39 @@
+#include "pch.h"
 #include "MeshLibrary.h"
 #include<DirectXMath.h>
 void MeshLibrary::GetCubeMesh(std::vector<Vertex>& vertices, std::vector<uint16_t>& indices) {
     vertices = {
-        // ‘O–Ê (Z-)
+        // å‰é¢ (Z-)
         { -0.5f, -0.5f, -0.5f,  0, 0, -1, 0, 1 },
         { -0.5f,  0.5f, -0.5f,  0, 0, -1, 0, 0 },
         {  0.5f,  0.5f, -0.5f,  0, 0, -1, 1, 0 },
         {  0.5f, -0.5f, -0.5f,  0, 0, -1, 1, 1 },
 
-        // ‰E–Ê (X+)
+        // å³é¢ (X+)
         { 0.5f, -0.5f, -0.5f,   1, 0, 0, 0, 1 },
         { 0.5f,  0.5f, -0.5f,   1, 0, 0, 0, 0 },
         { 0.5f,  0.5f,  0.5f,   1, 0, 0, 1, 0 },
         { 0.5f, -0.5f,  0.5f,   1, 0, 0, 1, 1 },
 
-        // Œã–Ê (Z+)
+        // å¾Œé¢ (Z+)
         { 0.5f, -0.5f,  0.5f,   0, 0, 1, 0, 1 },
         { 0.5f,  0.5f,  0.5f,   0, 0, 1, 0, 0 },
         { -0.5f,  0.5f,  0.5f,  0, 0, 1, 1, 0 },
         { -0.5f, -0.5f,  0.5f,  0, 0, 1, 1, 1 },
 
-        // ¶–Ê (X-)
+        // å·¦é¢ (X-)
         { -0.5f, -0.5f,  0.5f,  -1, 0, 0, 0, 1 },
         { -0.5f,  0.5f,  0.5f,  -1, 0, 0, 0, 0 },
         { -0.5f,  0.5f, -0.5f,  -1, 0, 0, 1, 0 },
         { -0.5f, -0.5f, -0.5f,  -1, 0, 0, 1, 1 },
 
-        // ã–Ê (Y+)
+        // ä¸Šé¢ (Y+)
         { -0.5f,  0.5f, -0.5f,  0, 1, 0, 0, 1 },
         { -0.5f,  0.5f,  0.5f,  0, 1, 0, 0, 0 },
         {  0.5f,  0.5f,  0.5f,  0, 1, 0, 1, 0 },
         {  0.5f,  0.5f, -0.5f,  0, 1, 0, 1, 1 },
 
-        // ‰º–Ê (Y-)
+        // ä¸‹é¢ (Y-)
         { -0.5f, -0.5f, -0.5f,  0, -1, 0, 0, 1 },
         { -0.5f, -0.5f,  0.5f,  0, -1, 0, 0, 0 },
         {  0.5f, -0.5f,  0.5f,  0, -1, 0, 1, 0 },
@@ -49,17 +50,17 @@ void MeshLibrary::GetCubeMesh(std::vector<Vertex>& vertices, std::vector<uint16_
 }
 
 void MeshLibrary::GetQuadMesh2D(std::vector<Vertex>& vertices, std::vector<uint16_t>& indices) {
-    // ‰æ–ÊXY•½–Ê‚É“\‚è•t‚¯‚élŠpi¶ãŠî€ANDC‘z’è‚Å’†S0,0j
+    // ç”»é¢XYå¹³é¢ã«è²¼ã‚Šä»˜ã‘ã‚‹å››è§’ï¼ˆå·¦ä¸ŠåŸºæº–ã€NDCæƒ³å®šã§ä¸­å¿ƒ0,0ï¼‰
     vertices = {
-     { 0.0f, 1.0f, 0.0f, 0, 0, -1, 0, 1 }, // ¶‰º
-     { 1.0f, 1.0f, 0.0f, 0, 0, -1, 1, 1 }, // ‰E‰º
-     { 1.0f, 0.0f, 0.0f, 0, 0, -1, 1, 0 }, // ‰Eã
-     { 0.0f, 0.0f, 0.0f, 0, 0, -1, 0, 0 }, // ¶ã
+     { 0.0f, 1.0f, 0.0f, 0, 0, -1, 0, 1 }, // å·¦ä¸‹
+     { 1.0f, 1.0f, 0.0f, 0, 0, -1, 1, 1 }, // å³ä¸‹
+     { 1.0f, 0.0f, 0.0f, 0, 0, -1, 1, 0 }, // å³ä¸Š
+     { 0.0f, 0.0f, 0.0f, 0, 0, -1, 0, 0 }, // å·¦ä¸Š
     };
     indices = { 0, 1, 2, 0, 2, 3 };
 }
 
-// MeshLibrary.cppi––”ö‚É’Ç‰Áj
+// MeshLibrary.cppï¼ˆæœ«å°¾ã«è¿½åŠ ï¼‰
 void MeshLibrary::GetSphereMesh(std::vector<Vertex>& vertices, std::vector<uint16_t>& indices, int latDiv, int lonDiv) {
     vertices.clear(); indices.clear();
     const float r = 1.0f;
@@ -79,10 +80,10 @@ void MeshLibrary::GetSphereMesh(std::vector<Vertex>& vertices, std::vector<uint1
             v.y = r * cosT;
             v.z = r * sinT * sinP;
 
-            // š“à‘¤‚©‚çŒ©‚é‚Ì‚Å–@ü‚Í“àŒü‚«i-posj
+            // â˜…å†…å´ã‹ã‚‰è¦‹ã‚‹ã®ã§æ³•ç·šã¯å†…å‘ãï¼ˆ-posï¼‰
             v.nx = -v.x; v.ny = -v.y; v.nz = -v.z;
 
-            // equirectangular‘z’è‚ÌUV
+            // equirectangularæƒ³å®šã®UV
             v.u = p;      // 0..1
             v.v = t;      // 0..1
 
@@ -156,20 +157,20 @@ void MeshLibrary::GetCylinderMesh(std::vector<Vertex>& vertices, std::vector<uin
     vertices.clear();
     indices.clear();
 
-    // ƒÆ‚Å‰~üã‚ğ‚®‚é‚Á‚Æˆêü
+    // Î¸ã§å††å‘¨ä¸Šã‚’ãã‚‹ã£ã¨ä¸€å‘¨
     for (int i = 0; i <= slice; ++i) {
-        // ƒÆ‚ÉƒÎ/2ƒ‰ƒWƒAƒ“i90“xj‚ğ‘«‚µ‚ÄZ+•ûŒüŠî€‚ÅƒXƒ^[ƒgI
+        // Î¸ã«Ï€/2ãƒ©ã‚¸ã‚¢ãƒ³ï¼ˆ90åº¦ï¼‰ã‚’è¶³ã—ã¦Z+æ–¹å‘åŸºæº–ã§ã‚¹ã‚¿ãƒ¼ãƒˆï¼
         float theta = DirectX::XM_2PI * i / slice + DirectX::XM_PIDIV2;
         float x = cosf(theta) * radius;
         float z = sinf(theta) * radius;
         float u = (float)i / slice;
 
-        vertices.push_back({ x, +height / 2, z, x, 0, z, 1, u }); // ã’[Fv=1
-        vertices.push_back({ x, -height / 2, z, x, 0, z, 0, u }); // ‰º’[Fv=0
+        vertices.push_back({ x, +height / 2, z, x, 0, z, 1, u }); // ä¸Šç«¯ï¼šv=1
+        vertices.push_back({ x, -height / 2, z, x, 0, z, 0, u }); // ä¸‹ç«¯ï¼šv=0
 
     }
 
-    // ‘¤–ÊƒCƒ“ƒfƒbƒNƒX
+    // å´é¢ã‚¤ãƒ³ãƒ‡ãƒƒã‚¯ã‚¹
     for (int i = 0; i < slice; ++i) {
         int idx = i * 2;
         indices.push_back(idx);
@@ -180,7 +181,7 @@ void MeshLibrary::GetCylinderMesh(std::vector<Vertex>& vertices, std::vector<uin
         indices.push_back(idx + 1);
         indices.push_back(idx + 3);
     }
-    // š“V–ÊE’ê–Ê‚ÌOŠpŒ`‚à•K—v‚È‚ç’Ç‰Á‰Â”\i‚Ü‚¸‚Í‘¤–Ê‚Ì‚İ‚ÅOKIj
+    // â˜…å¤©é¢ãƒ»åº•é¢ã®ä¸‰è§’å½¢ã‚‚å¿…è¦ãªã‚‰è¿½åŠ å¯èƒ½ï¼ˆã¾ãšã¯å´é¢ã®ã¿ã§OKï¼ï¼‰
 }
 
 

@@ -1,10 +1,10 @@
-﻿#include "Player1Component.h"
+﻿#include "pch.h"
+#include "Player1Component.h"
 #include "Transform.h"
 #include "Animator.h"
 #include "GameObject.h"
 #include "UIImage.h"
 #include "GameScene.h"
-#include <windows.h>
 
 extern "C" {
 #include "lua.h"

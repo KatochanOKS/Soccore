@@ -1,91 +1,91 @@
+#include "pch.h"
 #include "BufferManager.h"
 #include "d3dx12.h"   
-#include <DirectXMath.h>
 //--------------------------------------------------------------------------------------
 // CreateVertexBuffer
-// w’è‚³‚ê‚½’¸“_ƒf[ƒ^‚©‚çDirectX 12‚Ì’¸“_ƒoƒbƒtƒ@‚ğì¬‚µAGPU‚ÉƒAƒbƒvƒ[ƒh‚·‚éB
-// - ’¸“_”EƒTƒCƒY‚©‚çƒoƒbƒtƒ@‚ğŠm•Û
-// - ƒAƒbƒvƒ[ƒh—pƒq[ƒv‚ğ—˜—p‚µCPU‚©‚çƒf[ƒ^“]‘—
-// - ƒoƒbƒtƒ@ƒrƒ…[‚ğƒZƒbƒg‚µ•`‰æ‚É—˜—p‰Â”\‚É‚·‚é
+// æŒ‡å®šã•ã‚ŒãŸé ‚ç‚¹ãƒ‡ãƒ¼ã‚¿ã‹ã‚‰DirectX 12ã®é ‚ç‚¹ãƒãƒƒãƒ•ã‚¡ã‚’ä½œæˆã—ã€GPUã«ã‚¢ãƒƒãƒ—ãƒ­ãƒ¼ãƒ‰ã™ã‚‹ã€‚
+// - é ‚ç‚¹æ•°ãƒ»ã‚µã‚¤ã‚ºã‹ã‚‰ãƒãƒƒãƒ•ã‚¡ã‚’ç¢ºä¿
+// - ã‚¢ãƒƒãƒ—ãƒ­ãƒ¼ãƒ‰ç”¨ãƒ’ãƒ¼ãƒ—ã‚’åˆ©ç”¨ã—CPUã‹ã‚‰ãƒ‡ãƒ¼ã‚¿è»¢é€
+// - ãƒãƒƒãƒ•ã‚¡ãƒ“ãƒ¥ãƒ¼ã‚’ã‚»ãƒƒãƒˆã—æç”»æ™‚ã«åˆ©ç”¨å¯èƒ½ã«ã™ã‚‹
 //--------------------------------------------------------------------------------------
 void BufferManager::CreateVertexBuffer(ID3D12Device* device, const std::vector<Vertex>& vertices)
 {
-    if (vertices.empty()) return; // ’¸“_ƒf[ƒ^‚ª‹ó‚È‚ç‰½‚à‚µ‚È‚¢
+    if (vertices.empty()) return; // é ‚ç‚¹ãƒ‡ãƒ¼ã‚¿ãŒç©ºãªã‚‰ä½•ã‚‚ã—ãªã„
 
-    const UINT bufferSize = UINT(vertices.size() * sizeof(Vertex)); // ƒoƒbƒtƒ@ƒTƒCƒYŒvZ
+    const UINT bufferSize = UINT(vertices.size() * sizeof(Vertex)); // ãƒãƒƒãƒ•ã‚¡ã‚µã‚¤ã‚ºè¨ˆç®—
 
-    CD3DX12_HEAP_PROPERTIES heapProps(D3D12_HEAP_TYPE_UPLOAD); // ƒAƒbƒvƒ[ƒh—pƒq[ƒv
-    CD3DX12_RESOURCE_DESC resDesc = CD3DX12_RESOURCE_DESC::Buffer(bufferSize); // ƒoƒbƒtƒ@‹Lqq
+    CD3DX12_HEAP_PROPERTIES heapProps(D3D12_HEAP_TYPE_UPLOAD); // ã‚¢ãƒƒãƒ—ãƒ­ãƒ¼ãƒ‰ç”¨ãƒ’ãƒ¼ãƒ—
+    CD3DX12_RESOURCE_DESC resDesc = CD3DX12_RESOURCE_DESC::Buffer(bufferSize); // ãƒãƒƒãƒ•ã‚¡è¨˜è¿°å­
 
-    // ƒoƒbƒtƒ@ƒŠƒ\[ƒX¶¬iƒAƒbƒvƒ[ƒh—pƒq[ƒv‚ÉŠm•Ûj
+    // ãƒãƒƒãƒ•ã‚¡ãƒªã‚½ãƒ¼ã‚¹ç”Ÿæˆï¼ˆã‚¢ãƒƒãƒ—ãƒ­ãƒ¼ãƒ‰ç”¨ãƒ’ãƒ¼ãƒ—ã«ç¢ºä¿ï¼‰
     HRESULT hr = device->CreateCommittedResource(
-        &heapProps, // ƒq[ƒvƒvƒƒpƒeƒB
-        D3D12_HEAP_FLAG_NONE, // ƒq[ƒvƒtƒ‰ƒO
-        &resDesc, // ƒŠƒ\[ƒX‹Lqq
-        D3D12_RESOURCE_STATE_GENERIC_READ, // ‰Šúó‘Ô
-        nullptr, // ƒNƒŠƒA’l•s—v
-        IID_PPV_ARGS(&m_vertexBuffer) // ƒoƒbƒtƒ@‚Ìƒ|ƒCƒ“ƒ^
+        &heapProps, // ãƒ’ãƒ¼ãƒ—ãƒ—ãƒ­ãƒ‘ãƒ†ã‚£
+        D3D12_HEAP_FLAG_NONE, // ãƒ’ãƒ¼ãƒ—ãƒ•ãƒ©ã‚°
+        &resDesc, // ãƒªã‚½ãƒ¼ã‚¹è¨˜è¿°å­
+        D3D12_RESOURCE_STATE_GENERIC_READ, // åˆæœŸçŠ¶æ…‹
+        nullptr, // ã‚¯ãƒªã‚¢å€¤ä¸è¦
+        IID_PPV_ARGS(&m_vertexBuffer) // ãƒãƒƒãƒ•ã‚¡ã®ãƒã‚¤ãƒ³ã‚¿
     );
-    if (FAILED(hr)) return; // ¸”s‚Í‰½‚à‚µ‚È‚¢
+    if (FAILED(hr)) return; // å¤±æ•—æ™‚ã¯ä½•ã‚‚ã—ãªã„
 
     void* mapped = nullptr;
-    hr = m_vertexBuffer->Map(0, nullptr, &mapped); // ƒoƒbƒtƒ@‚ğCPUƒƒ‚ƒŠ‹óŠÔ‚Éƒ}ƒbƒv
+    hr = m_vertexBuffer->Map(0, nullptr, &mapped); // ãƒãƒƒãƒ•ã‚¡ã‚’CPUãƒ¡ãƒ¢ãƒªç©ºé–“ã«ãƒãƒƒãƒ—
     if (SUCCEEDED(hr)) {
-        memcpy(mapped, vertices.data(), bufferSize); // ’¸“_ƒf[ƒ^‚ğƒRƒs[
-        m_vertexBuffer->Unmap(0, nullptr); // ƒ}ƒbƒsƒ“ƒO‰ğœ
+        memcpy(mapped, vertices.data(), bufferSize); // é ‚ç‚¹ãƒ‡ãƒ¼ã‚¿ã‚’ã‚³ãƒ”ãƒ¼
+        m_vertexBuffer->Unmap(0, nullptr); // ãƒãƒƒãƒ”ãƒ³ã‚°è§£é™¤
     }
 
-    // ’¸“_ƒoƒbƒtƒ@ƒrƒ…[‚ğƒZƒbƒg
-    m_vbv.BufferLocation = m_vertexBuffer->GetGPUVirtualAddress(); // GPU‰¼‘zƒAƒhƒŒƒX
-    m_vbv.SizeInBytes = bufferSize; // ƒoƒbƒtƒ@‘S‘ÌƒTƒCƒY
-    m_vbv.StrideInBytes = sizeof(Vertex); // 1’¸“_‚ ‚½‚è‚ÌƒTƒCƒY
+    // é ‚ç‚¹ãƒãƒƒãƒ•ã‚¡ãƒ“ãƒ¥ãƒ¼ã‚’ã‚»ãƒƒãƒˆ
+    m_vbv.BufferLocation = m_vertexBuffer->GetGPUVirtualAddress(); // GPUä»®æƒ³ã‚¢ãƒ‰ãƒ¬ã‚¹
+    m_vbv.SizeInBytes = bufferSize; // ãƒãƒƒãƒ•ã‚¡å…¨ä½“ã‚µã‚¤ã‚º
+    m_vbv.StrideInBytes = sizeof(Vertex); // 1é ‚ç‚¹ã‚ãŸã‚Šã®ã‚µã‚¤ã‚º
 }
 
 void BufferManager::CreateSkinningVertexBuffer(ID3D12Device* device, const std::vector<SkinningVertex>& vertices) {
     const UINT bufferSize = UINT(vertices.size() * sizeof(SkinningVertex));
    
-    // ƒAƒbƒvƒ[ƒh—pƒq[ƒvƒvƒƒpƒeƒB‚ÆƒŠƒ\[ƒX‹Lqq‚ğì¬
+    // ã‚¢ãƒƒãƒ—ãƒ­ãƒ¼ãƒ‰ç”¨ãƒ’ãƒ¼ãƒ—ãƒ—ãƒ­ãƒ‘ãƒ†ã‚£ã¨ãƒªã‚½ãƒ¼ã‚¹è¨˜è¿°å­ã‚’ä½œæˆ
     CD3DX12_HEAP_PROPERTIES heapProps(D3D12_HEAP_TYPE_UPLOAD);
     CD3DX12_RESOURCE_DESC resDesc = CD3DX12_RESOURCE_DESC::Buffer(bufferSize);
 
-    // ƒoƒbƒtƒ@ƒŠƒ\[ƒX‚ğ¶¬
+    // ãƒãƒƒãƒ•ã‚¡ãƒªã‚½ãƒ¼ã‚¹ã‚’ç”Ÿæˆ
     device->CreateCommittedResource(
-        &heapProps, // ƒq[ƒvƒvƒƒpƒeƒB
-        D3D12_HEAP_FLAG_NONE, // ƒq[ƒvƒtƒ‰ƒO
-        &resDesc, // ƒŠƒ\[ƒX‹Lqq
-        D3D12_RESOURCE_STATE_GENERIC_READ, // ƒŠƒ\[ƒX‰Šúó‘Ô
-        nullptr, // ƒNƒŠƒA’l•s—v
-        IID_PPV_ARGS(&m_vertexBuffer) // ƒoƒbƒtƒ@‚Ìƒ|ƒCƒ“ƒ^
+        &heapProps, // ãƒ’ãƒ¼ãƒ—ãƒ—ãƒ­ãƒ‘ãƒ†ã‚£
+        D3D12_HEAP_FLAG_NONE, // ãƒ’ãƒ¼ãƒ—ãƒ•ãƒ©ã‚°
+        &resDesc, // ãƒªã‚½ãƒ¼ã‚¹è¨˜è¿°å­
+        D3D12_RESOURCE_STATE_GENERIC_READ, // ãƒªã‚½ãƒ¼ã‚¹åˆæœŸçŠ¶æ…‹
+        nullptr, // ã‚¯ãƒªã‚¢å€¤ä¸è¦
+        IID_PPV_ARGS(&m_vertexBuffer) // ãƒãƒƒãƒ•ã‚¡ã®ãƒã‚¤ãƒ³ã‚¿
     );
 
-    // ƒoƒbƒtƒ@‚ğCPUƒƒ‚ƒŠ‹óŠÔ‚Éƒ}ƒbƒsƒ“ƒOi‘‚«‚İ‰Â”\‚É‚·‚éj
+    // ãƒãƒƒãƒ•ã‚¡ã‚’CPUãƒ¡ãƒ¢ãƒªç©ºé–“ã«ãƒãƒƒãƒ”ãƒ³ã‚°ï¼ˆæ›¸ãè¾¼ã¿å¯èƒ½ã«ã™ã‚‹ï¼‰
     void* mapped = nullptr;
     m_vertexBuffer->Map(0, nullptr, &mapped);
 
-    // ƒoƒbƒtƒ@‚É’¸“_ƒf[ƒ^‚ğ‘‚«‚Ş
+    // ãƒãƒƒãƒ•ã‚¡ã«é ‚ç‚¹ãƒ‡ãƒ¼ã‚¿ã‚’æ›¸ãè¾¼ã‚€
     memcpy(mapped, vertices.data(), bufferSize);
 
-    // ƒ}ƒbƒsƒ“ƒO‰ğœiGPUƒAƒNƒZƒX‰Â”\ó‘Ô‚Ö–ß‚·j
+    // ãƒãƒƒãƒ”ãƒ³ã‚°è§£é™¤ï¼ˆGPUã‚¢ã‚¯ã‚»ã‚¹å¯èƒ½çŠ¶æ…‹ã¸æˆ»ã™ï¼‰
     m_vertexBuffer->Unmap(0, nullptr);
 
-    // ’¸“_ƒoƒbƒtƒ@ƒrƒ…[iGPU‚É“n‚·ƒoƒbƒtƒ@î•ñj‚ğƒZƒbƒg
+    // é ‚ç‚¹ãƒãƒƒãƒ•ã‚¡ãƒ“ãƒ¥ãƒ¼ï¼ˆGPUã«æ¸¡ã™ãƒãƒƒãƒ•ã‚¡æƒ…å ±ï¼‰ã‚’ã‚»ãƒƒãƒˆ
     m_vbv.BufferLocation = m_vertexBuffer->GetGPUVirtualAddress();
     m_vbv.SizeInBytes = bufferSize;
 
     m_vbv.StrideInBytes = sizeof(SkinningVertex);
 }
 
-// ƒCƒ“ƒfƒbƒNƒXƒoƒbƒtƒ@‚ğì¬‚·‚éŠÖ”
+// ã‚¤ãƒ³ãƒ‡ãƒƒã‚¯ã‚¹ãƒãƒƒãƒ•ã‚¡ã‚’ä½œæˆã™ã‚‹é–¢æ•°
 void BufferManager::CreateIndexBuffer(ID3D12Device* device, const std::vector<uint16_t>& indices)
 {
-    // ƒoƒbƒtƒ@ƒTƒCƒY‚ğŒvZiƒCƒ“ƒfƒbƒNƒX” ~ ƒCƒ“ƒfƒbƒNƒXƒTƒCƒYj
+    // ãƒãƒƒãƒ•ã‚¡ã‚µã‚¤ã‚ºã‚’è¨ˆç®—ï¼ˆã‚¤ãƒ³ãƒ‡ãƒƒã‚¯ã‚¹æ•° Ã— ã‚¤ãƒ³ãƒ‡ãƒƒã‚¯ã‚¹ã‚µã‚¤ã‚ºï¼‰
     const UINT bufferSize = UINT(indices.size() * sizeof(uint16_t));
 
-    // ƒAƒbƒvƒ[ƒh—pƒq[ƒvƒvƒƒpƒeƒB‚ÆƒŠƒ\[ƒX‹Lqq‚ğì¬
+    // ã‚¢ãƒƒãƒ—ãƒ­ãƒ¼ãƒ‰ç”¨ãƒ’ãƒ¼ãƒ—ãƒ—ãƒ­ãƒ‘ãƒ†ã‚£ã¨ãƒªã‚½ãƒ¼ã‚¹è¨˜è¿°å­ã‚’ä½œæˆ
     CD3DX12_HEAP_PROPERTIES heapProps(D3D12_HEAP_TYPE_UPLOAD);
     CD3DX12_RESOURCE_DESC resDesc = CD3DX12_RESOURCE_DESC::Buffer(bufferSize);
 
-    // ƒoƒbƒtƒ@ƒŠƒ\[ƒX‚ğ¶¬
+    // ãƒãƒƒãƒ•ã‚¡ãƒªã‚½ãƒ¼ã‚¹ã‚’ç”Ÿæˆ
     device->CreateCommittedResource(
         &heapProps,
         D3D12_HEAP_FLAG_NONE,
@@ -95,34 +95,34 @@ void BufferManager::CreateIndexBuffer(ID3D12Device* device, const std::vector<ui
         IID_PPV_ARGS(&m_indexBuffer)
     );
 
-    // ƒoƒbƒtƒ@‚ğCPUƒƒ‚ƒŠ‹óŠÔ‚Éƒ}ƒbƒsƒ“ƒOi‘‚«‚İ‰Â”\‚É‚·‚éj
+    // ãƒãƒƒãƒ•ã‚¡ã‚’CPUãƒ¡ãƒ¢ãƒªç©ºé–“ã«ãƒãƒƒãƒ”ãƒ³ã‚°ï¼ˆæ›¸ãè¾¼ã¿å¯èƒ½ã«ã™ã‚‹ï¼‰
     void* mapped = nullptr;
     m_indexBuffer->Map(0, nullptr, &mapped);
 
-    // ƒoƒbƒtƒ@‚ÉƒCƒ“ƒfƒbƒNƒXƒf[ƒ^‚ğ‘‚«‚Ş
+    // ãƒãƒƒãƒ•ã‚¡ã«ã‚¤ãƒ³ãƒ‡ãƒƒã‚¯ã‚¹ãƒ‡ãƒ¼ã‚¿ã‚’æ›¸ãè¾¼ã‚€
     memcpy(mapped, indices.data(), bufferSize);
 
-    // ƒ}ƒbƒsƒ“ƒO‰ğœiGPUƒAƒNƒZƒX‰Â”\ó‘Ô‚Ö–ß‚·j
+    // ãƒãƒƒãƒ”ãƒ³ã‚°è§£é™¤ï¼ˆGPUã‚¢ã‚¯ã‚»ã‚¹å¯èƒ½çŠ¶æ…‹ã¸æˆ»ã™ï¼‰
     m_indexBuffer->Unmap(0, nullptr);
 
-    // ƒCƒ“ƒfƒbƒNƒXƒoƒbƒtƒ@ƒrƒ…[iGPU‚É“n‚·ƒoƒbƒtƒ@î•ñj‚ğƒZƒbƒg
+    // ã‚¤ãƒ³ãƒ‡ãƒƒã‚¯ã‚¹ãƒãƒƒãƒ•ã‚¡ãƒ“ãƒ¥ãƒ¼ï¼ˆGPUã«æ¸¡ã™ãƒãƒƒãƒ•ã‚¡æƒ…å ±ï¼‰ã‚’ã‚»ãƒƒãƒˆ
     m_ibv.BufferLocation = m_indexBuffer->GetGPUVirtualAddress();
     m_ibv.SizeInBytes = bufferSize;
-    m_ibv.Format = DXGI_FORMAT_R16_UINT; // 16ƒrƒbƒgƒCƒ“ƒfƒbƒNƒX
+    m_ibv.Format = DXGI_FORMAT_R16_UINT; // 16ãƒ“ãƒƒãƒˆã‚¤ãƒ³ãƒ‡ãƒƒã‚¯ã‚¹
 }
 
 // BufferManager.cpp
 
 
 
-// ’è”ƒoƒbƒtƒ@iCBV: Constant Buffer Viewj‚ğì¬‚·‚éŠÖ”
+// å®šæ•°ãƒãƒƒãƒ•ã‚¡ï¼ˆCBV: Constant Buffer Viewï¼‰ã‚’ä½œæˆã™ã‚‹é–¢æ•°
 void BufferManager::CreateConstantBuffer(ID3D12Device* device, size_t size)
 {
-    // 256ƒoƒCƒg‹«ŠE‚ÉƒAƒ‰ƒCƒ“i’è”ƒoƒbƒtƒ@‚Í256ƒoƒCƒg’PˆÊ‚ÅŠm•Û‚·‚é•K—v‚ ‚èj
+    // 256ãƒã‚¤ãƒˆå¢ƒç•Œã«ã‚¢ãƒ©ã‚¤ãƒ³ï¼ˆå®šæ•°ãƒãƒƒãƒ•ã‚¡ã¯256ãƒã‚¤ãƒˆå˜ä½ã§ç¢ºä¿ã™ã‚‹å¿…è¦ã‚ã‚Šï¼‰
     CD3DX12_HEAP_PROPERTIES heapProps(D3D12_HEAP_TYPE_UPLOAD);
     CD3DX12_RESOURCE_DESC desc = CD3DX12_RESOURCE_DESC::Buffer((size + 255) & ~255);
 
-    // ƒoƒbƒtƒ@ƒŠƒ\[ƒX‚ğ¶¬
+    // ãƒãƒƒãƒ•ã‚¡ãƒªã‚½ãƒ¼ã‚¹ã‚’ç”Ÿæˆ
     device->CreateCommittedResource(
         &heapProps,
         D3D12_HEAP_FLAG_NONE,
@@ -132,11 +132,11 @@ void BufferManager::CreateConstantBuffer(ID3D12Device* device, size_t size)
         IID_PPV_ARGS(&m_constantBuffer)
     );
 
-    // GPUƒoƒbƒtƒ@‚Ì‰¼‘zƒAƒhƒŒƒX‚ğ•Û
+    // GPUãƒãƒƒãƒ•ã‚¡ã®ä»®æƒ³ã‚¢ãƒ‰ãƒ¬ã‚¹ã‚’ä¿æŒ
     m_cbGpuAddress = m_constantBuffer->GetGPUVirtualAddress();
 }
 
-// ’è”ƒoƒbƒtƒ@‚ÌGPUƒAƒhƒŒƒX‚ğæ“¾‚·‚éŠÖ”
+// å®šæ•°ãƒãƒƒãƒ•ã‚¡ã®GPUã‚¢ãƒ‰ãƒ¬ã‚¹ã‚’å–å¾—ã™ã‚‹é–¢æ•°
 D3D12_GPU_VIRTUAL_ADDRESS BufferManager::GetConstantBufferGPUAddress() const
 {
     return m_cbGpuAddress;

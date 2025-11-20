@@ -1,3 +1,4 @@
+#include "pch.h"
 #include "GameScene.h"
 #include "GameObject.h"
 #include "ObjectFactory.h"
@@ -12,10 +13,6 @@
 #include "EngineManager.h"
 #include "GameOverScene.h"
 #include "PlayerManager.h"
-#include <algorithm>
-#include <DirectXMath.h>
-#include <cmath>
-#include <Windows.h>
 #undef min
 #undef max
 
@@ -27,7 +24,7 @@ using namespace DirectX;
 static bool sceneChanged = false;
 
 /// <summary>
-/// w’è‚µ‚½ƒ^ƒO‚ğ‚ÂGameObject‚ğŒŸõ‚·‚é
+/// æŒ‡å®šã—ãŸã‚¿ã‚°ã‚’æŒã¤GameObjectã‚’æ¤œç´¢ã™ã‚‹
 /// </summary>
 GameObject* GameScene::FindByTag(const std::string& tag) {
     for (auto* obj : m_SceneObjects) {
@@ -37,7 +34,7 @@ GameObject* GameScene::FindByTag(const std::string& tag) {
 }
 
 /// <summary>
-/// w’è‚µ‚½–¼‘O‚ğ‚ÂGameObject‚ğŒŸõ‚·‚é
+/// æŒ‡å®šã—ãŸåå‰ã‚’æŒã¤GameObjectã‚’æ¤œç´¢ã™ã‚‹
 /// </summary>
 GameObject* GameScene::FindByName(const std::string& name) {
     for (auto* obj : m_SceneObjects) {
@@ -47,7 +44,7 @@ GameObject* GameScene::FindByName(const std::string& name) {
 }
 
 /// <summary>
-/// 2‚Â‚ÌAABB‚Ìd‚È‚è”»’è‚ğs‚¤iUŒ‚”»’è—pj
+/// 2ã¤ã®AABBã®é‡ãªã‚Šåˆ¤å®šã‚’è¡Œã†ï¼ˆæ”»æ’ƒåˆ¤å®šç”¨ï¼‰
 /// </summary>
 bool CheckAABBOverlap(const XMFLOAT3& minA, const XMFLOAT3& maxA,
     const XMFLOAT3& minB, const XMFLOAT3& maxB) {
@@ -57,46 +54,46 @@ bool CheckAABBOverlap(const XMFLOAT3& minA, const XMFLOAT3& maxA,
 }
 
 /// <summary>
-/// ƒQ[ƒ€ƒV[ƒ“‚ÌƒRƒ“ƒXƒgƒ‰ƒNƒ^
+/// ã‚²ãƒ¼ãƒ ã‚·ãƒ¼ãƒ³ã®ã‚³ãƒ³ã‚¹ãƒˆãƒ©ã‚¯ã‚¿
 /// </summary>
 GameScene::GameScene(EngineManager* engine)
     : engine(engine)
-	, m_StageManage(engine) // ƒXƒe[ƒWŠÇ—‰Šú‰»
+	, m_StageManage(engine) // ã‚¹ãƒ†ãƒ¼ã‚¸ç®¡ç†åˆæœŸåŒ–
 {}
 
 /// <summary>
-/// ƒV[ƒ“ŠJn‚Ì‰Šú‰»ˆ—
+/// ã‚·ãƒ¼ãƒ³é–‹å§‹æ™‚ã®åˆæœŸåŒ–å‡¦ç†
 /// </summary>
 void GameScene::Start() {
     m_SceneObjects.clear();
-    sceneChanged = false;  // ƒV[ƒ“Ø‚è‘Ö‚¦ƒtƒ‰ƒO‰Šú‰»
-    m_UIManager.InitUI(engine, m_SceneObjects); // UI‰Šú‰»
-    m_PlayerManager.InitPlayers(engine, m_SceneObjects); // ƒvƒŒƒCƒ„[ŠÇ—‰Šú‰»
-    m_StageManage.InitStage(m_SceneObjects); // ƒXƒe[ƒW‰Šú‰»
-    RegisterAnimations(); // ƒAƒjƒ[ƒVƒ‡ƒ““o˜^
+    sceneChanged = false;  // ã‚·ãƒ¼ãƒ³åˆ‡ã‚Šæ›¿ãˆãƒ•ãƒ©ã‚°åˆæœŸåŒ–
+    m_UIManager.InitUI(engine, m_SceneObjects); // UIåˆæœŸåŒ–
+    m_PlayerManager.InitPlayers(engine, m_SceneObjects); // ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ç®¡ç†åˆæœŸåŒ–
+    m_StageManage.InitStage(m_SceneObjects); // ã‚¹ãƒ†ãƒ¼ã‚¸åˆæœŸåŒ–
+    RegisterAnimations(); // ã‚¢ãƒ‹ãƒ¡ãƒ¼ã‚·ãƒ§ãƒ³ç™»éŒ²
 
-    // ‚±‚ê‚ª–³‚¢‚Æ Controller ‚â UI ‚É scene ‚ª“ü‚ç‚È‚¢
+    // ã“ã‚ŒãŒç„¡ã„ã¨ Controller ã‚„ UI ã« scene ãŒå…¥ã‚‰ãªã„
     for (auto* obj : m_SceneObjects) obj->scene = this;
 }
 
 /// <summary>
-/// –ˆƒtƒŒ[ƒ€‚ÌXVˆ—
+/// æ¯ãƒ•ãƒ¬ãƒ¼ãƒ ã®æ›´æ–°å‡¦ç†
 /// </summary>
 void GameScene::Update() {
-    // ‘SComponent‚ÌUpdate
+    // å…¨Componentã®Update
     for (auto* obj : m_SceneObjects) {
         for (auto* comp : obj->components) comp->Update();
     }
-    // ‘SƒAƒjƒ[ƒ^[Update
+    // å…¨ã‚¢ãƒ‹ãƒ¡ãƒ¼ã‚¿ãƒ¼Update
     for (auto* obj : m_SceneObjects) {
         if (auto* animator = obj->GetComponent<Animator>())
             animator->Update(1.0f / 120.0f);
     }
 
-    // ƒvƒŒƒCƒ„[“¯m‚ÌUŒ‚”»’èE€–S”»’èEƒQ[ƒ€ƒI[ƒo[”»’è‚ÍPlayerManager‚ÉˆÏ÷
+    // ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼åŒå£«ã®æ”»æ’ƒåˆ¤å®šãƒ»æ­»äº¡åˆ¤å®šãƒ»ã‚²ãƒ¼ãƒ ã‚ªãƒ¼ãƒãƒ¼åˆ¤å®šã¯PlayerManagerã«å§”è­²
     m_PlayerManager.UpdatePlayers();
 
-    // ƒQ[ƒ€ƒI[ƒo[ƒV[ƒ“‚Ö‚Ì‘JˆÚ”»’è
+    // ã‚²ãƒ¼ãƒ ã‚ªãƒ¼ãƒãƒ¼ã‚·ãƒ¼ãƒ³ã¸ã®é·ç§»åˆ¤å®š
     if (!sceneChanged && (m_PlayerManager.IsP1DyingEnded() || m_PlayerManager.IsP2DyingEnded())) {
         sceneChanged = true;
         engine->ChangeScene(std::make_unique<GameOverScene>(engine));
@@ -113,12 +110,12 @@ void GameScene::Update() {
 }
 
 /// <summary>
-/// –ˆƒtƒŒ[ƒ€‚Ì•`‰æˆ—
+/// æ¯ãƒ•ãƒ¬ãƒ¼ãƒ ã®æç”»å‡¦ç†
 /// </summary>
 void GameScene::Draw() {
     Camera* cam = engine->GetCamera();
 
-    // ƒTƒCƒhƒrƒ…[ƒJƒƒ‰İ’è
+    // ã‚µã‚¤ãƒ‰ãƒ“ãƒ¥ãƒ¼ã‚«ãƒ¡ãƒ©è¨­å®š
     cam->SetPosition({ 0.0f, 2.0f, -5.0f });
     cam->SetTarget({ 0.0f, 2.0f, 0.0f });
 
@@ -128,7 +125,7 @@ void GameScene::Draw() {
         engine->GetSwapChainManager()->GetHeight()
     );
 
-    // ƒXƒJƒCƒh[ƒ€‚ÌˆÊ’u‚ğƒJƒƒ‰‚É’Ç]
+    // ã‚¹ã‚«ã‚¤ãƒ‰ãƒ¼ãƒ ã®ä½ç½®ã‚’ã‚«ãƒ¡ãƒ©ã«è¿½å¾“
     auto* sky = FindByTag("Sky");
     if (sky) {
         auto* skyTr = sky->GetComponent<Transform>();
@@ -140,7 +137,7 @@ void GameScene::Draw() {
     auto* cb = engine->GetBufferManager()->GetConstantBuffer();
     cb->Map(0, nullptr, &mapped);
 
-    // ŠeƒIƒuƒWƒFƒNƒg‚Ì’è”ƒoƒbƒtƒ@XV
+    // å„ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆã®å®šæ•°ãƒãƒƒãƒ•ã‚¡æ›´æ–°
     for (size_t i = 0; i < m_SceneObjects.size(); ++i) {
         GameObject* obj = m_SceneObjects[i];
         auto* tr = obj->GetComponent<Transform>();
@@ -161,14 +158,14 @@ void GameScene::Draw() {
     cb->Unmap(0, nullptr);
 
     engine->GetRenderer()->BeginFrame();
-    // ’ÊíƒIƒuƒWƒFƒNƒg•`‰æ
+    // é€šå¸¸ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆæç”»
     for (size_t i = 0; i < m_SceneObjects.size(); ++i) {
         auto* obj = m_SceneObjects[i];
         if (!obj->GetComponent<UIImage>()) {
             engine->GetRenderer()->DrawObject(obj, i, view, proj);
         }
     }
-    // UIƒIƒuƒWƒFƒNƒg•`‰æiÅŒã‚É•`‰æj
+    // UIã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆæç”»ï¼ˆæœ€å¾Œã«æç”»ï¼‰
     for (size_t i = 0; i < m_SceneObjects.size(); ++i) {
         auto* obj = m_SceneObjects[i];
         if (obj->GetComponent<UIImage>()) {
@@ -180,7 +177,7 @@ void GameScene::Draw() {
 
 
 /// <summary>
-/// ƒAƒjƒ[ƒVƒ‡ƒ“‚Ì“o˜^ˆ—
+/// ã‚¢ãƒ‹ãƒ¡ãƒ¼ã‚·ãƒ§ãƒ³ã®ç™»éŒ²å‡¦ç†
 /// </summary>
 void GameScene::RegisterAnimations() {
     auto* animator1 = FindByName("Player1")->GetComponent<Animator>();
@@ -189,7 +186,7 @@ void GameScene::RegisterAnimations() {
 }
 
 /// <summary>
-/// ƒQ[ƒ€ƒV[ƒ“‚ÌƒfƒXƒgƒ‰ƒNƒ^
+/// ã‚²ãƒ¼ãƒ ã‚·ãƒ¼ãƒ³ã®ãƒ‡ã‚¹ãƒˆãƒ©ã‚¯ã‚¿
 /// </summary>
 GameScene::~GameScene() {
     for (auto* obj : m_SceneObjects) {
@@ -204,10 +201,10 @@ namespace {
 
     static SlotRole ParseSlotResult(const std::string& s) {
         if (s == "BIG")           return SlotRole::Big;
-        if (s == "ƒxƒ‹‘µ‚¢")      return SlotRole::Bell;
-        if (s == "ƒŠƒvƒŒƒC")      return SlotRole::Replay;
-        if (s == "BAR‘µ‚¢")       return SlotRole::Bar;
-        if (s == "—Í‘µ‚¢")        return SlotRole::Power;
+        if (s == "ãƒ™ãƒ«æƒã„")      return SlotRole::Bell;
+        if (s == "ãƒªãƒ—ãƒ¬ã‚¤")      return SlotRole::Replay;
+        if (s == "BARæƒã„")       return SlotRole::Bar;
+        if (s == "åŠ›æƒã„")        return SlotRole::Power;
         return SlotRole::Miss;
     }
 

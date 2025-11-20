@@ -1,3 +1,4 @@
+#include "pch.h"
 // UIImage.cpp
 #include "UIImage.h"
 #include "Renderer.h"

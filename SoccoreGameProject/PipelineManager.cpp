@@ -1,8 +1,5 @@
-﻿#include "PipelineManager.h"
-#include <d3dcompiler.h>
-#include <vector>
-#include <fstream>
-#include <cassert>
+﻿#include "pch.h"
+#include "PipelineManager.h"
 #include "d3dx12.h"
 
 // ファイル読み込みユーティリティ

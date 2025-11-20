@@ -1,22 +1,23 @@
+#include "pch.h"
 #include "StageManager.h"
 #include "ObjectFactory.h"
 #include "Colors.h"
 
 /// <summary>
-/// ƒXƒe[ƒWƒ}ƒl[ƒWƒƒ‚ÌƒRƒ“ƒXƒgƒ‰ƒNƒ^
+/// ã‚¹ãƒ†ãƒ¼ã‚¸ãƒãƒãƒ¼ã‚¸ãƒ£ã®ã‚³ãƒ³ã‚¹ãƒˆãƒ©ã‚¯ã‚¿
 /// </summary>
 
 StageManager::StageManager(EngineManager* engine)
     : engine(engine) {}
 
 /// <summary>
-/// ƒXƒe[ƒWƒ}ƒl[ƒWƒƒ‚ÌƒfƒXƒgƒ‰ƒNƒ^
+/// ã‚¹ãƒ†ãƒ¼ã‚¸ãƒãƒãƒ¼ã‚¸ãƒ£ã®ãƒ‡ã‚¹ãƒˆãƒ©ã‚¯ã‚¿
 /// </summary>
 
 StageManager::~StageManager() {}
 
 /// <summary>
-/// ƒXƒe[ƒW‚Ì‰Šú‰»ˆ—
+/// ã‚¹ãƒ†ãƒ¼ã‚¸ã®åˆæœŸåŒ–å‡¦ç†
 /// </summary>
 
 void StageManager::InitStage(std::vector<GameObject*>& sceneObjects) {
@@ -30,7 +31,7 @@ void StageManager::InitStage(std::vector<GameObject*>& sceneObjects) {
 
     int reelTex = engine->GetTextureManager()->LoadTexture(L"assets/Slot/Reel.png", engine->GetDeviceManager()->GetCommandList());
 
-    // --- ƒXƒƒbƒgƒŠ[ƒ‹3–{‚ğ‰¡•À‚Ñ‚Å¶¬•ƒRƒ“ƒgƒ[ƒ‰”zü ---
+    // --- ã‚¹ãƒ­ãƒƒãƒˆãƒªãƒ¼ãƒ«3æœ¬ã‚’æ¨ªä¸¦ã³ã§ç”Ÿæˆï¼†ã‚³ãƒ³ãƒˆãƒ­ãƒ¼ãƒ©é…ç·š ---
     ReelComponent* reels[3] = { nullptr, nullptr, nullptr };
 
     for (int i = 0; i < 3; ++i) {
@@ -38,10 +39,10 @@ void StageManager::InitStage(std::vector<GameObject*>& sceneObjects) {
 
         GameObject* reel = ObjectFactory::CreateCylinderReel(
             engine,
-            { x, 3.0f, 0.0f },          // ˆÊ’u
-            { 1.5f, 1.5f, 1.5f },       // ƒXƒP[ƒ‹
-            reelTex,                    // ƒeƒNƒXƒ`ƒƒ
-            Colors::White,              // F
+            { x, 3.0f, 0.0f },          // ä½ç½®
+            { 1.5f, 1.5f, 1.5f },       // ã‚¹ã‚±ãƒ¼ãƒ«
+            reelTex,                    // ãƒ†ã‚¯ã‚¹ãƒãƒ£
+            Colors::White,              // è‰²
             "Reel",                     // Tag
             "SlotReel" + std::to_string(i + 1) // Name
         );
@@ -51,7 +52,7 @@ void StageManager::InitStage(std::vector<GameObject*>& sceneObjects) {
         reels[i] = rc;
     }
 
-    // “ü—Í¨ŠeƒŠ[ƒ‹‚Ö–½—ß‚ğo‚·ƒRƒ“ƒgƒ[ƒ‰iZ=¶, X=’†, C=‰E, S=‘SƒXƒ^[ƒgj
+    // å…¥åŠ›â†’å„ãƒªãƒ¼ãƒ«ã¸å‘½ä»¤ã‚’å‡ºã™ã‚³ãƒ³ãƒˆãƒ­ãƒ¼ãƒ©ï¼ˆZ=å·¦, X=ä¸­, C=å³, S=å…¨ã‚¹ã‚¿ãƒ¼ãƒˆï¼‰
     {
         GameObject* controller = new GameObject();
         controller->tag = "ReelController";

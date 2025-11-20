@@ -1,13 +1,14 @@
+#include "pch.h"
 #include "StaticMeshRenderer.h"
 
 StaticMeshRenderer::~StaticMeshRenderer() {
-    // FBXƒ‚ƒfƒ‹‚È‚ÇŒÂ•Ênew‚µ‚½‚Æ‚«‚¾‚¯delete
+    // FBXãƒ¢ãƒ‡ãƒ«ãªã©å€‹åˆ¥newã—ãŸã¨ãã ã‘delete
     if (m_VertexInfo) delete m_VertexInfo;
-    // modelBuffer‚àFBXƒ‚ƒfƒ‹“™‚Ìnew BufferManager‚¾‚¯delete
-    // Cube/Sphere/Quad‚È‚ÇEngineManager‚Ì‚à‚Ì‚Ídelete‚µ‚È‚¢
+    // modelBufferã‚‚FBXãƒ¢ãƒ‡ãƒ«ç­‰ã®new BufferManageræ™‚ã ã‘delete
+    // Cube/Sphere/Quadãªã©EngineManagerã®ã‚‚ã®ã¯deleteã—ãªã„
     if (m_ModelBuffer && m_VertexInfo) delete m_ModelBuffer;
 }
 
 void StaticMeshRenderer::Draw() {
-    // •`‰æ‚ÍRendererƒNƒ‰ƒX‚ÉˆÏ÷‚·‚é‚Ì‚Å‚±‚±‚Å‚Í‰½‚à‚µ‚È‚¢
+    // æç”»ã¯Rendererã‚¯ãƒ©ã‚¹ã«å§”è­²ã™ã‚‹ã®ã§ã“ã“ã§ã¯ä½•ã‚‚ã—ãªã„
 }

@@ -1,3 +1,4 @@
+#include "pch.h"
 #include "PlayerManager.h"
 #include "Player1Component.h"
 #include "Player2Component.h"
@@ -5,12 +6,10 @@
 #include "Transform.h"
 #include "Animator.h"
 #include "Collider.h"
-#include <DirectXMath.h>
-#include <cmath>
 using namespace DirectX;
 
 void PlayerManager::InitPlayers(EngineManager* engine, std::vector<GameObject*>& sceneObjects) {
-    // 1P¶¬
+    // 1Pç”Ÿæˆ
     int p1TexIdx = engine->GetTextureManager()->LoadTexture(L"assets/Mutant.fbm/Mutant_diffuse.png", engine->GetDeviceManager()->GetCommandList());
     m_Player1 = ObjectFactory::CreateSkinningBaseModel(
         engine, "assets/Mutant.fbx",
@@ -23,7 +22,7 @@ void PlayerManager::InitPlayers(EngineManager* engine, std::vector<GameObject*>&
     m_Player1->GetComponent<Transform>()->rotation.y = XMConvertToRadians(90.0f);
     if (auto* comp1 = m_Player1->GetComponent<Player1Component>()) comp1->Start();
 
-    // 2P¶¬
+    // 2Pç”Ÿæˆ
     int p2TexIdx = engine->GetTextureManager()->LoadTexture(L"assets/MMA2/SkeletonzombieTAvelange.fbm/skeletonZombie_diffuse.png", engine->GetDeviceManager()->GetCommandList());
     m_Player2 = ObjectFactory::CreateSkinningBaseModel(
         engine, "assets/MMA2/SkeletonzombieTAvelange.fbx",
@@ -53,7 +52,7 @@ GameObject* PlayerManager::GetPlayerByName(const std::string& name) {
 }
 
 void PlayerManager::UpdatePlayers() {
-    // ƒvƒŒƒCƒ„[“¯Žm‚ÌUŒ‚”»’èEŽ€–S”»’è‚È‚Ç
+    // ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼åŒå£«ã®æ”»æ’ƒåˆ¤å®šãƒ»æ­»äº¡åˆ¤å®šãªã©
     if (!m_Player1 || !m_Player2) return;
 
     auto* tr1 = m_Player1->GetComponent<Transform>();
@@ -71,7 +70,7 @@ void PlayerManager::UpdatePlayers() {
     auto* anim2 = m_Player2->GetComponent<Animator>();
     auto* comp2 = m_Player2->GetComponent<Player2Component>();
 
-    // ƒvƒŒƒCƒ„[1‚ÌUŒ‚”»’è
+    // ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼1ã®æ”»æ’ƒåˆ¤å®š
     static bool prevHitP1toP2 = false;
     bool isP1AttackAnim = (anim1 && (anim1->currentAnim == "Punch" || anim1->currentAnim == "Kick") && anim1->isPlaying);
     bool hitP1toP2 = isP1AttackAnim &&
@@ -86,7 +85,7 @@ void PlayerManager::UpdatePlayers() {
     }
     prevHitP1toP2 = hitP1toP2;
 
-    // ƒvƒŒƒCƒ„[2‚ÌUŒ‚”»’è
+    // ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼2ã®æ”»æ’ƒåˆ¤å®š
     static bool prevHitP2toP1 = false;
     bool isP2AttackAnim = (anim2 && (anim2->currentAnim == "Punch" || anim2->currentAnim == "Kick") && anim2->isPlaying);
     bool hitP2toP1 = isP2AttackAnim &&
@@ -101,7 +100,7 @@ void PlayerManager::UpdatePlayers() {
     }
     prevHitP2toP1 = hitP2toP1;
 
-    // Ž€–S‰‰oI—¹ŒŸo
+    // æ­»äº¡æ¼”å‡ºçµ‚äº†æ¤œå‡º
     if (comp1 && comp1->state == PlayerState::Dying) {
         if (anim1 && !anim1->isPlaying) {
             m_IsP1DyingEnded = true;

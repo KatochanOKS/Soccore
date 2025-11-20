@@ -1,9 +1,10 @@
+#include "pch.h"
 #include "Collider.h"
 #include "Transform.h"
 
-// ƒ[ƒ‹ƒhÀ•WAABBi‰ñ“]‚Íl—¶‚µ‚È‚¢Cube‚Æ‚µ‚ÄŒvZj
+// ãƒ¯ãƒ¼ãƒ«ãƒ‰åº§æ¨™AABBï¼ˆå›è»¢ã¯è€ƒæ…®ã—ãªã„Cubeã¨ã—ã¦è¨ˆç®—ï¼‰
 void Collider::GetAABBWorld(const Transform* tr, DirectX::XMFLOAT3& outMin, DirectX::XMFLOAT3& outMax) const {
-    // scale‚ğŠ|‚¯‚È‚¢‚ÅCollider‚ÌƒTƒCƒY‚ğ‚»‚Ì‚Ü‚Üg‚¤
+    // scaleã‚’æ›ã‘ãªã„ã§Colliderã®ã‚µã‚¤ã‚ºã‚’ãã®ã¾ã¾ä½¿ã†
     float halfX = size.x * 0.5f;
     float halfY = size.y * 0.5f;
     float halfZ = size.z * 0.5f;
