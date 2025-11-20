@@ -180,7 +180,7 @@ void Player1Component::Update() {
     }
 
     // HPバーUIの更新（既存のまま）
-    const float delaySpeed = 0.001f;
+    const float delaySpeed = 0.005f;
     if (delayedHp > hp) {
         delayedHp -= delaySpeed;
         if (delayedHp < hp) delayedHp = hp;

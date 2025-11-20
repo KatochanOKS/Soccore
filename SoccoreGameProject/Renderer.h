@@ -63,6 +63,8 @@ public:
     /// </summary>
     void EndFrame();
 
+	void SetImGuiSrvHeap(ID3D12DescriptorHeap* heap) { m_ImGuiSrvHeap = heap; } ///< ImGui用SRVヒープ設定
+
 private:
     DeviceManager* m_DeviceMgr = nullptr;                ///< デバイス管理
     SwapChainManager* m_SwapMgr = nullptr;               ///< スワップチェーン管理
@@ -82,6 +84,10 @@ private:
 
     UINT m_BackBufferIndex = 0;                          ///< バックバッファインデックス
     ID3D12GraphicsCommandList* m_CmdList = nullptr;      ///< コマンドリスト
-    float m_Width = 1280.0f;                             ///< 画面幅
-    float m_Height = 720.0f;                             ///< 画面高さ
+    UINT m_Width = 1280;                             ///< 画面幅
+    UINT m_Height = 720;                             ///< 画面高さ
+
+    
+	ID3D12DescriptorHeap* m_ImGuiSrvHeap = nullptr; 	  ///< ImGui用SRVヒープ
+
 };

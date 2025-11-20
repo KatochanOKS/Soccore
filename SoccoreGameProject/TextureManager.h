@@ -30,6 +30,9 @@ public:
     /// </summary>
     D3D12_GPU_DESCRIPTOR_HANDLE GetSRV(int index);
 
+    D3D12_CPU_DESCRIPTOR_HANDLE GetSRVCPUHandle(int index) const;
+    D3D12_GPU_DESCRIPTOR_HANDLE GetSRVGPUHandle(int index) const;
+    int ReserveSlot();///< 次のSRVスロット
 private:
     Microsoft::WRL::ComPtr<ID3D12Device> m_Device;                 ///< デバイス
     Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> m_SrvHeap;        ///< SRVヒープ
@@ -37,5 +40,7 @@ private:
     std::vector<Microsoft::WRL::ComPtr<ID3D12Resource>> m_Textures; ///< テクスチャリソース
     std::vector<Microsoft::WRL::ComPtr<ID3D12Resource>> m_UploadBuffers; ///< Uploadバッファ
     UINT m_DescriptorSize = 0;                                     ///< SRVディスクリプタサイズ
-    UINT m_NextIndex = 0;                                          ///< 次のSRVスロット
+    UINT m_NextIndex = 0;   
+    
+
 };

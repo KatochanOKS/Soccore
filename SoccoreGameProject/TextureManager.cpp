@@ -127,3 +127,20 @@ D3D12_GPU_DESCRIPTOR_HANDLE TextureManager::GetSRV(int index) {
     handle.ptr += static_cast<UINT64>(index) * m_DescriptorSize;
     return handle;
 }
+
+D3D12_CPU_DESCRIPTOR_HANDLE TextureManager::GetSRVCPUHandle(int index) const {
+    D3D12_CPU_DESCRIPTOR_HANDLE handle = m_SrvHeap->GetCPUDescriptorHandleForHeapStart();
+    handle.ptr += static_cast<SIZE_T>(index) * m_DescriptorSize;
+    return handle;
+}
+
+D3D12_GPU_DESCRIPTOR_HANDLE TextureManager::GetSRVGPUHandle(int index) const {
+    D3D12_GPU_DESCRIPTOR_HANDLE handle = m_SrvHeap->GetGPUDescriptorHandleForHeapStart();
+    handle.ptr += static_cast<UINT64>(index) * m_DescriptorSize;
+    return handle;
+}
+
+int TextureManager::ReserveSlot() {
+    return m_NextIndex++; // SRV を作らずに "空き1スロット" として確保する
+}
+

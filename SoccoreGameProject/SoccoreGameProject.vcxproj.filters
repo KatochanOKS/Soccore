@@ -57,6 +57,12 @@
     <Filter Include="F\Scene\Stage">
       <UniqueIdentifier>{b554d6c9-d097-4b1a-8ccd-326f98433217}</UniqueIdentifier>
     </Filter>
+    <Filter Include="F\imgui">
+      <UniqueIdentifier>{1a837d58-5a8b-4d9b-a9a7-1f031fdf2e43}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="F\imgui\backends">
+      <UniqueIdentifier>{8ac05e69-575d-44fb-b796-8264e8dd6edb}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="MeshLibrary.cpp">
@@ -148,6 +154,27 @@
     </ClCompile>
     <ClCompile Include="ReelJudge.cpp">
       <Filter>F\Slot</Filter>
+    </ClCompile>
+    <ClCompile Include="imgui.cpp">
+      <Filter>F\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="imgui_demo.cpp">
+      <Filter>F\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="imgui_draw.cpp">
+      <Filter>F\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="imgui_tables.cpp">
+      <Filter>F\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="imgui_widgets.cpp">
+      <Filter>F\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="imgui_impl_dx12.cpp">
+      <Filter>F\imgui\backends</Filter>
+    </ClCompile>
+    <ClCompile Include="imgui_impl_win32.cpp">
+      <Filter>F\imgui\backends</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -273,6 +300,18 @@
     </ClInclude>
     <ClInclude Include="ReelJudge.h">
       <Filter>F\Slot</Filter>
+    </ClInclude>
+    <ClInclude Include="imconfig.h">
+      <Filter>F\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="imgui.h">
+      <Filter>F\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="imgui_impl_dx12.h">
+      <Filter>F\imgui\backends</Filter>
+    </ClInclude>
+    <ClInclude Include="imgui_impl_win32.h">
+      <Filter>F\imgui\backends</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

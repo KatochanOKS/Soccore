@@ -2,6 +2,14 @@
 #include "EngineManager.h"
 #include <windows.h>
 
+#include "imgui.h"
+#include "imgui_impl_win32.h"   // ← backends/ は付けない
+
+// ★ これを追加（前方宣言）
+extern LRESULT ImGui_ImplWin32_WndProcHandler(
+    HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+
+
 void ApplicationManager::InitWindow(HINSTANCE hInstance, int nCmdShow) {
     WNDCLASSEX windowClass = { 0 };
     windowClass.cbSize = sizeof(WNDCLASSEX);
@@ -58,6 +66,10 @@ int ApplicationManager::GetExitCode() {
 }
 
 LRESULT CALLBACK ApplicationManager::WndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
+    // ★ ImGui にもメッセージを渡す
+    if (ImGui_ImplWin32_WndProcHandler(hwnd, msg, wp, lp))
+        return true;
+
     switch (msg) {
     case WM_DESTROY:
         PostQuitMessage(0);
