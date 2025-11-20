@@ -65,6 +65,9 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="pch.cpp">
+      <Filter>F</Filter>
+    </ClCompile>
     <ClCompile Include="MeshLibrary.cpp">
       <Filter>F\GameObject</Filter>
     </ClCompile>
@@ -180,6 +183,9 @@
   <ItemGroup>
     <ClInclude Include="GameObject.h">
       <Filter>F\GameObject</Filter>
+    </ClInclude>
+    <ClInclude Include="pch.h">
+      <Filter>F</Filter>
     </ClInclude>
     <ClInclude Include="Colors.h">
       <Filter>F\GameObject</Filter>

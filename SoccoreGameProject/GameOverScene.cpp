@@ -1,9 +1,10 @@
+#include "pch.h"
 #include "GameOverScene.h"
 #include "ObjectFactory.h"
 #include "Transform.h"
 #include "Renderer.h"
 #include "Camera.h"
-#include "StartScene.h"   // ƒ^ƒCƒgƒ‹‚Ö–ß‚é‚½‚ß
+#include "StartScene.h"   // ã‚¿ã‚¤ãƒˆãƒ«ã¸æˆ»ã‚‹ãŸã‚
 
 GameOverScene::GameOverScene(EngineManager* engine) : engine(engine) {}
 
@@ -11,7 +12,7 @@ void GameOverScene::Start() {
     m_SceneObjects.clear();
 
 
-    // uGAME OVERv‰æ‘œi–³‚¯‚ê‚ÎƒeƒLƒXƒg‰æ‘œ‚ð—pˆÓ‚µ‚Ä‚Ëj
+    // ã€ŒGAME OVERã€ç”»åƒï¼ˆç„¡ã‘ã‚Œã°ãƒ†ã‚­ã‚¹ãƒˆç”»åƒã‚’ç”¨æ„ã—ã¦ã­ï¼‰
     int overTex = engine->GetTextureManager()->LoadTexture(
         L"assets/GameOver.png",
         engine->GetDeviceManager()->GetCommandList()
@@ -19,27 +20,27 @@ void GameOverScene::Start() {
     {
         auto* ui = new GameObject();
         auto* img = ui->AddComponent<UIImage>();
-        img->m_TexIndex = overTex;         // ‰æ‘œ‚ª–³‚¢‚Æ‚«‚Í -1 ‚Å‚àOKiFƒxƒ^•\Ž¦j
+        img->m_TexIndex = overTex;         // ç”»åƒãŒç„¡ã„ã¨ãã¯ -1 ã§ã‚‚OKï¼ˆè‰²ãƒ™ã‚¿è¡¨ç¤ºï¼‰
         img->m_Size = { 1280, 720 };
-        img->m_Position = { 0, 0 };    // 1280x720‘z’è‚Ì’†‰›•t‹ß
+        img->m_Position = { 0, 0 };    // 1280x720æƒ³å®šã®ä¸­å¤®ä»˜è¿‘
         img->m_Color = { 1, 1, 1, 1 };
         m_SceneObjects.push_back(ui);
     }
 }
 
 void GameOverScene::Update() {
-    // ƒGƒbƒWŒŸoi‰Ÿ‚µ‚½uŠÔ‚¾‚¯”½‰žj
+    // ã‚¨ãƒƒã‚¸æ¤œå‡ºï¼ˆæŠ¼ã—ãŸçž¬é–“ã ã‘åå¿œï¼‰
     static bool prev = false;
     bool cur = (GetAsyncKeyState(VK_RETURN) & 0x8000) != 0;
 
     if (cur && !prev) {
-        // ƒ^ƒCƒgƒ‹‚Ö
+        // ã‚¿ã‚¤ãƒˆãƒ«ã¸
         engine->ChangeScene(std::make_unique<StartScene>(engine));
         return;
     }
     prev = cur;
 
-    // •K—v‚ª‚ ‚ê‚Î“_–Å‚È‚Ç‚ÌUI‰‰o‚ð‚±‚±‚Å
+    // å¿…è¦ãŒã‚ã‚Œã°ç‚¹æ»…ãªã©ã®UIæ¼”å‡ºã‚’ã“ã“ã§
 }
 
 void GameOverScene::Draw() {
@@ -53,7 +54,7 @@ void GameOverScene::Draw() {
         engine->GetSwapChainManager()->GetHeight()
     );
 
-    // ƒXƒJƒCƒh[ƒ€‚ðƒJƒƒ‰‚É’Ç]
+    // ã‚¹ã‚«ã‚¤ãƒ‰ãƒ¼ãƒ ã‚’ã‚«ãƒ¡ãƒ©ã«è¿½å¾“
     for (auto* obj : m_SceneObjects) {
         if (obj->tag == "Sky") {
             if (auto* tr = obj->GetComponent<Transform>())

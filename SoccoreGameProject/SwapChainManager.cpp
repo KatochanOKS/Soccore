@@ -1,9 +1,9 @@
+#include "pch.h"
 #include "SwapChainManager.h"
-#include <cassert>
 
 bool SwapChainManager::Initialize(HWND hWnd, ID3D12Device* device, ID3D12CommandQueue* cmdQueue, UINT width, UINT height) {
-    m_width = width;    // �ǉ�
-    m_height = height;  // �ǉ�
+    m_width = width;    // 追加
+    m_height = height;  // 追加
     Microsoft::WRL::ComPtr<IDXGIFactory4> dxgiFactory;
     HRESULT hr = CreateDXGIFactory2(0, IID_PPV_ARGS(&dxgiFactory));
     if (FAILED(hr)) return false;
@@ -24,7 +24,7 @@ bool SwapChainManager::Initialize(HWND hWnd, ID3D12Device* device, ID3D12Command
     hr = swapChain1.As(&m_swapChain);
     if (FAILED(hr)) return false;
 
-    // RTV�q�[�v�쐬
+    // RTVヒープ作成
     D3D12_DESCRIPTOR_HEAP_DESC heapDesc = {};
     heapDesc.NumDescriptors = m_bufferCount;
     heapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
@@ -34,7 +34,7 @@ bool SwapChainManager::Initialize(HWND hWnd, ID3D12Device* device, ID3D12Command
 
     m_rtvHeapSize = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 
-    // �o�b�N�o�b�t�@�擾��RTV�쐬
+    // バックバッファ取得＆RTV作成
     D3D12_CPU_DESCRIPTOR_HANDLE handle = m_rtvHeap->GetCPUDescriptorHandleForHeapStart();
     for (UINT i = 0; i < m_bufferCount; ++i) {
         hr = m_swapChain->GetBuffer(i, IID_PPV_ARGS(&m_backBuffers[i]));

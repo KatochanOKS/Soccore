@@ -1,14 +1,8 @@
+#include "pch.h"
 #include "DeviceManager.h"
-#include <cassert>
-#include <d3d12.h>
-#include <wrl.h>
 #pragma comment(lib, "d3d12.lib")
 #pragma comment(lib, "dxgi.lib")
 #pragma comment(lib, "dxguid.lib")
-#include <dxgi1_6.h>
-#include <wrl/client.h>
-#include <Windows.h>
-#include <DirectXMath.h>
 bool DeviceManager::Initialize() {
 #ifdef _DEBUG
     Microsoft::WRL::ComPtr<ID3D12Debug> debug;
@@ -43,11 +37,11 @@ bool DeviceManager::Initialize() {
 
 void DeviceManager::Cleanup() {
     if (m_fenceEvent) CloseHandle(m_fenceEvent);
-    // ComPtr‚ÍŽ©“®‚Å‰ð•ú
+    // ComPtrã¯è‡ªå‹•ã§è§£æ”¾
 }
 
 void DeviceManager::WaitForGpu() {
-    // m_fence, m_fenceValue, m_commandQueue, m_fenceEvent ‚ðŽ–‘O‚Éì‚Á‚Ä‚¨‚­‚±‚ÆI
+    // m_fence, m_fenceValue, m_commandQueue, m_fenceEvent ã‚’äº‹å‰ã«ä½œã£ã¦ãŠãã“ã¨ï¼
     const UINT64 fenceToWaitFor = ++m_fenceValue;
     m_commandQueue->Signal(m_fence.Get(), fenceToWaitFor);
     if (m_fence->GetCompletedValue() < fenceToWaitFor) {

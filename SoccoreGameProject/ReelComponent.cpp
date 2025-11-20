@@ -1,10 +1,7 @@
-﻿#include "ReelComponent.h"
+﻿#include "pch.h"
+#include "ReelComponent.h"
 #include "Transform.h"
 #include "GameObject.h"
-#include <cmath>
-#include <random>
-#include <algorithm>
-#include <DirectXMath.h>
 
 using namespace DirectX;
 

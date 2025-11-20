@@ -1,4 +1,5 @@
-﻿#include "Renderer.h"
+﻿#include "pch.h"
+#include "Renderer.h"
 #include "d3dx12.h"
 #include "Transform.h"
 #include "StaticMeshRenderer.h"

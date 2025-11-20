@@ -1,3 +1,4 @@
+#include "pch.h"
 #include "GameUIManager.h"
 #include "EngineManager.h"
 #include "ObjectFactory.h"
@@ -6,7 +7,7 @@
 
 void GameUIManager::InitUI(EngineManager* engine, std::vector<GameObject*>& sceneObjects) {
 
-        // ƒXƒJƒCƒh[ƒ€¶¬
+        // ã‚¹ã‚«ã‚¤ãƒ‰ãƒ¼ãƒ ç”Ÿæˆ
         int skyTex = engine->GetTextureManager()->LoadTexture(
             L"assets/SkyDome.png",
             engine->GetDeviceManager()->GetCommandList()
@@ -17,7 +18,7 @@ void GameUIManager::InitUI(EngineManager* engine, std::vector<GameObject*>& scen
         int logoTexRed = engine->GetTextureManager()->LoadTexture(L"assets/Red.png", engine->GetDeviceManager()->GetCommandList());
         int logoTex = engine->GetTextureManager()->LoadTexture(L"assets/Green3.png", engine->GetDeviceManager()->GetCommandList());
 
-        // 1P—p ÔŽc‘œƒo[i¶ãj
+        // 1Pç”¨ èµ¤æ®‹åƒãƒãƒ¼ï¼ˆå·¦ä¸Šï¼‰
         GameObject* hp1RedObj = new GameObject();
         auto* hp1Red = hp1RedObj->AddComponent<UIImage>();
         hp1Red->m_TexIndex = logoTexRed;
@@ -28,7 +29,7 @@ void GameUIManager::InitUI(EngineManager* engine, std::vector<GameObject*>& scen
         hp1RedObj->name = "HP1Red";
         sceneObjects.push_back(hp1RedObj);
 
-        // 1P—p –{‘Ìƒo[i¶ãj
+        // 1Pç”¨ æœ¬ä½“ãƒãƒ¼ï¼ˆå·¦ä¸Šï¼‰
         GameObject* hp1Obj = new GameObject();
         auto* hp1 = hp1Obj->AddComponent<UIImage>();
         hp1->m_TexIndex = logoTex;
@@ -39,7 +40,7 @@ void GameUIManager::InitUI(EngineManager* engine, std::vector<GameObject*>& scen
         hp1Obj->name = "HP1";
         sceneObjects.push_back(hp1Obj);
 
-        // 2P—p ÔŽc‘œƒo[i‰Eãj
+        // 2Pç”¨ èµ¤æ®‹åƒãƒãƒ¼ï¼ˆå³ä¸Šï¼‰
         GameObject* hp2RedObj = new GameObject();
         auto* hp2Red = hp2RedObj->AddComponent<UIImage>();
         hp2Red->m_TexIndex = logoTexRed;
@@ -50,7 +51,7 @@ void GameUIManager::InitUI(EngineManager* engine, std::vector<GameObject*>& scen
         hp2RedObj->name = "HP2Red";
         sceneObjects.push_back(hp2RedObj);
 
-        // 2P—p –{‘Ìƒo[i‰Eãj
+        // 2Pç”¨ æœ¬ä½“ãƒãƒ¼ï¼ˆå³ä¸Šï¼‰
         GameObject* hp2Obj = new GameObject();
         auto* hp2 = hp2Obj->AddComponent<UIImage>();
         hp2->m_TexIndex = logoTex;

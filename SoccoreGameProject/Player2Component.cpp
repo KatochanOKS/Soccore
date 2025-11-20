@@ -1,10 +1,10 @@
+#include "pch.h"
 #include "Player2Component.h"
 #include "Transform.h"
 #include "Animator.h"
 #include "GameObject.h"
 #include "UIImage.h"
 #include "GameScene.h"
-#include <windows.h>
 
 extern "C" {
 #include "lua.h"
@@ -48,14 +48,14 @@ void Player2Component::LoadConfigFromLua() {
 
     lua_close(L);
 
-    // ƒfƒoƒbƒOo—Í
+    // ãƒ‡ãƒãƒƒã‚°å‡ºåŠ›
     char buf[128];
     sprintf_s(buf, "Player2Config: maxHp=%.1f, hp=%.1f, speed=%.3f, name=%s\n", maxHp, hp, moveSpeed, name.c_str());
     OutputDebugStringA(buf);
 }
 
 void Player2Component::Start() {
-    // Å‰‚Ì“Ç‚ÉXV‚àŠo‚¦‚é
+    // æœ€åˆã®èª­è¾¼æ™‚ã«æ›´æ–°æ™‚åˆ»ã‚‚è¦šãˆã‚‹
     WIN32_FILE_ATTRIBUTE_DATA data;
     if (GetFileAttributesExA("assets/scripts/player2_config.lua", GetFileExInfoStandard, &data)) {
         lastWriteTime = data.ftLastWriteTime;
@@ -64,13 +64,13 @@ void Player2Component::Start() {
 }
 void Player2Component::Update() {
 
-    // Luaƒtƒ@ƒCƒ‹XVŠÄ‹i©“®ƒŠƒ[ƒhIj
+    // Luaãƒ•ã‚¡ã‚¤ãƒ«æ›´æ–°ç›£è¦–ï¼ˆè‡ªå‹•ãƒªãƒ­ãƒ¼ãƒ‰ï¼ï¼‰
     WIN32_FILE_ATTRIBUTE_DATA data;
     if (GetFileAttributesExA("assets/scripts/player2_config.lua", GetFileExInfoStandard, &data)) {
         if (CompareFileTime(&lastWriteTime, &data.ftLastWriteTime) != 0) {
             lastWriteTime = data.ftLastWriteTime;
             LoadConfigFromLua();
-            OutputDebugStringA("LuaƒzƒbƒgƒŠƒ[ƒh!\n");
+            OutputDebugStringA("Luaãƒ›ãƒƒãƒˆãƒªãƒ­ãƒ¼ãƒ‰!\n");
         }
     }
 
@@ -78,7 +78,7 @@ void Player2Component::Update() {
     auto* animator = gameObject->GetComponent<Animator>();
     if (!tr || !animator) return;
 
-    // “ü—Íæ“¾i2P: U=ƒK[ƒh, P=ƒLƒbƒN, L=ƒpƒ“ƒ`, –îˆó‚ÅˆÚ“®j
+    // å…¥åŠ›å–å¾—ï¼ˆ2P: U=ã‚¬ãƒ¼ãƒ‰, P=ã‚­ãƒƒã‚¯, L=ãƒ‘ãƒ³ãƒ, çŸ¢å°ã§ç§»å‹•ï¼‰
     bool kickKey = (GetAsyncKeyState('P') & 0x8000);
     bool punchKey = (GetAsyncKeyState('L') & 0x8000);
     bool guardKey = (GetAsyncKeyState('U') & 0x8000);
@@ -136,7 +136,7 @@ void Player2Component::Update() {
             animator->SetAnimation("Idle", true);
         }
         else {
-            // –îˆóˆÚ“®
+            // çŸ¢å°ç§»å‹•
             if (moveL) tr->position.x -= moveSpeed;
             if (moveR) tr->position.x += moveSpeed;
             if (moveU) tr->position.z -= moveSpeed;
@@ -169,15 +169,15 @@ void Player2Component::Update() {
         break;
 
     case PlayerState::Dying:
-        // €–S‚Í‰½‚à‚µ‚È‚¢
+        // æ­»äº¡æ™‚ã¯ä½•ã‚‚ã—ãªã„
         break;
 
     case PlayerState::Win:
-        // Ÿ—˜ó‘Ô
+        // å‹åˆ©çŠ¶æ…‹
         break;
     }
 
-    // HPƒo[UIiŠù‘¶‚Ü‚Üj
+    // HPãƒãƒ¼UIï¼ˆæ—¢å­˜ã¾ã¾ï¼‰
     const float delaySpeed = 0.005f;
     if (delayedHp > hp) {
         delayedHp -= delaySpeed;
@@ -188,7 +188,7 @@ void Player2Component::Update() {
     }
 
     const float HPBAR_MAX_WIDTH = 500.0f;
-    const float HPBAR_RIGHT_EDGE = 1280.0f - HPBAR_MAX_WIDTH; // ‰E‘¤‚Éƒo[‚ğŒÅ’è‚µ‚½‚¢ê‡
+    const float HPBAR_RIGHT_EDGE = 1280.0f - HPBAR_MAX_WIDTH; // å³å´ã«ãƒãƒ¼ã‚’å›ºå®šã—ãŸã„å ´åˆ
 
     GameObject* hpRedBarObj = gameObject->scene->FindByName("HP2Red");
     if (hpRedBarObj) {
@@ -196,7 +196,7 @@ void Player2Component::Update() {
         float redWidth = HPBAR_MAX_WIDTH * (delayedHp / maxHp);
         if (redWidth < 0) redWidth = 0;
         redBar->m_Size.x = redWidth;
-        redBar->m_Position.x = HPBAR_RIGHT_EDGE + (HPBAR_MAX_WIDTH - redWidth); // ‰E’[ŒÅ’è
+        redBar->m_Position.x = HPBAR_RIGHT_EDGE + (HPBAR_MAX_WIDTH - redWidth); // å³ç«¯å›ºå®š
     }
 
     GameObject* hpBarObj = gameObject->scene->FindByName("HP2");
@@ -205,7 +205,7 @@ void Player2Component::Update() {
         float barWidth = HPBAR_MAX_WIDTH * (hp / maxHp);
         if (barWidth < 0) barWidth = 0;
         bar->m_Size.x = barWidth;
-        bar->m_Position.x = HPBAR_RIGHT_EDGE + (HPBAR_MAX_WIDTH - barWidth); // ‰E’[ŒÅ’è
+        bar->m_Position.x = HPBAR_RIGHT_EDGE + (HPBAR_MAX_WIDTH - barWidth); // å³ç«¯å›ºå®š
     }
 
 
@@ -214,7 +214,7 @@ void Player2Component::Update() {
     prevGuardKey = guardKey;
 }
 
-// ”íƒ_ƒ[ƒWó‚¯‚é‚Æ‚«
+// è¢«ãƒ€ãƒ¡ãƒ¼ã‚¸å—ã‘ã‚‹ã¨ã
 void Player2Component::TakeDamage(float amount) {
     if (state == PlayerState::Dying) return;
     hp -= amount;
