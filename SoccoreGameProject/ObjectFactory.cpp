@@ -1,4 +1,3 @@
-#include "pch.h"
 #include "ObjectFactory.h"
 #include "GameObject.h"
 #include "Transform.h"
@@ -13,14 +12,14 @@
 
 using namespace DirectX;
 
-// ãƒ˜ãƒ«ãƒ‘ãƒ¼ï¼šColliderã‚’Transformã«åˆã‚ã›ã¦è‡ªå‹•è¨­å®š
+// ƒwƒ‹ƒp[FCollider‚ðTransform‚É‡‚í‚¹‚ÄŽ©“®Ý’è
 inline void AutoFitCollider(Collider* col, Transform* tr) {
     col->center = { 0,0,0 };
     col->size = tr->scale;
 }
 
 //---------------------------
-// Cubeï¼ˆåœ°é¢ãƒ»å£ãªã©ï¼‰
+// Cubei’n–ÊE•Ç‚È‚Çj
 //---------------------------
 GameObject* ObjectFactory::CreateCube(
     EngineManager* engine,
@@ -45,9 +44,9 @@ GameObject* ObjectFactory::CreateCube(
     mr->m_TexIndex = texIdx;
     mr->m_Color = color;
 
-    // FBXã˜ã‚ƒãªã„å ´åˆã¯å…±é€šãƒãƒƒãƒ•ã‚¡ã‚’ã‚»ãƒƒãƒˆ
+    // FBX‚¶‚á‚È‚¢ê‡‚Í‹¤’Êƒoƒbƒtƒ@‚ðƒZƒbƒg
     mr->m_ModelBuffer = engine->GetCubeBufferManager();
-    mr->m_VertexInfo = nullptr; // Cubeç­‰ã¯å€‹åˆ¥ã®vertexInfoä¸è¦ï¼ˆå…±é€šãƒãƒƒãƒ•ã‚¡ã‚’ä½¿ã†ã ã‘ï¼‰
+    mr->m_VertexInfo = nullptr; // Cube“™‚ÍŒÂ•Ê‚ÌvertexInfo•s—vi‹¤’Êƒoƒbƒtƒ@‚ðŽg‚¤‚¾‚¯j
 
     auto* col = obj->AddComponent<Collider>();
     if (colliderSize.x < 0 || colliderSize.y < 0 || colliderSize.z < 0) {
@@ -61,7 +60,7 @@ GameObject* ObjectFactory::CreateCube(
 }
 
 //---------------------------
-// Modelï¼ˆé™çš„FBXãƒ¢ãƒ‡ãƒ«ï¼‰
+// ModeliÃ“IFBXƒ‚ƒfƒ‹j
 //---------------------------
 GameObject* ObjectFactory::CreateModel(
     EngineManager* engine,
@@ -108,7 +107,7 @@ GameObject* ObjectFactory::CreateModel(
 }
 
 //---------------------------
-// SkinningModelï¼ˆã‚¹ã‚­ãƒ‹ãƒ³ã‚°ãƒ»ã‚¢ãƒ‹ãƒ¡å¯¾å¿œï¼‰
+// SkinningModeliƒXƒLƒjƒ“ƒOEƒAƒjƒ‘Î‰žj
 //---------------------------
 GameObject* ObjectFactory::CreateSkinningBaseModel(
     EngineManager* engine,
@@ -154,8 +153,8 @@ GameObject* ObjectFactory::CreateSkinningBaseModel(
     smr->m_ModelBuffer->CreateSkinningVertexBuffer(engine->GetDeviceManager()->GetDevice(), skinInfo->vertices);
     smr->m_ModelBuffer->CreateIndexBuffer(engine->GetDeviceManager()->GetDevice(), skinInfo->indices);
 
-    // ==== ã“ã“ã‹ã‚‰è¿½åŠ ï¼ ====
-// ãƒ¯ãƒ¼ãƒ«ãƒ‰ï¼‹ãƒœãƒ¼ãƒ³è¡Œåˆ—80å€‹ã¶ã‚“ã®ã‚µã‚¤ã‚ºï¼ˆ256+80*64=5376ãƒã‚¤ãƒˆï¼‰ã§OK
+    // ==== ‚±‚±‚©‚ç’Ç‰ÁI ====
+// ƒ[ƒ‹ƒh{ƒ{[ƒ“s—ñ80ŒÂ‚Ô‚ñ‚ÌƒTƒCƒYi256+80*64=5376ƒoƒCƒgj‚ÅOK
     smr->m_BoneCB = new BufferManager();
     smr->m_BoneCB->CreateConstantBuffer(
         engine->GetDeviceManager()->GetDevice(),
@@ -221,16 +220,16 @@ GameObject* ObjectFactory::CreateCylinderReel(
     auto* tr = obj->AddComponent<Transform>();
     tr->position = pos;
     tr->scale = scale;
-    tr->rotation.z = -DirectX::XM_PIDIV2; // â† ãƒžã‚¤ãƒŠã‚¹ã§é€†æ–¹å‘
-    auto* mr = obj->AddComponent<StaticMeshRenderer>(); // StaticMeshRendereræµç”¨
+    tr->rotation.z = -DirectX::XM_PIDIV2; // © ƒ}ƒCƒiƒX‚Å‹t•ûŒü
+    auto* mr = obj->AddComponent<StaticMeshRenderer>(); // StaticMeshRenderer—¬—p
     mr->m_TexIndex = texIdx;
     mr->m_Color = color;
 
 
-    // ...å‰ç•¥
+    // ...‘O—ª
     auto* reel = obj->AddComponent<ReelComponent>();
 
-    // é ‚ç‚¹ãƒ»ã‚¤ãƒ³ãƒ‡ãƒƒã‚¯ã‚¹ã‚’ç”Ÿæˆ
+    // ’¸“_EƒCƒ“ƒfƒbƒNƒX‚ð¶¬
     mr->m_VertexInfo = new FbxModelLoader::VertexInfo();
     MeshLibrary::GetCylinderMesh(mr->m_VertexInfo->vertices, mr->m_VertexInfo->indices, 32);
     mr->m_ModelBuffer = new BufferManager();

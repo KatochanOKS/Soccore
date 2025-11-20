@@ -1,11 +1,11 @@
-#include "pch.h"
 #include "ApplicationManager.h"
 #include "EngineManager.h"
+#include <windows.h>
 
 #include "imgui.h"
-#include "imgui_impl_win32.h"   // â† backends/ ã¯ä»˜ã‘ãªã„
+#include "imgui_impl_win32.h"   // © backends/ ‚Í•t‚¯‚È‚¢
 
-// â˜… ã“ã‚Œã‚’è¿½åŠ ï¼ˆå‰æ–¹å®£è¨€ï¼‰
+// š ‚±‚ê‚ğ’Ç‰Ái‘O•ûéŒ¾j
 extern LRESULT ImGui_ImplWin32_WndProcHandler(
     HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
@@ -18,7 +18,7 @@ void ApplicationManager::InitWindow(HINSTANCE hInstance, int nCmdShow) {
     windowClass.hInstance = hInstance;
     windowClass.hCursor = LoadCursor(NULL, IDC_ARROW);
     windowClass.hbrBackground = (HBRUSH)GetStockObject(WHITE_BRUSH);
-    //                â†‘ ã“ã“ãŒã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã®åˆæœŸèƒŒæ™¯è‰²
+    //                ª ‚±‚±‚ªƒEƒBƒ“ƒhƒE‚Ì‰Šú”wŒiF
     windowClass.lpszClassName = L"GAME_WINDOW";
     RegisterClassEx(&windowClass);
 
@@ -35,11 +35,11 @@ void ApplicationManager::InitWindow(HINSTANCE hInstance, int nCmdShow) {
 int ApplicationManager::Run(EngineManager* engine, HINSTANCE hInstance, int nCmdShow) {
     InitWindow(hInstance, nCmdShow);
 
-    // HWNDã‚’EngineManagerã¸ã‚»ãƒƒãƒˆ
+    // HWND‚ğEngineManager‚ÖƒZƒbƒg
     engine->SetHWND(m_hWnd);
     engine->Initialize();
 
-    // ãƒ¡ã‚¤ãƒ³ãƒ«ãƒ¼ãƒ—
+    // ƒƒCƒ“ƒ‹[ƒv
     engine->Start();
     while (!ShouldQuit()) {
         PollEvents();
@@ -66,7 +66,7 @@ int ApplicationManager::GetExitCode() {
 }
 
 LRESULT CALLBACK ApplicationManager::WndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
-    // â˜… ImGui ã«ã‚‚ãƒ¡ãƒƒã‚»ãƒ¼ã‚¸ã‚’æ¸¡ã™
+    // š ImGui ‚É‚àƒƒbƒZ[ƒW‚ğ“n‚·
     if (ImGui_ImplWin32_WndProcHandler(hwnd, msg, wp, lp))
         return true;
 

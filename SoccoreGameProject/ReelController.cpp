@@ -1,9 +1,13 @@
-#include "pch.h"
 #include "ReelController.h"
 #include "ReelComponent.h"
 #include "ReelJudge.h"
 #include "GameScene.h"
+#include <Windows.h>
 #include <cstdlib>
+#include <string>
+#include <array>
+#include <vector>
+#include <algorithm>
 
 void ReelController::SetReels(ReelComponent* left, ReelComponent* middle, ReelComponent* right) {
     m_Left = left; m_Middle = middle; m_Right = right;
@@ -11,53 +15,53 @@ void ReelController::SetReels(ReelComponent* left, ReelComponent* middle, ReelCo
 
 static bool IsDown(int vk) { return (GetAsyncKeyState(vk) & 0x8000) != 0; }
 
-// ===== ãƒ¦ãƒ¼ãƒ†ã‚£ãƒªãƒ†ã‚£ï¼š1/N æŠ½é¸ï¼ˆNåˆ†ã®1ã§trueï¼‰ =====
+// ===== ƒ†[ƒeƒBƒŠƒeƒBF1/N ’Š‘IiN•ª‚Ì1‚Åtruej =====
 static bool Roll1in(int denom) {
     if (denom <= 1) return true;
-    // rand() ã¯ç°¡æ˜“ã§ååˆ†ï¼ˆå¿…è¦ãªã‚‰ mt19937 ã«å·®ã—æ›¿ãˆå¯ï¼‰
+    // rand() ‚ÍŠÈˆÕ‚Å\•ªi•K—v‚È‚ç mt19937 ‚É·‚µ‘Ö‚¦‰Âj
     int r = std::rand() % denom; // 0 .. denom-1
     return (r == 0);
 }
 
-// ===== ãƒªãƒ¼ãƒ«é¢ã«å­˜åœ¨ã™ã‚‹å›³æŸ„ï¼ˆå›ºå®šåï¼‰ =====
-// â€» ã‚ãªãŸã®ãƒªãƒ¼ãƒ«é…åˆ—: {"BAR","åŠ›","ãƒ™ãƒ«","ãƒªãƒ—ãƒ¬ã‚¤","7","åŠ›","ãƒªãƒ—ãƒ¬ã‚¤","ãƒ™ãƒ«"}
-//   â†’ ä»¥ä¸‹ã®ä¸€è¦§ã¨ä¸€è‡´ã™ã‚‹åç§°ã‚’ä½¿ã„ã¾ã™ã€‚
-static const std::array<const char*, 5> kSymbols = { "ãƒ™ãƒ«", "ãƒªãƒ—ãƒ¬ã‚¤", "7", "BAR", "åŠ›" };
+// ===== ƒŠ[ƒ‹–Ê‚É‘¶İ‚·‚é}•¿iŒÅ’è–¼j =====
+// ¦ ‚ ‚È‚½‚ÌƒŠ[ƒ‹”z—ñ: {"BAR","—Í","ƒxƒ‹","ƒŠƒvƒŒƒC","7","—Í","ƒŠƒvƒŒƒC","ƒxƒ‹"}
+//   ¨ ˆÈ‰º‚Ìˆê——‚Æˆê’v‚·‚é–¼Ì‚ğg‚¢‚Ü‚·B
+static const std::array<const char*, 5> kSymbols = { "ƒxƒ‹", "ƒŠƒvƒŒƒC", "7", "BAR", "—Í" };
 
-// ===== ãƒã‚ºãƒ¬ç”¨ï¼šåŸºæº–å›³æŸ„ã¨ã¯ç•°ãªã‚‹å›³æŸ„ã‚’1ã¤è¿”ã™ =====
+// ===== ƒnƒYƒŒ—pFŠî€}•¿‚Æ‚ÍˆÙ‚È‚é}•¿‚ğ1‚Â•Ô‚· =====
 static std::string PickDifferentSymbol(const std::string& base) {
     std::vector<std::string> pool;
     pool.reserve(kSymbols.size()); 
     for (auto s : kSymbols) if (base != s) pool.emplace_back(s);
-    if (pool.empty()) return base; // å¿µã®ãŸã‚
+    if (pool.empty()) return base; // ”O‚Ì‚½‚ß
     int idx = std::rand() % static_cast<int>(pool.size());
     return pool[idx];
 }
 
-// ===== ä»»æ„ï¼šãƒã‚ºãƒ¬æ™‚ã«ä½¿ã†â€œè¦‹ã›æ–¹â€ãƒ‘ã‚¿ãƒ¼ãƒ³ï¼ˆã“ã“ã§æƒã‚ãªã„å½¢ã«ã™ã‚‹ï¼‰ =====
+// ===== ”CˆÓFƒnƒYƒŒ‚Ég‚¤gŒ©‚¹•ûhƒpƒ^[ƒ“i‚±‚±‚Å‘µ‚í‚È‚¢Œ`‚É‚·‚éj =====
 static void PlanLosePattern(ReelComponent* L, ReelComponent* M, ReelComponent* R, const std::string& base) {
-    // ä¾‹ï¼šL=base, M=ç•°ãªã‚‹å›³æŸ„, R=baseï¼ˆã€Œãƒ‹é€£ï¼‹ã‚¹ã‚«ã—ã€ã®åŸºæœ¬å‹ï¼‰
+    // —áFL=base, M=ˆÙ‚È‚é}•¿, R=baseiuƒj˜A{ƒXƒJ‚µv‚ÌŠî–{Œ^j
     const std::string other = PickDifferentSymbol(base);
     if (L) L->PlanStopSymbol(base);
     if (M) M->PlanStopSymbol(other);
     if (R) R->PlanStopSymbol(base);
 }
 
-// ===== å½“é¸æ™‚ï¼š3æœ¬åŒã˜å›³æŸ„ã§äºˆç´„ =====
+// ===== “–‘IF3–{“¯‚¶}•¿‚Å—\–ñ =====
 static void PlanWinAllSame(ReelComponent* L, ReelComponent* M, ReelComponent* R, const std::string& symbol) {
     if (L) L->PlanStopSymbol(symbol);
     if (M) M->PlanStopSymbol(symbol);
     if (R) R->PlanStopSymbol(symbol);
 }
 
-// === â˜…â˜… S å†å—ä»˜ã¨4.1ç§’ç®¡ç†ç”¨ è¿½åŠ å¤‰æ•° â˜…â˜… ===
+// === šš S Äó•t‚Æ4.1•bŠÇ——p ’Ç‰Á•Ï” šš ===
 static constexpr float GAME_MIN_TIME = 4.1f;
 
 void ReelController::Update() {
 
-    // ---- ã‚¿ã‚¤ãƒãƒ¼æ›´æ–°ï¼ˆæ¯ãƒ•ãƒ¬ãƒ¼ãƒ  Update å‘¼ã°ã‚Œã‚‹å‰æï¼‰ ----
+    // ---- ƒ^ƒCƒ}[XVi–ˆƒtƒŒ[ƒ€ Update ŒÄ‚Î‚ê‚é‘O’ñj ----
     if (!m_CanStart) {
-        m_Timer += 1.0f / 60.0f;  // ä»®ã«60FPSã¨ã—ã¦
+        m_Timer += 1.0f / 60.0f;  // ‰¼‚É60FPS‚Æ‚µ‚Ä
     }
 
     bool z = IsDown('Z');
@@ -65,7 +69,7 @@ void ReelController::Update() {
     bool c = IsDown('C');
     bool s = IsDown('S');
 
-    // === åœæ­¢ï¼ˆç«‹ã¡ä¸ŠãŒã‚Šã®ã¿ï¼‰ ===
+    // === ’â~i—§‚¿ã‚ª‚è‚Ì‚İj ===
     if (z && !m_IsPrevZ && m_Left)   m_Left->RequestStop();
     if (x && !m_IsPrevX && m_Middle) m_Middle->RequestStop();
     if (c && !m_IsPrevC && m_Right)  m_Right->RequestStop();
@@ -76,70 +80,70 @@ void ReelController::Update() {
 		m_Right && !m_Right->IsSpinning();
 
     bool startAllowed =
-        m_CanStart && allStopped;   // Så—ä»˜å¯èƒ½ ã‹ã¤ å…¨åœæ­¢
+        m_CanStart && allStopped;   // Só•t‰Â”\ ‚©‚Â ‘S’â~
 
-    // === ã‚¹ã‚¿ãƒ¼ãƒˆï¼ˆç«‹ã¡ä¸ŠãŒã‚Šã®ã¿ï¼‰===
+    // === ƒXƒ^[ƒgi—§‚¿ã‚ª‚è‚Ì‚İj===
     if (s && !m_IsPrevS && startAllowed) {
 
         // ------------------------------------------------------------
-        // 1) æ’ä»–çš„ãªå½“é¸æŠ½é¸ï¼šä¸Šã‹ã‚‰é †ã«ã€Œå½“ãŸã£ãŸã‚‰å³æ¡ç”¨ã€
-        //    ä¾‹ï¼‰7(1/80) â†’ BAR(1/120) â†’ åŠ›(1/60) â†’ ãƒªãƒ—ãƒ¬ã‚¤(1/7) â†’ ãƒ™ãƒ«(1/2)
-        //    â€» ä¸Šã«ã‚ã‚‹ã»ã©å„ªå…ˆåº¦ãŒé«˜ã„ã€‚äºŒé‡å½“é¸ã¯èµ·ã“ã•ãªã„ã€‚
+        // 1) ”r‘¼“I‚È“–‘I’Š‘IFã‚©‚ç‡‚Éu“–‚½‚Á‚½‚ç‘¦Ì—pv
+        //    —áj7(1/80) ¨ BAR(1/120) ¨ —Í(1/60) ¨ ƒŠƒvƒŒƒC(1/7) ¨ ƒxƒ‹(1/2)
+        //    ¦ ã‚É‚ ‚é‚Ù‚Ç—Dæ“x‚ª‚‚¢B“ñd“–‘I‚Í‹N‚±‚³‚È‚¢B
         // ------------------------------------------------------------
         struct Entry { const char* symbol; int denom; };
-        // â† å¥½ãã«èª¿æ•´OKï¼ˆâ€œ1/denomâ€ ãŒå½“é¸ç¢ºç‡ï¼‰
+        // © D‚«‚É’²®OKig1/denomh ‚ª“–‘IŠm—¦j
         const std::array<Entry, 5> table = { {
             { "7",        80  },   // 1/80
             { "BAR",      120 },   // 1/120
-            { "åŠ›",       60  },   // 1/60
-            { "ãƒªãƒ—ãƒ¬ã‚¤", 7   },   // 1/7
-            { "ãƒ™ãƒ«",     2   },   // 1/2ï¼ˆä½“é¨“ç”¨ã«é«˜ã‚ï¼‰
+            { "—Í",       60  },   // 1/60
+            { "ƒŠƒvƒŒƒC", 7   },   // 1/7
+            { "ƒxƒ‹",     2   },   // 1/2i‘ÌŒ±—p‚É‚‚ßj
         } };
 
-        std::string outcome;   // å½“é¸ã—ãŸå›³æŸ„åï¼ˆç©ºãªã‚‰ãƒã‚ºãƒ¬ï¼‰
+        std::string outcome;   // “–‘I‚µ‚½}•¿–¼i‹ó‚È‚çƒnƒYƒŒj
         for (const auto& e : table) {
             if (Roll1in(e.denom)) { outcome = e.symbol; break; }
         }
 
         // ------------------------------------------------------------
-        // 2) å½“é¸/ãƒã‚ºãƒ¬ã§â€œå‡ºç›®äºˆç´„â€ã‚’åˆ†å²
+        // 2) “–‘I/ƒnƒYƒŒ‚Ågo–Ú—\–ñh‚ğ•ªŠò
         // ------------------------------------------------------------
         if (!outcome.empty()) {
-            // å½“é¸ï¼š3æœ¬ã™ã¹ã¦åŒã˜å›³æŸ„ã‚’äºˆç´„ï¼ˆï¼æƒã†ï¼‰
+            // “–‘IF3–{‚·‚×‚Ä“¯‚¶}•¿‚ğ—\–ñi‘µ‚¤j
             PlanWinAllSame(m_Left, m_Middle, m_Right, outcome);
         }
         else {
-            // ãƒã‚ºãƒ¬ï¼šæ„å›³çš„ã«æƒãˆãªã„å½¢ã‚’ä½œã‚‹
-            const std::string base = "ãƒ™ãƒ«";
+            // ƒnƒYƒŒFˆÓ}“I‚É‘µ‚¦‚È‚¢Œ`‚ğì‚é
+            const std::string base = "ƒxƒ‹";
             PlanLosePattern(m_Left, m_Middle, m_Right, base);
         }
 
         // ------------------------------------------------------------
-        // 3) äºˆç´„ã—ã¦ã‹ã‚‰å›è»¢é–‹å§‹
+        // 3) —\–ñ‚µ‚Ä‚©‚ç‰ñ“]ŠJn
         // ------------------------------------------------------------
         if (m_Left)   m_Left->RequestStart();
         if (m_Middle) m_Middle->RequestStart();
         if (m_Right)  m_Right->RequestStart();
 
-        m_ResultShown = false; // ã‚¹ã‚¿ãƒ¼ãƒˆæ™‚ã«ãƒªã‚»ãƒƒãƒˆ
-        m_IsStarted = true;  // â†è¿½åŠ ï¼šåˆå›ã‚¹ã‚¿ãƒ¼ãƒˆæ™‚ã«trueã«
+        m_ResultShown = false; // ƒXƒ^[ƒg‚ÉƒŠƒZƒbƒg
+        m_IsStarted = true;  // ©’Ç‰ÁF‰‰ñƒXƒ^[ƒg‚Étrue‚É
 
-		m_CanStart = false; // Så†å—ä»˜ç¦æ­¢
-		m_Timer = 0.0f; // ã‚¿ã‚¤ãƒãƒ¼ãƒªã‚»ãƒƒãƒˆ
+		m_CanStart = false; // SÄó•t‹Ö~
+		m_Timer = 0.0f; // ƒ^ƒCƒ}[ƒŠƒZƒbƒg
     }
 
     if (!m_CanStart) {
         if (m_Timer >= GAME_MIN_TIME) {
-            m_CanStart = true; // å†ã³Så—ä»˜å¯èƒ½ã«
+            m_CanStart = true; // Ä‚ÑSó•t‰Â”\‚É
         }
 	}
 
     m_IsPrevZ = z; m_IsPrevX = x; m_IsPrevC = c; m_IsPrevS = s;
 
-    // === å…¨ãƒªãƒ¼ãƒ«åœæ­¢å¾Œã®å‡ºç›®åˆ¤å®š ===
+    // === ‘SƒŠ[ƒ‹’â~Œã‚Ìo–Ú”»’è ===
     if (m_Left && m_Middle && m_Right)
     {
-        // ä¸€åº¦ã§ã‚‚å›è»¢ã—ãŸã“ã¨ãŒã‚ã‚‹ã‹ã‚’ç¢ºèª
+        // ˆê“x‚Å‚à‰ñ“]‚µ‚½‚±‚Æ‚ª‚ ‚é‚©‚ğŠm”F
         if (m_IsStarted && !m_Left->IsSpinning() && !m_Middle->IsSpinning() && !m_Right->IsSpinning())
         {
             if (!m_ResultShown) {
@@ -150,7 +154,7 @@ void ReelController::Update() {
                 };
                 std::string result = ReelJudge::Judge(symbols);
 
-                OutputDebugStringA(("å‡ºç›®çµæœ: " + result + "\n").c_str());
+                OutputDebugStringA(("o–ÚŒ‹‰Ê: " + result + "\n").c_str());
 
                 if (gameObject && gameObject->scene) {
                     if (auto* gs = dynamic_cast<GameScene*>(gameObject->scene)) {

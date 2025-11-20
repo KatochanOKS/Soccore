@@ -1,22 +1,21 @@
-#include "pch.h"
 #include "ReelJudge.h"
 
 std::string ReelJudge::Judge(const std::array<std::string, 3>& s)
 {
-    // 3ã¤æƒã„
+    // 3‚Â‘µ‚¢
     if (s[0] == s[1] && s[1] == s[2]) {
         if (s[0] == "7")        return "BIG";
-        if (s[0] == "ãƒ™ãƒ«")     return "ãƒ™ãƒ«æƒã„";
-        if (s[0] == "ãƒªãƒ—ãƒ¬ã‚¤") return "ãƒªãƒ—ãƒ¬ã‚¤";
-        if (s[0] == "BAR")      return "BARæƒã„";
-        if (s[0] == "åŠ›")       return "åŠ›æƒã„";
+        if (s[0] == "ƒxƒ‹")     return "ƒxƒ‹‘µ‚¢";
+        if (s[0] == "ƒŠƒvƒŒƒC") return "ƒŠƒvƒŒƒC";
+        if (s[0] == "BAR")      return "BAR‘µ‚¢";
+        if (s[0] == "—Í")       return "—Í‘µ‚¢";
     }
 
-    // 2é€£ï¼ˆä¾‹: å·¦ä¸­ or ä¸­å³ï¼‰
+    // 2˜Ai—á: ¶’† or ’†‰Ej
     if (s[0] == s[1] || s[1] == s[2]) {
-        return s[1] + "2é€£";
+        return s[1] + "2˜A";
     }
 
-    // ãƒãƒ©ãƒãƒ©
-    return "ãƒã‚ºãƒ¬";
+    // ƒoƒ‰ƒoƒ‰
+    return "ƒnƒYƒŒ";
 }

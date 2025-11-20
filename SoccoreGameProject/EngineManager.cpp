@@ -1,10 +1,10 @@
-#include "pch.h"
 #include "EngineManager.h"
 #include "GameScene.h"
 #include "MeshLibrary.h"
 #include"StartScene.h"
+#include <memory>
 
-// â˜… ImGui é–¢é€£
+// š ImGui ŠÖ˜A
 #include "imgui.h"
 #include "imgui_impl_win32.h"
 #include "imgui_impl_dx12.h"
@@ -70,7 +70,7 @@ void EngineManager::Initialize() {
         GetModelVertexInfo()
     );
 
-    // ==== â˜…â˜… ImGui åˆæœŸåŒ–ã“ã“ã‹ã‚‰ â˜…â˜… ====
+    // ==== šš ImGui ‰Šú‰»‚±‚±‚©‚ç šš ====
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
     ImGuiIO& io = ImGui::GetIO(); (void)io;
@@ -78,13 +78,13 @@ void EngineManager::Initialize() {
 
 
 
-    // ã‚­ãƒ¼ãƒœãƒ¼ãƒ‰æ“ä½œãŒã§ãã‚‹ã‚ˆã†ã«
+    // ƒL[ƒ{[ƒh‘€ì‚ª‚Å‚«‚é‚æ‚¤‚É
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
 	
-    // è¦‹ãŸç›®
+    // Œ©‚½–Ú
     ImGui::StyleColorsDark();
 
-    // ImGui ç”¨ã® SRV ãƒ’ãƒ¼ãƒ—ã‚’ä½œæˆï¼ˆ1ã¤ã ã‘ã§OKï¼‰
+    // ImGui —p‚Ì SRV ƒq[ƒv‚ğì¬i1‚Â‚¾‚¯‚ÅOKj
     D3D12_DESCRIPTOR_HEAP_DESC heapDesc = {};
     heapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
     heapDesc.NumDescriptors = 1;
@@ -92,35 +92,35 @@ void EngineManager::Initialize() {
     heapDesc.NodeMask = 0;
     device->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(&m_imguiSrvHeap));
 
-    // Win32 backend åˆæœŸåŒ–
+    // Win32 backend ‰Šú‰»
     ImGui_ImplWin32_Init(m_hWnd);
 
-    // â˜…â˜… ã“ã“ã‚’ã€Œæ–°ã—ã„ InitInfo ç‰ˆã€ã«æ›¸ãæ›ãˆã‚‹ â˜…â˜…
+    // šš ‚±‚±‚ğuV‚µ‚¢ InitInfo ”Åv‚É‘‚«Š·‚¦‚é šš
     ImGui_ImplDX12_InitInfo init_info{};
     init_info.Device = device;
-    init_info.CommandQueue = cmdQueue; // â† ã™ã§ã«ä¸Šã§å–ã£ã¦ã„ã‚‹ã‚³ãƒãƒ³ãƒ‰ã‚­ãƒ¥ãƒ¼
+    init_info.CommandQueue = cmdQueue; // © ‚·‚Å‚Éã‚Åæ‚Á‚Ä‚¢‚éƒRƒ}ƒ“ƒhƒLƒ…[
     init_info.NumFramesInFlight = m_swapChainManager.GetBufferCount();
     init_info.RTVFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
 
-    // DSVFormat ã¯å®Ÿéš›ã®ãƒ‡ãƒ—ã‚¹ã®ãƒ•ã‚©ãƒ¼ãƒãƒƒãƒˆã«åˆã‚ã›ã‚‹
-    // ï¼ˆDepthBufferManager ãŒ D32_FLOAT ãªã‚‰ãã‚Œã«åˆã‚ã›ã‚‹ï¼‰
+    // DSVFormat ‚ÍÀÛ‚ÌƒfƒvƒX‚ÌƒtƒH[ƒ}ƒbƒg‚É‡‚í‚¹‚é
+    // iDepthBufferManager ‚ª D32_FLOAT ‚È‚ç‚»‚ê‚É‡‚í‚¹‚éj
     init_info.DSVFormat = DXGI_FORMAT_D32_FLOAT;
 
-    // ImGui ã® SRV ã‚’ç™ºè¡Œã™ã‚‹ãƒ’ãƒ¼ãƒ—
+    // ImGui ‚Ì SRV ‚ğ”­s‚·‚éƒq[ƒv
     init_info.SrvDescriptorHeap = m_imguiSrvHeap.Get();
 
-    // ãƒ¬ã‚¬ã‚·ãƒ¼äº’æ›ç”¨ã®â€œ1å€‹ã ã‘â€ãƒ•ã‚©ãƒ³ãƒˆç”¨ SRV ãƒãƒ³ãƒ‰ãƒ«
+    // ƒŒƒKƒV[ŒİŠ·—p‚Ìg1ŒÂ‚¾‚¯hƒtƒHƒ“ƒg—p SRV ƒnƒ“ƒhƒ‹
     init_info.LegacySingleSrvCpuDescriptor = m_imguiSrvHeap->GetCPUDescriptorHandleForHeapStart();
     init_info.LegacySingleSrvGpuDescriptor = m_imguiSrvHeap->GetGPUDescriptorHandleForHeapStart();
 
-    // æ–°ã‚·ã‚°ãƒãƒãƒ£ç‰ˆ Init
+    // VƒVƒOƒlƒ`ƒƒ”Å Init
     ImGui_ImplDX12_Init(&init_info);
 
-    // â˜… ã“ã‚Œã‚’è¿½åŠ ï¼
+    // š ‚±‚ê‚ğ’Ç‰ÁI
     m_renderer.SetImGuiSrvHeap(m_imguiSrvHeap.Get());
 
-    // â˜…â˜… ã“ã“ã§ã¯ ImGui_ImplDX12_CreateDeviceObjects() ã‚’å‘¼ã°ãªã„ï¼ â˜…â˜…
-    // å¿…è¦ãªã¨ãã« ImGui_ImplDX12_NewFrame() å´ã§å‹æ‰‹ã«ä½œã£ã¦ãã‚Œã‚‹
+    // šš ‚±‚±‚Å‚Í ImGui_ImplDX12_CreateDeviceObjects() ‚ğŒÄ‚Î‚È‚¢I šš
+    // •K—v‚È‚Æ‚«‚É ImGui_ImplDX12_NewFrame() ‘¤‚ÅŸè‚Éì‚Á‚Ä‚­‚ê‚é
     // ===============================
 
 
@@ -132,35 +132,35 @@ void EngineManager::Start() {}
 
 void EngineManager::Update()
 {
-    // â‘  ImGui ã®ãƒ•ãƒ¬ãƒ¼ãƒ é–‹å§‹ï¼ˆé †ç•ªã¯ Win32 â†’ DX12ï¼‰
+    // ‡@ ImGui ‚ÌƒtƒŒ[ƒ€ŠJni‡”Ô‚Í Win32 ¨ DX12j
     ImGui_ImplWin32_NewFrame();
     ImGui_ImplDX12_NewFrame();
 
-    // â‘¡ ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã®ã‚¯ãƒ©ã‚¤ã‚¢ãƒ³ãƒˆã‚µã‚¤ã‚ºã‚’å–å¾—
+    // ‡A ƒEƒBƒ“ƒhƒE‚ÌƒNƒ‰ƒCƒAƒ“ƒgƒTƒCƒY‚ğæ“¾
     RECT rc{};
     GetClientRect(m_hWnd, &rc);
     float clientW = static_cast<float>(rc.right - rc.left);
     float clientH = static_cast<float>(rc.bottom - rc.top);
 
-    // â‘¢ ãƒãƒƒã‚¯ãƒãƒƒãƒ•ã‚¡ï¼ˆã‚¹ãƒ¯ãƒƒãƒ—ãƒã‚§ã‚¤ãƒ³ï¼‰ã®ã‚µã‚¤ã‚ºã‚’å–å¾—
+    // ‡B ƒoƒbƒNƒoƒbƒtƒ@iƒXƒƒbƒvƒ`ƒFƒCƒ“j‚ÌƒTƒCƒY‚ğæ“¾
     float fbW = static_cast<float>(m_swapChainManager.GetWidth());   // 1280
     float fbH = static_cast<float>(m_swapChainManager.GetHeight());  // 720
 
-    // â‘£ ImGui ã«ã€Œè«–ç†ã‚µã‚¤ã‚º = ãƒãƒƒã‚¯ãƒãƒƒãƒ•ã‚¡ã€ã‚’æ•™ãˆã‚‹
+    // ‡C ImGui ‚Éu˜_—ƒTƒCƒY = ƒoƒbƒNƒoƒbƒtƒ@v‚ğ‹³‚¦‚é
     ImGuiIO& io = ImGui::GetIO();
     io.DisplaySize = ImVec2(fbW, fbH);
 
-    // â‘¤ ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦åº§æ¨™ â†’ ãƒãƒƒã‚¯ãƒãƒƒãƒ•ã‚¡åº§æ¨™ã¸ã®ã‚¹ã‚±ãƒ¼ãƒ«
-    //    ï¼ˆãƒã‚¦ã‚¹ãƒ»ã‚¯ãƒªãƒƒãƒ”ãƒ³ã‚°ç”¨ã€‚ã“ã“ãŒãƒŸã‚½ï¼‰
+    // ‡D ƒEƒBƒ“ƒhƒEÀ•W ¨ ƒoƒbƒNƒoƒbƒtƒ@À•W‚Ö‚ÌƒXƒP[ƒ‹
+    //    iƒ}ƒEƒXEƒNƒŠƒbƒsƒ“ƒO—pB‚±‚±‚ªƒ~ƒ\j
     io.DisplayFramebufferScale = ImVec2(
-        fbW / clientW,   // 1280 / 1262 â‰’ 1.01
-        fbH / clientH    // 720  / 673  â‰’ 1.07
+        fbW / clientW,   // 1280 / 1262 à 1.01
+        fbH / clientH    // 720  / 673  à 1.07
     );
 
-    // â‘¥ ImGui ãƒ•ãƒ¬ãƒ¼ãƒ é–‹å§‹
+    // ‡E ImGui ƒtƒŒ[ƒ€ŠJn
     ImGui::NewFrame();
 
-    // ä»¥é™ã¯ã„ã¤ã‚‚é€šã‚Š
+    // ˆÈ~‚Í‚¢‚Â‚à’Ê‚è
     if (m_activeScene) {
         m_activeScene->Update();
     }
@@ -176,7 +176,7 @@ void EngineManager::Draw() {
 
 
 void EngineManager::Shutdown() {
-    // ImGui çµ‚äº†
+    // ImGui I—¹
     ImGui_ImplDX12_Shutdown();
     ImGui_ImplWin32_Shutdown();
     ImGui::DestroyContext();
@@ -188,7 +188,7 @@ void EngineManager::Shutdown() {
 
 
 void EngineManager::ChangeScene(std::unique_ptr<Scene> nextScene) {
-    // æ—§ã‚·ãƒ¼ãƒ³ã¯ unique_ptr ã®ãƒ ãƒ¼ãƒ–ã§è‡ªå‹•ç ´æ£„
+    // ‹ŒƒV[ƒ“‚Í unique_ptr ‚Ìƒ€[ƒu‚Å©“®”jŠü
     m_activeScene = std::move(nextScene);
     if (m_activeScene) m_activeScene->Start();
 }
