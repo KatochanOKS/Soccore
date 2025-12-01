@@ -85,9 +85,6 @@ void Player1Component::Update() {
     bool kickKey = (GetAsyncKeyState('K') & 0x8000);
     bool punchKey = (GetAsyncKeyState('J') & 0x8000);
     bool guardKey = (GetAsyncKeyState('G') & 0x8000);
-    bool moveL = (GetAsyncKeyState('A') & 0x8000);
-    bool moveR = (GetAsyncKeyState('D') & 0x8000);
-    bool isMoving = moveL || moveR;
 
     static bool prevKickKey = false, prevPunchKey = false, prevGuardKey = false;
 
@@ -108,13 +105,12 @@ void Player1Component::Update() {
             state = PlayerState::Attack;
             animator->SetAnimation("Punch", false);
         }
-        else if (isMoving) {
-            state = PlayerState::Move;
-            animator->SetAnimation("Walk", true);
-        }
         else {
-            if (animator->currentAnim != "Idle")
-                animator->SetAnimation("Idle", true);
+            // Attack, Guard, Reaction の時は Idle に戻さない
+            if (state == PlayerState::Idle) {
+                if (animator->currentAnim != "Idle")
+                    animator->SetAnimation("Idle", true);
+            }
         }
         break;
 
@@ -132,15 +128,6 @@ void Player1Component::Update() {
         else if (punchKey && !prevPunchKey) {
             state = PlayerState::Attack;
             animator->SetAnimation("Punch", false);
-        }
-        else if (!isMoving) {
-            state = PlayerState::Idle;
-            animator->SetAnimation("Idle", true);
-        }
-        else {
-            // 移動
-            if (moveL) tr->position.x -= moveSpeed;
-            if (moveR) tr->position.x += moveSpeed;
         }
         break;
 

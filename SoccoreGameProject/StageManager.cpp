@@ -20,7 +20,10 @@ StageManager::~StageManager() {}
 /// </summary>
 
 void StageManager::InitStage(std::vector<GameObject*>& sceneObjects) {
-    int groundTex = engine->GetTextureManager()->LoadTexture(L"assets/Floor.png", engine->GetDeviceManager()->GetCommandList());
+    int groundTex = engine->GetTextureManager()->LoadTexture(
+        L"assets/Floor.png",
+        engine->GetDeviceManager()->GetCommandList()
+    );
 
     sceneObjects.push_back(ObjectFactory::CreateCube(
         engine, { 0.0f, -0.5f, 0.0f }, { 10.0f, 1.0f, 3.0f },
@@ -28,37 +31,71 @@ void StageManager::InitStage(std::vector<GameObject*>& sceneObjects) {
         Colors::Gray, { 0,0,0 }, { -1,-1,-1 }, "Ground", "GroundFloor"
     ));
 
-    int reelTex = engine->GetTextureManager()->LoadTexture(L"assets/Slot/Reel.png", engine->GetDeviceManager()->GetCommandList());
+    int reelTex = engine->GetTextureManager()->LoadTexture(
+        L"assets/Slot/Reel.png",
+        engine->GetDeviceManager()->GetCommandList()
+    );
 
-    // --- スロットリール3本を横並びで生成＆コントローラ配線 ---
-    ReelComponent* reels[3] = { nullptr, nullptr, nullptr };
-
+    // --- ★1P用リール ---
+    ReelComponent* reelsP1[3] = { nullptr, nullptr, nullptr };
     for (int i = 0; i < 3; ++i) {
-        const float x = -5.0f + i * 1.5f;
+        const float x = -5.0f + i * 1.5f;   // 左側に表示
 
         GameObject* reel = ObjectFactory::CreateCylinderReel(
             engine,
-            { x, 3.0f, 0.0f },          // 位置
-            { 1.5f, 1.5f, 1.5f },       // スケール
-            reelTex,                    // テクスチャ
-            Colors::White,              // 色
-            "Reel",                     // Tag
-            "SlotReel" + std::to_string(i + 1) // Name
+            { x, 3.0f, 0.0f },
+            { 1.5f, 1.5f, 1.5f },
+            reelTex,
+            Colors::White,
+            "ReelP1",
+            "P1_SlotReel" + std::to_string(i + 1)
         );
         sceneObjects.push_back(reel);
         auto* rc = reel->GetComponent<ReelComponent>();
         rc->SetSpeed(-0.04f);
-        reels[i] = rc;
+        reelsP1[i] = rc;
     }
 
-    // 入力→各リールへ命令を出すコントローラ（Z=左, X=中, C=右, S=全スタート）
     {
         GameObject* controller = new GameObject();
-        controller->tag = "ReelController";
-        controller->name = "ReelController";
+        controller->tag = "ReelControllerP1";
+        controller->name = "ReelControllerP1";
 
         auto* ctrl = controller->AddComponent<ReelController>();
-        ctrl->SetReels(reels[0], reels[1], reels[2]);
+        ctrl->SetReels(reelsP1[0], reelsP1[1], reelsP1[2]);
+        ctrl->SetOwner(SlotOwner::Player1);   // ★ここ重要
+
+        sceneObjects.push_back(controller);
+    }
+
+    // --- ★2P用リール ---
+    ReelComponent* reelsP2[3] = { nullptr, nullptr, nullptr };
+    for (int i = 0; i < 3; ++i) {
+        const float x = +2.0f + i * 1.5f;   // 右側に表示（位置はお好みで）
+
+        GameObject* reel = ObjectFactory::CreateCylinderReel(
+            engine,
+            { x, 3.0f, 0.0f },
+            { 1.5f, 1.5f, 1.5f },
+            reelTex,
+            Colors::White,
+            "ReelP2",
+            "P2_SlotReel" + std::to_string(i + 1)
+        );
+        sceneObjects.push_back(reel);
+        auto* rc = reel->GetComponent<ReelComponent>();
+        rc->SetSpeed(-0.04f);
+        reelsP2[i] = rc;
+    }
+
+    {
+        GameObject* controller = new GameObject();
+        controller->tag = "ReelControllerP2";
+        controller->name = "ReelControllerP2";
+
+        auto* ctrl = controller->AddComponent<ReelController>();
+        ctrl->SetReels(reelsP2[0], reelsP2[1], reelsP2[2]);
+        ctrl->SetOwner(SlotOwner::Player2);   // ★2P用と指定
 
         sceneObjects.push_back(controller);
     }

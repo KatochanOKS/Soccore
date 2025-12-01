@@ -64,10 +64,22 @@ void ReelController::Update() {
         m_Timer += 1.0f / 60.0f;  // 仮に60FPSとして
     }
 
-    bool z = IsDown('Z');
-    bool x = IsDown('X');
-    bool c = IsDown('C');
-    bool s = IsDown('S');
+    // ★オーナー別で使うキーを変える
+    bool z, x, c, s;
+    if (m_Owner == SlotOwner::Player1) {
+        // 1P用：Z, X, C, S
+        z = IsDown('Z');
+        x = IsDown('X');
+        c = IsDown('C');
+        s = IsDown('S');
+    }
+    else {
+        // 2P用：J, K, L, I （好きに変えてOK）
+        z = IsDown('B');
+        x = IsDown('N');
+        c = IsDown('M');
+        s = IsDown('I');
+    }
 
     // === 停止（立ち上がりのみ） ===
     if (z && !m_IsPrevZ && m_Left)   m_Left->RequestStop();
@@ -158,7 +170,8 @@ void ReelController::Update() {
 
                 if (gameObject && gameObject->scene) {
                     if (auto* gs = dynamic_cast<GameScene*>(gameObject->scene)) {
-                        gs->ApplySlotEffect(result);
+                        bool fromP2 = (m_Owner == SlotOwner::Player2);
+                        gs->ApplySlotEffect(result, fromP2);
                     }
                 }
 
