@@ -14,7 +14,7 @@ void PlayerManager::InitPlayers(EngineManager* engine, std::vector<GameObject*>&
     int p1TexIdx = engine->GetTextureManager()->LoadTexture(L"assets/Mutant.fbm/Mutant_diffuse.png", engine->GetDeviceManager()->GetCommandList());
     m_Player1 = ObjectFactory::CreateSkinningBaseModel(
         engine, "assets/Mutant.fbx",
-        { -2.5f, 0.0f, 0.0f },
+        { -0.7f, 0.0f, 0.0f },
         { 0.01f, 0.01f, 0.01f },
         p1TexIdx, Colors::White,
         { 0,0.85f,0 }, { 1.5f,1.7f,1.5f }, "Player", "Player1"
@@ -27,7 +27,7 @@ void PlayerManager::InitPlayers(EngineManager* engine, std::vector<GameObject*>&
     int p2TexIdx = engine->GetTextureManager()->LoadTexture(L"assets/MMA2/SkeletonzombieTAvelange.fbm/skeletonZombie_diffuse.png", engine->GetDeviceManager()->GetCommandList());
     m_Player2 = ObjectFactory::CreateSkinningBaseModel(
         engine, "assets/MMA2/SkeletonzombieTAvelange.fbx",
-        { 2.5f, 0.0f, 0.0f },
+        { 0.7f, 0.0f, 0.0f },
         { 0.01f, 0.01f, 0.01f },
         p2TexIdx, Colors::White,
         { 0,0.9f,0 }, { 1.5f,1.8f,1.5f }, "Enemy", "Player2"

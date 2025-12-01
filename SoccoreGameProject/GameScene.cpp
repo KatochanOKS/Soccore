@@ -219,32 +219,114 @@ namespace {
 
 }
 
-void GameScene::ApplySlotEffect(const std::string& result) {
+void GameScene::ApplySlotEffect(const std::string& result, bool fromPlayer2)
+{
     auto* p1 = m_PlayerManager.GetPlayer1();
     auto* p2 = m_PlayerManager.GetPlayer2();
 
-    constexpr float DMG_SMALL = 0.5f;
-    constexpr float DMG_MEDIUM = 1.0f;
-    constexpr float DMG_LARGE = 1.5f;
-    constexpr float DMG_HUGE = 3.0f;
+    auto* c1 = p1 ? p1->GetComponent<Player1Component>() : nullptr;
+    auto* c2 = p2 ? p2->GetComponent<Player2Component>() : nullptr;
 
-    switch (ParseSlotResult(result)) {
+    auto* a1 = p1 ? p1->GetComponent<Animator>() : nullptr;
+    auto* a2 = p2 ? p2->GetComponent<Animator>() : nullptr;
+
+    const float DMG_SMALL = 0.5f;
+    const float DMG_MEDIUM = 1.0f;
+    const float DMG_LARGE = 1.5f;
+    const float DMG_HUGE = 3.0f;
+
+    // ==== まずは既存ダメージ判定 ====
+    switch (ParseSlotResult(result))
+    {
     case SlotRole::Big:
-        SafeDamage<Player2Component>(p2, DMG_HUGE);
+        if (!fromPlayer2) SafeDamage<Player2Component>(p2, DMG_HUGE);
+        else SafeDamage<Player1Component>(p1, DMG_HUGE);
         break;
+
     case SlotRole::Bar:
-        SafeDamage<Player2Component>(p2, DMG_LARGE);
+        if (!fromPlayer2) SafeDamage<Player2Component>(p2, DMG_LARGE);
+        else SafeDamage<Player1Component>(p1, DMG_LARGE);
         break;
+
     case SlotRole::Power:
     case SlotRole::Bell:
-        SafeDamage<Player2Component>(p2, DMG_MEDIUM);
+        if (!fromPlayer2) SafeDamage<Player2Component>(p2, DMG_MEDIUM);
+        else SafeDamage<Player1Component>(p1, DMG_MEDIUM);
         break;
+
     case SlotRole::Replay:
-        if (auto* c = p1 ? p1->GetComponent<Player1Component>() : nullptr) {
-            c->hp = std::min(c->maxHp, c->hp + 0.10f);
-        }
+        if (!fromPlayer2 && c1) c1->hp = std::min(c1->maxHp, c1->hp + 0.10f);
+        if (fromPlayer2 && c2) c2->hp = std::min(c2->maxHp, c2->hp + 0.10f);
         break;
+
     case SlotRole::Miss:
         break;
+    }
+
+    // ==== ここからアニメーション命令 ====
+
+    // Big → 強パンチ
+    if (ParseSlotResult(result) == SlotRole::Big)
+    {
+        if (!fromPlayer2) {
+            c1->state = PlayerState::Attack;
+            a1->SetAnimation("Punch", false);
+        }
+        else {
+            c2->state = PlayerState::Attack;
+            a2->SetAnimation("Punch", false);
+        }
+    }
+
+    // BAR → 強パンチ
+    else if (ParseSlotResult(result) == SlotRole::Bar)
+    {
+        if (!fromPlayer2) {
+            c1->state = PlayerState::Attack;
+            a1->SetAnimation("Punch", false);
+        }
+        else {
+            c2->state = PlayerState::Attack;
+            a2->SetAnimation("Punch", false);
+        }
+    }
+
+    // 力揃い → パンチ
+    else if (ParseSlotResult(result) == SlotRole::Power)
+    {
+        if (!fromPlayer2) {
+            c1->state = PlayerState::Attack;
+            a1->SetAnimation("Punch", false);
+        }
+        else {
+            c2->state = PlayerState::Attack;
+            a2->SetAnimation("Punch", false);
+        }
+    }
+
+    // ベル揃い → キック
+    else if (ParseSlotResult(result) == SlotRole::Bell)
+    {
+        if (!fromPlayer2) {
+            c1->state = PlayerState::Attack;
+            a1->SetAnimation("Kick", false);
+        }
+        else {
+            c2->state = PlayerState::Attack;
+            a2->SetAnimation("Kick", false);
+        }
+    }
+
+    // リプレイ → パンチ（軽攻撃）
+    else if (ParseSlotResult(result) == SlotRole::Replay)
+    {
+        if (!fromPlayer2) {
+            c1->state = PlayerState::Attack;
+            a1->SetAnimation("Punch", false);
+        }
+        else {
+            c2->state = PlayerState::Attack;
+            a2->SetAnimation("Punch", false);
+        }
     }
 }
