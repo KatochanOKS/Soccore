@@ -103,6 +103,20 @@ void GameScene::Update() {
         return;
     }
 
+    ImGui::SetNextWindowPos(ImVec2(10, 10), ImGuiCond_Once);
+    ImGui::SetNextWindowBgAlpha(0.35f);
+    ImGuiWindowFlags fpsFlags = ImGuiWindowFlags_NoDecoration |
+        ImGuiWindowFlags_AlwaysAutoResize |
+        ImGuiWindowFlags_NoSavedSettings |
+        ImGuiWindowFlags_NoFocusOnAppearing |
+        ImGuiWindowFlags_NoNav;
+    if (ImGui::Begin("Performance", nullptr, fpsFlags)) {
+        ImGuiIO& io = ImGui::GetIO();
+        ImGui::Text("FPS: %.1f", io.Framerate);
+        ImGui::Text("Frame Time: %.3f ms", 1000.0f / io.Framerate);
+    }
+    ImGui::End();
+
     ImGui::Begin("Mouse Debug");
     ImGuiIO& io = ImGui::GetIO();
     ImGui::Text("MousePos: %.1f, %.1f", io.MousePos.x, io.MousePos.y);
@@ -197,6 +211,13 @@ GameScene::~GameScene() {
     }
     m_SceneObjects.clear();
 }
+////namespace {
+//int x;
+//}
+//は内部的に
+//
+//cpp コードをコピーする static int x;
+//とほぼ同じ意味。
 
 namespace {
 
@@ -227,106 +248,101 @@ void GameScene::ApplySlotEffect(const std::string& result, bool fromPlayer2)
     auto* c1 = p1 ? p1->GetComponent<Player1Component>() : nullptr;
     auto* c2 = p2 ? p2->GetComponent<Player2Component>() : nullptr;
 
-    auto* a1 = p1 ? p1->GetComponent<Animator>() : nullptr;
-    auto* a2 = p2 ? p2->GetComponent<Animator>() : nullptr;
+    if (!c1 || !c2)
+        return;
 
-    const float DMG_SMALL = 0.5f;
+    // スロット役は1回だけ判定
+    auto role = ParseSlotResult(result);
+
+    const float DMG_SMALL  = 0.5f;
     const float DMG_MEDIUM = 1.0f;
-    const float DMG_LARGE = 1.5f;
-    const float DMG_HUGE = 3.0f;
+    const float DMG_LARGE  = 1.5f;
+    const float DMG_HUGE   = 3.0f;
 
-    // ==== まずは既存ダメージ判定 ====
-    switch (ParseSlotResult(result))
+    // 攻撃側 / 被攻撃側を決定（型を分けて保持）
+    Player1Component* attacker1 = nullptr;
+    Player2Component* attacker2 = nullptr;
+    Player1Component* target1   = nullptr;
+    Player2Component* target2   = nullptr;
+
+    if (fromPlayer2)
+    {
+        attacker2 = c2;
+        target1   = c1;
+    }
+    else
+    {
+        attacker1 = c1;
+        target2   = c2;
+    }
+
+    switch (role)
     {
     case SlotRole::Big:
-        if (!fromPlayer2) SafeDamage<Player2Component>(p2, DMG_HUGE);
-        else SafeDamage<Player1Component>(p1, DMG_HUGE);
+        if (attacker1)
+        {
+            attacker1->ExecuteAttack("Punch");
+            target2->TakeDamage(DMG_HUGE);
+        }
+        else
+        {
+            attacker2->ExecuteAttack("Punch");
+            target1->TakeDamage(DMG_HUGE);
+        }
         break;
 
     case SlotRole::Bar:
-        if (!fromPlayer2) SafeDamage<Player2Component>(p2, DMG_LARGE);
-        else SafeDamage<Player1Component>(p1, DMG_LARGE);
+        if (attacker1)
+        {
+            attacker1->ExecuteAttack("Punch");
+            target2->TakeDamage(DMG_LARGE);
+        }
+        else
+        {
+            attacker2->ExecuteAttack("Punch");
+            target1->TakeDamage(DMG_LARGE);
+        }
         break;
 
     case SlotRole::Power:
+        if (attacker1)
+        {
+            attacker1->ExecuteAttack("Punch");
+            target2->TakeDamage(DMG_MEDIUM);
+        }
+        else
+        {
+            attacker2->ExecuteAttack("Punch");
+            target1->TakeDamage(DMG_MEDIUM);
+        }
+        break;
+
     case SlotRole::Bell:
-        if (!fromPlayer2) SafeDamage<Player2Component>(p2, DMG_MEDIUM);
-        else SafeDamage<Player1Component>(p1, DMG_MEDIUM);
+        if (attacker1)
+        {
+            attacker1->ExecuteAttack("Kick");
+            target2->TakeDamage(DMG_MEDIUM);
+        }
+        else
+        {
+            attacker2->ExecuteAttack("Kick");
+            target1->TakeDamage(DMG_MEDIUM);
+        }
         break;
 
     case SlotRole::Replay:
-        if (!fromPlayer2 && c1) c1->hp = std::min(c1->maxHp, c1->hp + 0.10f);
-        if (fromPlayer2 && c2) c2->hp = std::min(c2->maxHp, c2->hp + 0.10f);
+        if (attacker1)
+        {
+            attacker1->hp = std::min(attacker1->maxHp, attacker1->hp + 0.10f);
+        }
+        else
+        {
+            attacker2->hp = std::min(attacker2->maxHp, attacker2->hp + 0.10f);
+        }
         break;
 
     case SlotRole::Miss:
+    default:
         break;
-    }
-
-    // ==== ここからアニメーション命令 ====
-
-    // Big → 強パンチ
-    if (ParseSlotResult(result) == SlotRole::Big)
-    {
-        if (!fromPlayer2) {
-            c1->state = PlayerState::Attack;
-            a1->SetAnimation("Punch", false);
-        }
-        else {
-            c2->state = PlayerState::Attack;
-            a2->SetAnimation("Punch", false);
-        }
-    }
-
-    // BAR → 強パンチ
-    else if (ParseSlotResult(result) == SlotRole::Bar)
-    {
-        if (!fromPlayer2) {
-            c1->state = PlayerState::Attack;
-            a1->SetAnimation("Punch", false);
-        }
-        else {
-            c2->state = PlayerState::Attack;
-            a2->SetAnimation("Punch", false);
-        }
-    }
-
-    // 力揃い → パンチ
-    else if (ParseSlotResult(result) == SlotRole::Power)
-    {
-        if (!fromPlayer2) {
-            c1->state = PlayerState::Attack;
-            a1->SetAnimation("Punch", false);
-        }
-        else {
-            c2->state = PlayerState::Attack;
-            a2->SetAnimation("Punch", false);
-        }
-    }
-
-    // ベル揃い → キック
-    else if (ParseSlotResult(result) == SlotRole::Bell)
-    {
-        if (!fromPlayer2) {
-            c1->state = PlayerState::Attack;
-            a1->SetAnimation("Kick", false);
-        }
-        else {
-            c2->state = PlayerState::Attack;
-            a2->SetAnimation("Kick", false);
-        }
-    }
-
-    // リプレイ → パンチ（軽攻撃）
-    else if (ParseSlotResult(result) == SlotRole::Replay)
-    {
-        if (!fromPlayer2) {
-            c1->state = PlayerState::Attack;
-            a1->SetAnimation("Punch", false);
-        }
-        else {
-            c2->state = PlayerState::Attack;
-            a2->SetAnimation("Punch", false);
-        }
     }
 }

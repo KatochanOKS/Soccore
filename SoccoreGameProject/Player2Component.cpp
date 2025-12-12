@@ -1,216 +1,204 @@
 #include "Player2Component.h"
-#include "Transform.h"
+
 #include "Animator.h"
 #include "GameObject.h"
-#include "UIImage.h"
 #include "GameScene.h"
+#include "UIImage.h"
+
 #include <windows.h>
 
-extern "C" {
-#include "lua.h"
+extern "C"
+{
 #include "lauxlib.h"
+#include "lua.h"
 #include "lualib.h"
 }
 
-void Player2Component::LoadConfigFromLua() {
+/* ===============================
+   Lua 設定読み込み
+================================ */
+
+void Player2Component::LoadConfigFromLua()
+{
     lua_State* L = luaL_newstate();
     luaL_openlibs(L);
 
-    if (luaL_dofile(L, "assets/scripts/player2_config.lua") != LUA_OK) {
-        const char* err = lua_tostring(L, -1);
-        OutputDebugStringA(err);
+    if (luaL_dofile(L, "assets/scripts/player2_config.lua") != LUA_OK)
+    {
+        OutputDebugStringA(lua_tostring(L, -1));
         lua_close(L);
         return;
     }
 
-    // maxHp
     lua_getglobal(L, "maxHp");
-    if (lua_isnumber(L, -1)) maxHp = (float)lua_tonumber(L, -1);
+    if (lua_isnumber(L, -1))
+        maxHp = (float)lua_tonumber(L, -1);
     lua_pop(L, 1);
 
-    // hp
     lua_getglobal(L, "hp");
-    if (lua_isnumber(L, -1)) hp = (float)lua_tonumber(L, -1);
-    lua_pop(L, 1);
-
-    // speed
-    lua_getglobal(L, "speed");
-    if (lua_isnumber(L, -1)) moveSpeed = (float)lua_tonumber(L, -1);
-    lua_pop(L, 1);
-
-    // name
-    lua_getglobal(L, "name");
-    if (lua_isstring(L, -1)) {
-        const char* name_utf8 = lua_tostring(L, -1);
-        name = name_utf8;
-    }
+    if (lua_isnumber(L, -1))
+        hp = (float)lua_tonumber(L, -1);
     lua_pop(L, 1);
 
     lua_close(L);
 
-    // デバッグ出力
-    char buf[128];
-    sprintf_s(buf, "Player2Config: maxHp=%.1f, hp=%.1f, speed=%.3f, name=%s\n", maxHp, hp, moveSpeed, name.c_str());
-    OutputDebugStringA(buf);
+    delayedHp = hp;
 }
 
-void Player2Component::Start() {
-    // 最初の読込時に更新時刻も覚える
+/* ===============================
+   初期化
+================================ */
+
+void Player2Component::Start()
+{
     WIN32_FILE_ATTRIBUTE_DATA data;
-    if (GetFileAttributesExA("assets/scripts/player2_config.lua", GetFileExInfoStandard, &data)) {
+    if (GetFileAttributesExA("assets/scripts/player2_config.lua", GetFileExInfoStandard, &data))
+    {
         lastWriteTime = data.ftLastWriteTime;
     }
-    LoadConfigFromLua();
-}
-void Player2Component::Update() {
 
-    // Luaファイル更新監視（自動リロード！）
+    LoadConfigFromLua();
+    state = PlayerState::Idle;
+}
+
+/* ===============================
+   毎フレーム更新（入力なし）
+================================ */
+
+void Player2Component::Update()
+{
+    // Luaホットリロード
     WIN32_FILE_ATTRIBUTE_DATA data;
-    if (GetFileAttributesExA("assets/scripts/player2_config.lua", GetFileExInfoStandard, &data)) {
-        if (CompareFileTime(&lastWriteTime, &data.ftLastWriteTime) != 0) {
+    if (GetFileAttributesExA("assets/scripts/player2_config.lua", GetFileExInfoStandard, &data))
+    {
+        if (CompareFileTime(&lastWriteTime, &data.ftLastWriteTime) != 0)
+        {
             lastWriteTime = data.ftLastWriteTime;
             LoadConfigFromLua();
-            OutputDebugStringA("Luaホットリロード!\n");
         }
     }
 
-    auto* tr = gameObject->GetComponent<Transform>();
     auto* animator = gameObject->GetComponent<Animator>();
-    if (!tr || !animator) return;
+    if (!animator)
+        return;
 
-    // 入力取得（2P: U=ガード, P=キック, L=パンチ, 矢印で移動）
-    bool kickKey = (GetAsyncKeyState('P') & 0x8000);
-    bool punchKey = (GetAsyncKeyState('L') & 0x8000);
-    bool guardKey = (GetAsyncKeyState('U') & 0x8000);
-
-    static bool prevKickKey = false, prevPunchKey = false, prevGuardKey = false;
-
-    switch (state) {
+    switch (state)
+    {
     case PlayerState::Idle:
-        isGuarding = false;
-        if (guardKey) {
-            state = PlayerState::Guard;
-            animator->SetAnimation("BodyBlock", true);
-            isGuarding = true;
-        }
-        else if (kickKey && !prevKickKey) {
-            state = PlayerState::Attack;
-            animator->SetAnimation("Kick", false);
-        }
-        else if (punchKey && !prevPunchKey) {
-            state = PlayerState::Attack;
-            animator->SetAnimation("Punch", false);
-        }
-        else {
-            // Attack, Guard, Reaction の時は Idle に戻さない
-            if (state == PlayerState::Idle) {
-                if (animator->currentAnim != "Idle")
-                    animator->SetAnimation("Idle", true);
-            }
-        }
-        break;
-
-    case PlayerState::Move:
-        isGuarding = false;
-        if (guardKey) {
-            state = PlayerState::Guard;
-            animator->SetAnimation("BodyBlock", true);
-            isGuarding = true;
-        }
-        else if (kickKey && !prevKickKey) {
-            state = PlayerState::Attack;
-            animator->SetAnimation("Kick", false);
-        }
-        else if (punchKey && !prevPunchKey) {
-            state = PlayerState::Attack;
-            animator->SetAnimation("Punch", false);
-        }
+        if (animator->currentAnim != "Idle")
+            animator->SetAnimation("Idle", true);
         break;
 
     case PlayerState::Attack:
-        if (!animator->isPlaying) {
+        if (!animator->isPlaying)
+        {
             state = PlayerState::Idle;
             animator->SetAnimation("Idle", true);
-        }
-        break;
-
-    case PlayerState::Guard:
-        isGuarding = true;
-        if (!guardKey) {
-            state = PlayerState::Idle;
-            animator->SetAnimation("Idle", true);
-            isGuarding = false;
         }
         break;
 
     case PlayerState::Reaction:
         reactionTimer -= 1.0f / 60.0f;
-        if (reactionTimer <= 0.0f) {
+        if (reactionTimer <= 0.0f)
+        {
             state = PlayerState::Idle;
             animator->SetAnimation("Idle", true);
         }
         break;
 
     case PlayerState::Dying:
-        // 死亡時は何もしない
+        // 何もしない（GameSceneで遷移管理）
         break;
 
-    case PlayerState::Win:
-        // 勝利状態
+    default:
         break;
     }
 
-    // HPバーUI（既存まま）
+    UpdateHpBar();
+}
+
+/* ===============================
+   外部命令：攻撃
+================================ */
+
+void Player2Component::ExecuteAttack(const std::string& animName)
+{
+    if (state == PlayerState::Dying)
+        return;
+
+    state = PlayerState::Attack;
+
+    if (auto* animator = gameObject->GetComponent<Animator>())
+    {
+        animator->SetAnimation(animName, false);
+    }
+}
+
+/* ===============================
+   外部命令：ダメージ
+================================ */
+
+void Player2Component::TakeDamage(float amount)
+{
+    if (state == PlayerState::Dying)
+        return;
+
+    hp -= amount;
+    if (hp <= 0.0f)
+    {
+        hp    = 0.0f;
+        state = PlayerState::Dying;
+        if (auto* animator = gameObject->GetComponent<Animator>())
+            animator->SetAnimation("Dying", false);
+    }
+    else
+    {
+        state         = PlayerState::Reaction;
+        reactionTimer = 0.8f;
+        if (auto* animator = gameObject->GetComponent<Animator>())
+            animator->SetAnimation("Reaction", false);
+    }
+}
+
+/* ===============================
+   HPバー更新（右寄せ）
+================================ */
+
+void Player2Component::UpdateHpBar()
+{
     const float delaySpeed = 0.005f;
-    if (delayedHp > hp) {
+
+    if (delayedHp > hp)
+    {
         delayedHp -= delaySpeed;
-        if (delayedHp < hp) delayedHp = hp;
+        if (delayedHp < hp)
+            delayedHp = hp;
     }
-    else {
+    else
+    {
         delayedHp = hp;
     }
 
-    const float HPBAR_MAX_WIDTH = 500.0f;
-    const float HPBAR_RIGHT_EDGE = 1280.0f - HPBAR_MAX_WIDTH; // 右側にバーを固定したい場合
+    constexpr float MAX_WIDTH  = 500.0f;
+    constexpr float RIGHT_EDGE = 1280.0f;
 
-    GameObject* hpRedBarObj = gameObject->scene->FindByName("HP2Red");
-    if (hpRedBarObj) {
-        auto* redBar = hpRedBarObj->GetComponent<UIImage>();
-        float redWidth = HPBAR_MAX_WIDTH * (delayedHp / maxHp);
-        if (redWidth < 0) redWidth = 0;
-        redBar->m_Size.x = redWidth;
-        redBar->m_Position.x = HPBAR_RIGHT_EDGE + (HPBAR_MAX_WIDTH - redWidth); // 右端固定
+    if (auto* red = gameObject->scene->FindByName("HP2Red"))
+    {
+        if (auto* img = red->GetComponent<UIImage>())
+        {
+            float w           = MAX_WIDTH * (delayedHp / maxHp);
+            img->m_Size.x     = w;
+            img->m_Position.x = RIGHT_EDGE - w;
+        }
     }
 
-    GameObject* hpBarObj = gameObject->scene->FindByName("HP2");
-    if (hpBarObj) {
-        auto* bar = hpBarObj->GetComponent<UIImage>();
-        float barWidth = HPBAR_MAX_WIDTH * (hp / maxHp);
-        if (barWidth < 0) barWidth = 0;
-        bar->m_Size.x = barWidth;
-        bar->m_Position.x = HPBAR_RIGHT_EDGE + (HPBAR_MAX_WIDTH - barWidth); // 右端固定
-    }
-
-
-    prevKickKey = kickKey;
-    prevPunchKey = punchKey;
-    prevGuardKey = guardKey;
-}
-
-// 被ダメージ受けるとき
-void Player2Component::TakeDamage(float amount) {
-    if (state == PlayerState::Dying) return;
-    hp -= amount;
-    if (hp <= 0.0f) {
-        hp = 0.0f;
-        state = PlayerState::Dying;
-        auto* animator = gameObject->GetComponent<Animator>();
-        if (animator) animator->SetAnimation("Dying", false);
-    }
-    else {
-        state = PlayerState::Reaction;
-        reactionTimer = 1.5f;
-        auto* animator = gameObject->GetComponent<Animator>();
-        if (animator) animator->SetAnimation("Reaction", false);
+    if (auto* bar = gameObject->scene->FindByName("HP2"))
+    {
+        if (auto* img = bar->GetComponent<UIImage>())
+        {
+            float w           = MAX_WIDTH * (hp / maxHp);
+            img->m_Size.x     = w;
+            img->m_Position.x = RIGHT_EDGE - w;
+        }
     }
 }

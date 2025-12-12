@@ -25,6 +25,8 @@ public:
     std::string name = "Player1";
     void LoadConfigFromLua();
     void TakeDamage(float amount);
+    void ExecuteAttack(const std::string& animName);
+    void UpdateHpBar();
 
     void Start() override;
 };

@@ -21,6 +21,9 @@ public:
 
     void LoadConfigFromLua();     // š’Ç‰Á
     void TakeDamage(float amount);
+    void ExecuteAttack(const std::string& animName);
+    void UpdateHpBar(); // š’Ç‰Á
+
     void Start() override;        // šStart‚Å1‰ñ‚¾‚¯Lua“Ç
 };
 

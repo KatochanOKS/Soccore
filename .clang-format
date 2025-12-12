@@ -1,0 +1,67 @@
+BasedOnStyle: Microsoft
+
+# 基本設定
+IndentWidth: 4        # インデント幅
+TabWidth: 4
+UseTab: Never         # タブ禁止（全部スペース）
+
+# ブレースの位置を Allman に変更（if の { が次の行に来る）
+BreakBeforeBraces: Allman
+
+# レイアウト / 折り返し
+ColumnLimit: 140      # 1行の最大長
+
+# 名前空間のインデント
+NamespaceIndentation: None # namespace 内でさらに一段インデントしない
+
+# if 1行書きを抑止（ネスト地獄を防ぐ）
+AllowShortIfStatementsOnASingleLine: false
+
+# ポインタ/参照の * と & の位置
+PointerAlignment: Left    
+
+# include の並びを自動ソート
+SortIncludes: true
+IncludeBlocks: Regroup
+
+# () や <> の中で折り返すとき、次の行を揃える
+AlignAfterOpenBracket: Align
+
+# 引数・パラメータを1行に詰め込まない
+BinPackArguments: false      # 関数呼び出しの引数
+BinPackParameters: false     # 関数宣言の引数
+
+# 1つ目の引数だけ次の行…みたいな変な折り方を防ぐ
+AllowAllArgumentsOnNextLine: false
+
+# C++11 の { } 初期化リストをそれっぽく扱う
+Cpp11BracedListStyle: true
+
+# = を縦に揃える（ローカル変数とか設定テーブルが見やすくなる）
+AlignConsecutiveAssignments: true
+
+# 行末コメントを揃える（設定テーブル好きならおすすめ）
+AlignTrailingComments: true
+
+# 長いコメント行を自動で折り返す（// の後の文章）
+ReflowComments: true
+
+# ブロック先頭の意味のない空行は削る
+KeepEmptyLinesAtTheStartOfBlocks: false
+
+# using / using namespace もソート
+SortUsingDeclarations: true
+
+# コンストラクタ初期化リストの : を改行位置にするかどうか
+BreakConstructorInitializers: BeforeColon   
+
+# 初期化子を1行に詰め込まず、縦に並べる
+PackConstructorInitializers: Never
+
+SpaceBeforeParens: ControlStatements   # if / for / while だけスペースを入れる
+
+# 空行は最大1行だけ維持（2行以上空いてたら1行に潰す）
+MaxEmptyLinesToKeep: 1
+
+# 関数・クラス定義のブロック同士は1行空ける（トップレベルの } の下）
+SeparateDefinitionBlocks: Always
